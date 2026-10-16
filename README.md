@@ -1,104 +1,129 @@
-# DevForge - OpenCode Agent
+# DevForge
 
-Este é o repositório do motor de desenvolvimento **DevForge**, um sistema de
-agentes de código aberto projetado para orquestrar fluxos de trabalho
-automatizados dentro de ambientes de desenvolvimento.
+**Open-source dev CLI & AI-orchestration engine**: it detects your stack,
+audits your dependency **supply chain**, and hands AI agents a one-call
+briefing instead of a folder full of files.
 
-## Como rodar
+**Works with any agent** — Claude Code, Codex, OpenCode, Cursor, Antigravity,
+aider, Copilot — or with no agent at all. DevForge is a plain CLI: stable
+`--json` output and exit codes *are* the interface; there is no vendor plugin
+to install. *(Compatibility, not affiliation.)*
 
-O projeto é um **workspace Cargo** padrão:
+[Also available in: **Português (pt-BR)**](README.pt-BR.md)
+
+## Install
+
+**From source** (prebuilt binaries ship with the `v0.1.0` release):
 
 ```bash
-cargo build            # compila todos os crates
-cargo test             # roda todos os testes
-cargo run              # analisa o diretório atual (detect)
+git clone https://github.com/Jhongamers/devforge && cd devforge
+cargo build --release
+cp target/release/devforge ~/.local/bin/   # or anywhere on your PATH
 ```
 
-O binário fica em `target/debug/devforge`.
+Requires Rust stable. Every `v*` tag publishes binaries
+(linux x64/arm64, macOS arm64, Windows) + `.sha256` checksums on
+[Releases](https://github.com/Jhongamers/devforge/releases); a `curl | sh`
+installer and package-manager one-liners are on the launch roadmap
+(`cargo install` works from the repo today).
 
-## Comandos
+> **For AI agents:** clone + `cargo build --release` is the canonical
+> zero-mystery install. After that, `devforge context --json` is the fastest
+> way to learn an unfamiliar repo.
+
+## Quickstart
 
 ```bash
-devforge [caminho]                     # detecta a stack (padrão)
-devforge detect [caminho]              # idem
-devforge analyze [caminho] [flags]     # analisa as dependências do projeto
-devforge context [caminho] [flags]     # briefing: runbook + entradas + riscos (1 chamada)
-devforge diagnose [flags]              # resume um erro: causa real + conserto
-devforge run [caminho] [flags]         # sobe o projeto (resolve o start e espera ficar pronto)
-devforge up [url|caminho] [flags]      # pipeline: clone? → audit → prepare → run (mesmos gates)
-devforge audit [caminho] [flags]       # auditoria de supply-chain (--fail-on gateia CI)
-devforge license status|install|remove # licença offline (assinatura Ed25519, local)
-devforge data status|update            # dataset de risco (grátis: status; Pro: update)
-devforge prepare [caminho] [flags]     # instala dependências (SEM Docker)
-devforge docker  [caminho] [flags]     # gera Dockerfile + build da imagem
+cd some-project
+devforge                    # detect the stack
+devforge context --json     # one-call briefing (runbook + entrypoints + trust)
+devforge audit              # supply-chain audit
+devforge up                 # audit → prepare → run, with intact gates
+```
+
+## Commands
+
+```bash
+devforge [path]                     # detect the stack (default)
+devforge detect [path]              # same
+devforge analyze [path] [flags]     # analyze the project's dependencies
+devforge context [path] [flags]     # briefing: runbook + entrypoints + risks (1 call)
+devforge diagnose [flags]           # summarize an error: root cause + fix
+devforge run [path] [flags]         # boot the project (resolves start, waits until ready)
+devforge up [url|path] [flags]      # pipeline: clone? → audit → prepare → run (same gates)
+devforge audit [path] [flags]       # supply-chain audit (--fail-on gates CI)
+devforge license status|install|remove # offline license (Ed25519 signature, local)
+devforge data status|update         # risk dataset (free: status; Pro: update)
+devforge prepare [path] [flags]     # install dependencies (no Docker)
+devforge docker  [path] [flags]     # generate Dockerfile + build the image
 ```
 
 Flags:
 
-| Flag        | Efeito                                                              |
-| ----------- | ------------------------------------------------------------------- |
-| `--dry-run` | Mostra o plano e **não executa nada**.                              |
-| `--yes`/`-y`| Aprova tudo automaticamente, sem perguntar.                         |
-| `--force`   | Permite **sobrescrever** arquivos existentes (ex.: `Dockerfile`).    |
-| `--online`  | (`analyze`/`audit`) Consulta os registries (versões / hooks).      |
-| `--json`    | Saída estruturada pra IA (stdout = JSON puro).                     |
-| `--all`     | Desce em subpastas procurando projetos (monorepo/aninhado).        |
-| `--fail-on` | (`audit`) Severidade mínima que reprova o CI (exit 1).             |
-| `--policy`  | (`audit`) Arquivo de política TOML (`fail_on`, `allowlist`).       |
-| `--ignore`  | (`audit`) Supressões TOML com **expiração obrigatória**.           |
-| `--sarif`   | (`audit`) Emite SARIF 2.1.0 (GitHub Code Scanning).                |
-| `--url`     | (`data`) Origem do dataset: `https://...` ou `file://<caminho>`    |
-|             | (alternativa: env `DF_DATASET_URL`).                               |
-| `--message` | (`diagnose`) Texto de erro inline.                                  |
-| `--input`   | (`diagnose`) Arquivo com a saída de erro.                           |
-| `--timeout` | (`run`) Segundos esperando ficar pronto (padrão 60).                |
-| `--health`  | (`run`) Readiness explícito: `tcp:<porta>` \| `http://...`.        |
-| `--until`   | (`up`) Para depois da etapa: `clone\|audit\|prepare\|run`.         |
-| `--skip`    | (`up`) Pula etapa(s), separadas por vírgula (nunca `clone`).       |
+| Flag        | Effect                                                             |
+| ----------- | ------------------------------------------------------------------ |
+| `--dry-run` | Shows the plan and **runs nothing**.                                |
+| `--yes`/`-y`| Approves everything automatically, without asking.                  |
+| `--force`   | Allows **overwriting** existing files (e.g. `Dockerfile`).          |
+| `--online`  | (`analyze`/`audit`) Queries registries (versions / hooks).          |
+| `--json`    | Structured output for agents (stdout = pure JSON).                  |
+| `--all`     | Descends into subfolders looking for projects (monorepo/nested).    |
+| `--fail-on` | (`audit`) Minimum severity that fails CI (exit 1).                  |
+| `--policy`  | (`audit`) TOML policy file (`fail_on`, `allowlist`).                |
+| `--ignore`  | (`audit`) TOML suppressions with **mandatory expiry**.              |
+| `--sarif`   | (`audit`) Emits SARIF 2.1.0 (GitHub Code Scanning).                 |
+| `--url`     | (`data`) Dataset origin: `https://...` or `file://<path>`           |
+|             | (alternative: env `DF_DATASET_URL`).                                |
+| `--message` | (`diagnose`) Inline error text.                                     |
+| `--input`   | (`diagnose`) File containing the error output.                      |
+| `--timeout` | (`run`) Seconds to wait for readiness (default 60).                 |
+| `--health`  | (`run`) Explicit readiness: `tcp:<port>` \| `http://...`.           |
+| `--until`   | (`up`) Stop after the stage: `clone\|audit\|prepare\|run`.          |
+| `--skip`    | (`up`) Skip stage(s), comma-separated (never `clone`).              |
 
-### Saída JSON (orquestração por IA)
+### JSON output (AI orchestration)
 
-Com `--json`, qualquer comando devolve **JSON compacto no stdout** (o "barulho"
-de diagnóstico vai pra stderr). Pensado pra quem chama ser um **agente**: texto
-pros humanos obriga o modelo a interpretar e gasta token; JSON entrega o fato
-pronto. Todo documento tem `"schema": 1`.
+With `--json`, every command returns **compact JSON on stdout** (diagnostic
+noise goes to stderr). Built for callers that are **agents**: human text makes
+the model interpret and burn tokens; JSON delivers the fact ready-made. Every
+document carries `"schema": 1`.
 
 ```bash
-devforge detect  --json          # o que é este projeto (ground truth)
-devforge context --json          # briefing: runbook + entradas + riscos (1 chamada)
-devforge analyze --json          # dependências doentes
-devforge diagnose --json         # causa real de um erro (+ conserto)
-devforge run --dry-run --json    # comando de start resolvido + de onde veio
-devforge run --json              # plano sem executar (modo IA) ou resultado final
-devforge up --dry-run --json     # plano do pipeline (etapa a etapa, sem executar)
-devforge up --json               # JSON Lines: 1 objeto por etapa + resumo final
-devforge audit --json            # relatório de supply-chain (score, fatores, veredito)
-devforge license status --json   # licença instalada (plan, holder, expires, valid)
-devforge data status --json      # dataset instalado? versão, idade, staleness (livre)
-devforge data update --json      # Pro: baixa+verifica; sem licença → no_license, exit 1
-devforge prepare --json          # plano + verificação de confiança (não executa)
-devforge docker  --json          # idem, modo Docker
+devforge detect  --json          # what is this project (ground truth)
+devforge context --json          # briefing: runbook + entrypoints + risks (1 call)
+devforge analyze --json          # sick dependencies
+devforge diagnose --json         # root cause of an error (+ fix)
+devforge run --dry-run --json    # resolved start command + where it came from
+devforge run --json              # plan without executing (agent mode) or final result
+devforge up --dry-run --json     # pipeline plan (stage by stage, nothing executed)
+devforge up --json               # JSON Lines: 1 object per stage + final summary
+devforge audit --json            # supply-chain report (score, factors, verdict)
+devforge license status --json   # installed license (plan, holder, expires, valid)
+devforge data status --json      # dataset installed? version, age, staleness (free)
+devforge data update --json      # Pro: downloads+verifies; no license → no_license, exit 1
+devforge prepare --json          # plan + trust verification (does not execute)
+devforge docker  --json          # same, Docker mode
 ```
 
-> `prepare`/`docker` com `--json` entregam o **plano** e os **riscos** de forma
-> estruturada e **não executam** — execução é interativa/humana. É o combo
-> "IA propõe, humano aprova" (roadmap 2.3).
+> `prepare`/`docker` with `--json` deliver the **plan** and **risks**
+> structurally and **do not execute** — execution is interactive/human. It's the
+> "agent proposes, human approves" combo.
 
-Exemplo (`detect --json`, enxugado):
+Example (`detect --json`, trimmed):
 ```json
 {"schema":1,"command":"detect","stacks":[{"language":"Rust","package_manager":"cargo","frameworks":["Tokio"],"dependencies":[{"name":"serde","version":"=1.0.100","kind":"Runtime"}]}]}
 ```
 
-> **O gancho de economia de token:** tudo que a CLI faz é Rust local
-> **determinístico = zero token de IA**. O LLM é o cérebro (decide o quê), a CLI
-> é as mãos (sabe como, com permissão + verificação). Um agente chama
-> `detect --json` e recebe o fato em vez de ler N arquivos de manifesto.
+> **The token-savings hook:** everything the CLI does is local deterministic
+> Rust = **zero AI tokens**. The LLM is the brain (decides *what*), the CLI is
+> the hands (knows *how*, with permission + verification). An agent calls
+> `detect --json` and gets the fact instead of reading N manifest files.
 
-### Briefing de uma chamada (`context`)
+### One-call briefing (`context`)
 
-O maior gasto de uma IA num projeto estranho é **exploração** (glob/grep/ler
-README pra descobrir "como buildo/testo/rodo?"). O `context` responde tudo isso
-**numa chamada só**:
+An AI's biggest expense in an unfamiliar project is **exploration**
+(glob/grep/reading the README to figure out "how do I build/test/run this?").
+The `context` answers all of it **in a single call**:
 
 ```bash
 devforge context --json
@@ -112,440 +137,448 @@ devforge context --json
  "trust":{"risks":[],"blocking":0}}
 ```
 
-- **runbook**: comandos de `setup`/`build`/`test`/`run`/`lint`, tirados de
-  `scripts` do `package.json`, alvos de `Makefile`/`justfile`, wrappers
-  (`mvnw`/`gradlew`) e convenções por linguagem.
-- **entrypoints**: arquivos de entrada (`src/main.rs`, `index.js`,
+- **runbook**: `setup`/`build`/`test`/`run`/`lint` commands, taken from
+  `package.json` `scripts`, `Makefile`/`justfile` targets, wrappers
+  (`mvnw`/`gradlew`) and per-language conventions.
+- **entrypoints**: entry files (`src/main.rs`, `index.js`,
   `cmd/api/main.go`, ...).
-- **key_files**: manifesto, lockfile, CI, Dockerfile, `.env.example`, README.
-- Junta `detect` + `trust` + isso tudo — troca N explorações por 1 JSON.
+- **key_files**: manifest, lockfile, CI, Dockerfile, `.env.example`, README.
+- Joins `detect` + `trust` + all of that — replaces N explorations with 1 JSON.
 
-Sem `--json`, mostra o mesmo em seções legíveis (COMO RODAR / ENTRADAS /
-ARQUIVOS-CHAVE / CONFIANÇA).
+Without `--json`, the same content is shown in readable sections
+(HOW TO RUN / ENTRYPOINTS / KEY FILES / TRUST).
 
-> **Honestidade:** o runbook é inferido (manifestos + convenções). Ele dá o
-> comando **mais provável**, não uma garantia de que roda sem ajuste — projetos
-> com build peculiar podem precisar de correção manual. CI não é parsed de YAML
-> (só listada nos `key_files`).
+> **Honesty:** the runbook is *inferred* (manifests + conventions). It gives the
+> **most likely** command, not a guarantee it runs unmodified — projects with
+> peculiar builds may need manual adjustment. CI YAML is not parsed (only
+> listed in `key_files`).
 
-### Diagnóstico de erro (`diagnose`)
+### Error diagnosis (`diagnose`)
 
-Quando um comando falha, o erro literal quase sempre é **sintoma, não causa**.
-`cannot find -lssl` parece problema de linking, mas a causa é "falta o
-`libssl-dev`"; `node-gyp ERR` parece problema do npm, mas a causa é "falta
-python3/gcc". O `diagnose` casa **padrões conhecidos** na saída inteira e devolve
-a causa **real** + o conserto, com a "prova" (as linhas que casaram):
+When a command fails, the literal error is almost always a **symptom, not the
+cause**. `cannot find -lssl` looks like a linking problem, but the cause is
+"missing `libssl-dev`"; `node-gyp ERR` looks like an npm problem, but the cause
+is "missing python3/gcc". `diagnose` matches **known patterns** across the
+whole output and returns the **real** cause + the fix, with the "proof"
+(the lines that matched):
 
 ```bash
-# 1) cola o erro direto
+# 1) paste the error directly
 devforge diagnose --message "sh: 1: cargo: not found"
-#   → conserto: `cargo` não está no PATH — rode `devforge prepare` pra toolchain
+#   → fix: `cargo` is not on PATH — run `devforge prepare` for the toolchain
 
-# 2) ou pipe (sem nem sair do fluxo de build)
-meu_build 2>&1 | devforge diagnose
+# 2) or pipe (without leaving your build flow)
+my_build 2>&1 | devforge diagnose
 
-# 3) ou de um arquivo
+# 3) or from a file
 devforge diagnose --input build.log --json
 ```
 
-É Rust local e determinístico (zero token). Se **nenhuma** regra casa, ele é
-honesto e devolve as linhas com mais cara de erro (resumo) em vez de fingir que
-entendeu. Por quê não `devforge run <comando>`? Pra não criar uma superfície
-nova de execução arbitrária — você/IA já tem o erro, falta só a tradução.
+Local deterministic Rust (zero tokens). If **no** rule matches, it is honest
+and returns the lines that look most like the error (a summary) instead of
+pretending it understood. Why not `devforge run <command>`? To avoid adding a
+new arbitrary-execution surface — you/the agent already have the error; only
+the translation is missing.
 
-### Executar o projeto (`run`)
+### Run the project (`run`)
 
-O `run` fecha o ciclo: **audit → prepare → run**. Ele **resolve como o projeto
-sobe** e sobe — nunca adivinha em silêncio:
+`run` closes the loop: **audit → prepare → run**. It **resolves how the
+project boots** and boots it — never silently guesses:
 
-1. **Declarado** (o projeto diz): `package.json` `scripts.start`, Procfile
-   (`web:`), `make run/start/serve`, `docker compose up`.
-2. **Convenção**: Django, Rails, Phoenix, `cargo run`, `go run .`, `dotnet run`,
-   Spring Boot, Laravel, `dart run`…
-3. **Ambíguo? Pergunta.** Nada achou? diz honestamente (não roda nada no chute).
+1. **Declared** (the project says so): `package.json` `scripts.start`,
+   Procfile (`web:`), `make run/start/serve`, `docker compose up`.
+2. **Convention**: Django, Rails, Phoenix, `cargo run`, `go run .`,
+   `dotnet run`, Spring Boot, Laravel, `dart run`…
+3. **Ambiguous? It asks.** Nothing found? It says so honestly (won't run a
+   guess).
 
 ```bash
-devforge run                      # resolve, PERGUNTA se pode executar, e sobe
-devforge run --dry-run            # só mostra o comando resolvido (sem executar)
-devforge run --timeout 90         # espera ficar pronto por até 90s (padrão 60)
-devforge run --health http://localhost:3000/health   # readiness explícito
-devforge run . -- --port 3001     # args após -- vão pro comando de start
-devforge run --json               # plano/resultado estruturado (modo IA)
+devforge run                      # resolves, ASKS permission to execute, boots
+devforge run --dry-run            # only shows the resolved command (no execution)
+devforge run --timeout 90         # wait up to 90s for readiness (default 60)
+devforge run --health http://localhost:3000/health   # explicit readiness
+devforge run . -- --port 3001     # args after -- go to the start command
+devforge run --json               # structured plan/result (agent mode)
 ```
 
-**O que torna "deu certo" honesto:** um servidor não termina, então exit code
-não basta — o `run` detecta **porta aceitando conexão** (heurística: `--health`,
-portas candidatas, e no Linux a porta **real** do processo e dos descendentes
-via `/proc` — pega até o neto `npm → node`). Ctrl-C/SIGTERM derruba o **grupo
-inteiro** (SIGTERM → espera → SIGKILL). Crash antes de subir vira entrada do
-`diagnose` (causa + conserto).
+**What makes "it worked" honest:** a server doesn't terminate, so the exit code
+isn't enough — `run` detects a **port accepting connections** (heuristics:
+`--health`, candidate ports, and on Linux the **real** port of the process and
+its descendants via `/proc` — catches the grandchild `npm → node`).
+Ctrl-C/SIGTERM takes down the **whole process group** (SIGTERM → wait →
+SIGKILL). A crash before booting becomes a `diagnose` entry (cause + fix).
 
-**Limitações honestas (v1):** prontidão é heurística de porta (não é garantia);
-`--health http` sem https; no macOS não há descoberta de porta (use
-`--health`/candidatas); `--json` não faz stream ao vivo (entrega o tail no
-resultado); foreground apenas (sem `--detach`); POSIX (Linux/macOS).
-E a regra de sempre: **executar é risco crítico — `--yes` não cobre**, o humano
-decide (modo IA: `--json` entrega o plano, não executa).
+**Honest limitations (v1):** readiness is port heuristics (not a guarantee);
+`--health http` has no https; no port discovery on macOS (use
+`--health`/candidates); `--json` doesn't stream live (delivers the tail in the
+result); foreground only (no `--detach`); POSIX (Linux/macOS).
+And the standing rule: **executing is critical risk — `--yes` never covers
+it**, the human decides (agent mode: `--json` delivers the plan, doesn't
+execute).
 
-### Pipeline completo (`up`)
+### The full pipeline (`up`)
 
-O princípio do produto em um comando: toda etapa funciona **isolada E
-composta**. O `up` encadeia o pipeline usando **literalmente os mesmos caminhos
-de código** dos comandos isolados — compor não enfraquece segurança:
+The product principle in one command: every stage works **isolated AND
+composed**. `up` chains the pipeline through **literally the same code paths**
+of the isolated commands — composing does not weaken security:
 
 ```bash
-devforge up                        # audit → prepare → run no diretório atual
-devforge up ./meu-projeto          # idem em outro caminho
-devforge up https://github.com/x/y # clone seguro (--depth 1, sem submódulos,
-                                   # sem hooks; destino = ./y — nunca sobrescreve)
-devforge up --until audit          # para depois do audit (útil em CI)
-devforge up --skip run             # só prepara, não sobe
-devforge up --dry-run              # mostra o plano de etapas; não executa nada
-devforge up --json                 # JSON Lines: 1 objeto por etapa + resumo final
+devforge up                        # audit → prepare → run in the current directory
+devforge up ./my-project           # same in another path
+devforge up https://github.com/x/y # safe clone (--depth 1, no submodules,
+                                   # no hooks; destination = ./y — never overwrites)
+devforge up --until audit          # stop after the audit (useful in CI)
+devforge up --skip run             # prepare only, don't boot
+devforge up --dry-run              # shows the stage plan; executes nothing
+devforge up --json                 # JSON Lines: 1 object per stage + final summary
 ```
 
-**Gates por etapa, intactos:** confiança/toolchain/instalação e a execução do
-`run` perguntam exatamente como nos comandos isolados — e **um aborto de
-segurança interrompe o pipeline ANTES do `run`, sempre** (não-interativo nega
-por padrão; `--yes` nunca cobre execução de código). No `--json` (modo IA), o
-audit entrega resultado real, o prepare entrega o **plano** (não executa) e o
-`run` nega sem terminal — quem executa é o humano.
+**Per-stage gates, intact:** trust/toolchain/installation checks and the `run`
+execution ask exactly as in the isolated commands — and **a security abort
+stops the pipeline BEFORE `run`, always** (non-interactive denies by default;
+`--yes` never covers code execution). In `--json` (agent mode), the audit
+delivers a real result, the prepare delivers the **plan** (no execution) and
+the `run` denies without a terminal — the human is the one who executes.
 
-**Limitações honestas (v1):** o `run` final é foreground (o `up` termina quando
-o app termina — `--detach` é v1.1); sem resume (falhou, roda de novo); clone
-exige `git` e um destino inexistente.
+**Honest limitations (v1):** the final `run` is foreground (the `up` ends when
+the app ends — `--detach` is v1.1); no resume (failed? run it again); the clone
+requires `git` and a destination that doesn't exist yet.
 
-### Auditoria de supply-chain (`audit`)
+### Supply-chain audit (`audit`)
 
-O `audit` responde "**posso confiar** nesse código pra entrar na minha
-empresa?". Copia o coração dos consolidados — **Socket.dev** (risk factors +
-confluência), **Snyk/cargo-audit** (policy + `fail_on` + exit code) e **OWASP**
-(supressão de FP) — com três travas nossas:
+The `audit` answers "**can I trust** this code into my company?". It borrows
+the heart of the established tools — **Socket.dev** (risk factors +
+confluence), **Snyk/cargo-audit** (policy + `fail_on` + exit code) and
+**OWASP** (FP suppression) — with three locks of our own:
 
-1. **Nenhum sinal isolado é veredito.** A severidade vem da *soma* de pesos
-   (confluência) e só um score ≥ 25 vira achação. Então `^4.18.0` (range
-   normal) ou um `postinstall` benigno (`node-gyp rebuild`, `prebuild-install`)
-   **não** viram alerta — testado com o esbuild real.
-2. **Classificamos o CONTEÚDO do hook**, não só a existência: `curl|sh`,
-   base64+eval, shell reversa e acesso a credenciais são suspeitos;
-   build-nativo/husky são esperados.
-3. **Supressão exige expiração** (`expires` no TOML) — um ignore nunca vira
-   escudo eterno pra um pacote comprometido; supressão expirada reativa o
-   alerta e é listada pra re-triagem.
+1. **No single signal is a verdict.** Severity comes from the *sum* of weights
+   (confluence) and only a score ≥ 25 becomes a finding. So `^4.18.0` (a normal
+   range) or a benign `postinstall` (`node-gyp rebuild`, `prebuild-install`)
+   **don't** trigger alerts — tested against the real esbuild.
+2. **We classify the hook's CONTENT**, not just its existence: `curl|sh`,
+   base64+eval, reverse shells and credential access are suspicious; native
+   builds/husky are expected.
+3. **Suppression requires expiry** (`expires` in the TOML) — an ignore never
+   becomes an eternal shield for a compromised package; an expired suppression
+   re-activates the alert and is listed for re-triage.
 
 ```bash
-devforge audit                      # offline: origem (registro/git/path) + pin
-devforge audit --online             # + hooks de instalação e downloads do npm
-devforge audit --fail-on high       # exit 1 se achar high/critical (gateia CI)
-devforge audit --sarif > results.sarif   # SARIF 2.1.0 p/ GitHub Code Scanning
+devforge audit                      # offline: origin (registry/git/path) + pin
+devforge audit --online             # + install hooks and npm downloads
+devforge audit --fail-on high       # exit 1 on high/critical (gates CI)
+devforge audit --sarif > results.sarif   # SARIF 2.1.0 for GitHub Code Scanning
 devforge audit --policy .devforge/policy.toml --ignore .devforge/ignore.toml
 ```
 
-Política (`.devforge/policy.toml`, versionada):
+Policy (`.devforge/policy.toml`, versioned):
 ```toml
 fail_on = "high"
-allowlist = ["meu-pacote-interno"]   # git interno esperado → não alerta
+allowlist = ["my-internal-package"]   # expected internal git → no alert
 ```
-Supressão (`.devforge/ignore.toml` — `expires` é **obrigatório**):
+Suppression (`.devforge/ignore.toml` — `expires` is **mandatory**):
 ```toml
 [[ignore]]
-package = "algum-pacote"
+package = "some-package"
 factor = "non-registry"
-reason = "fork interno auditado"
+reason = "audited internal fork"
 expires = "2027-01-01"
 ```
 
-**Honestidade:** analisamos o *texto* do script de instalação, não os arquivos
-que ele invoca (`node install.js`) — é um sinal, não garantia. Detecção de
-typosquat por similaridade de nome e verificação de integridade de lockfile
-estão no radar (ainda não implementadas). O `--online` consulta o registry npm.
+**Honesty:** we analyze the install script's *text*, not the files it invokes
+(`node install.js`) — it's a signal, not a guarantee. Typosquat detection by
+name similarity and lockfile integrity verification are on the roadmap (not
+implemented yet). `--online` queries the npm registry.
 
 #### CI/CD — GitHub Action (`action.yml`)
 
-O repositório expõe um **composite action** que roda o audit em PRs: baixa o
-binário da Release (com verificação de `sha256`), publica o SARIF no Code
-Scanning e **reprova o job** pelo exit code. Empacotamento vem junto — o
-workflow `.github/workflows/release.yml` publica binários (linux x64/arm64,
-macOS arm64, windows) a cada tag `v*`:
+The repository ships a **composite action** that runs the audit on PRs:
+downloads the binary from the Release (with `sha256` verification), publishes
+the SARIF to Code Scanning and **fails the job** via the exit code.
+Packaging comes with it — `.github/workflows/release.yml` publishes binaries
+(linux x64/arm64, macOS arm64, windows) on every `v*` tag:
 
 ```bash
-git tag v0.1.0 && git push origin v0.1.0   # publica as Releases
+git tag v0.1.0 && git push origin v0.1.0   # publishes the Releases
 ```
 
-Uso no repositório do consumidor (`.github/workflows/audit.yml`):
+Usage in the consumer's repository (`.github/workflows/audit.yml`):
 ```yaml
 name: supply-chain audit
 on: [pull_request]
 permissions:
   contents: read
-  security-events: write   # necessário p/ publicar o SARIF
+  security-events: write   # needed to publish the SARIF
 jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: OWNER/devforge@v0.1.0
+      - uses: Jhongamers/devforge@v0.1.0
         with:
           fail-on: high
-          # version: v0.1.0   # tag pinada (proposital, não "latest")
-          # sha256: <hash>    # opcional: ancora a integridade no action
-          # online: "true"    # default; offline o score só chega a Medium
+          # version: v0.1.0   # pinned tag (on purpose, not "latest")
+          # sha256: <hash>    # optional: pins integrity at the action level
+          # online: "true"    # default; offline the score only reaches Medium
 ```
 
-**Honestidade sobre o CI:**
-- O **gate funciona sempre**: `fail-on` → exit 1 reprovando o job, sem
-  dependência de nada além do binário. Mas repare: **offline** o audit só vê
-  origem + pin, então o score não passa de **Medium** — com `fail-on high` um
-  audit offline nunca reprovaria nada. Por isso o action vai com
-  `online: "true"` (é o conteúdo do hook que produz High/Critical).
-- A **anotação inline no PR** (SARIF) exige Code Scanning: grátis em repo
-  público; em repo **privado** exige GitHub Advanced Security (pago). Sem ele,
-  use `upload-sarif: "false"` e fique só com o gate.
-- Inputs entram via `env:` (não interpolados no `run:`) — imune a script
-  injection; binário verificado por `sha256`; ref **pinado** por tag.
-- Action cobre Linux (x64/arm64) e macOS (arm64). Windows: baixar o `.zip` da
-  Release manualmente (o binário é publicado).
+**Honesty about CI:**
+- The **gate always works**: `fail-on` → exit 1 fails the job, depending on
+  nothing but the binary. But note: **offline** the audit only sees origin +
+  pin, so the score never exceeds **Medium** — with `fail-on high` an offline
+  audit would never fail anything. That's why the action defaults to
+  `online: "true"` (hook *content* is what produces High/Critical).
+- **Inline PR annotation** (SARIF) requires Code Scanning: free on public
+  repositories; on **private** repositories it requires GitHub Advanced
+  Security (paid). Without it, set `upload-sarif: "false"` and keep the gate.
+- Inputs go through `env:` (not interpolated into `run:`) — immune to script
+  injection; binary verified by `sha256`; ref **pinned** by tag.
+- The action covers Linux (x64/arm64) and macOS (arm64). Windows: download the
+  `.zip` from the Release manually (the binary is published).
 
-#### Licença (`license`) — fundação da monetização (offline)
+#### License (`license`) — monetization foundation (offline)
 
-Modelo escolhido: **open core + assinatura**. O CLI é grátis; a licença é a
-chave que destrava (e destravará) o que é pago — sem nenhuma chamada de rede.
+Chosen model: **open core + subscription**. The CLI is free; the license is
+the key that unlocks (and will unlock) what's paid — with zero network calls.
 
 ```bash
-devforge license install <chave|@arquivo>   # valida localmente (Ed25519) e instala
-devforge license status [--json]            # plano, titular, expiração, validade
+devforge license install <key|@file>   # validates locally (Ed25519) and installs
+devforge license status [--json]       # plan, holder, expiry, validity
 devforge license remove
 ```
 
-- **Formato:** token `DF1.<payload-b64url>.<assinatura>`; o binário carrega só
-  a chave **pública**. Verificação 100% local, em `~/.config/devforge/license.key`.
-- **Honestidade:** é um gate **anti-honesto**, não anti-atacante — patchear o
-  binário burla (é o mesmo trato de TablePlus/Transmit). Também não defende
-  relógio do sistema atrasado. A proteção de verdade chega na fase server-side.
-- **O que ela bloqueia hoje:** só o `data update` (dataset Pro abaixo). Todo o
-  restante do CLI — incluindo `context`, que economiza token de IA — segue
-  **100% grátis**. É a fundação da fase server-side, não uma DRM.
-- Cunho de licenças (vendor-only, não vai no binário):
-  `cargo run --example license_tool -- genkey|mint ...` — a chave privada fica
-  com o vendor, **nunca** no repo.
+- **Format:** token `DF1.<payload-b64url>.<signature>`; the binary embeds only
+  the **public** key. 100% local verification, stored at
+  `~/.config/devforge/license.key`.
+- **Honesty:** it's an **anti-dishonesty** gate, not an anti-attacker one —
+  patching the binary bypasses it (same deal as TablePlus/Transmit). It also
+  doesn't defend against a system clock rolled back. Real protection arrives
+  with the server-side phase.
+- **What it blocks today:** only `data update` (the Pro dataset below).
+  Everything else in the CLI — including `context`, which saves AI tokens —
+  stays **100% free**. It's the foundation of the server-side phase, not DRM.
+- License minting (vendor-only, never ships in the binary):
+  `cargo run --example license_tool -- genkey|mint ...` — the private key
+  stays with the vendor, **never** in the repo.
 
-#### Dataset de risco Pro (`data`)
+#### Pro risk dataset (`data`)
 
-O `audit` offline de hoje (fatores de confluência, `--online`) é **o tier
-grátis, intacto**. O `data update` acrescenta, por cima, dados de risco
-**assinados e frescos** — advisories recentes (GHSA **revisados**, janela de
-~90 dias) e uma kill list **exata** de typosquat/maliciosos (patterns
-precisos de título medidos no banco real — sem fuzzy), baixados daqui da
-Release e verificados com a chave pública embutida.
+Today's offline `audit` (confluence factors, `--online`) is the **free tier,
+intact**. `data update` layers **signed, fresh** risk data on top — recent
+advisories (GitHub **reviewed** GHSA, ~90-day window) and an **exact** kill
+list of typosquats/malicious packages (precise title patterns measured against
+the real database — no fuzzy matching), downloaded from the Releases here and
+verified with the embedded public key.
 
 ```bash
-devforge data status [--json]              # livre, offline: versão, idade, staleness
-devforge data update [--json] [--url <url>]# Pro: baixa, VERIFICA e instala (exige licença)
+devforge data status [--json]               # free, offline: version, age, staleness
+devforge data update [--json] [--url <url>] # Pro: downloads, VERIFIES, installs (needs license)
 ```
 
-| | Grátis (hoje) | Pro (licença + `data update`) |
+| | Free (today) | Pro (license + `data update`) |
 | --- | --- | --- |
-| `audit` offline (confluência, FP controlado) | ✅ | ✅ |
-| `context` (economia de token), `run`, `up`, `prepare`... | ✅ | ✅ |
-| Advisories recentes por nome + kill list no `audit` | — | ✅ seção `dataset_findings` |
-| Atualização diária do dataset (Release assinada) | — | ✅ |
-| `data status` (estado do dataset) | ✅ (livre) | ✅ |
+| Offline `audit` (confluence, controlled FP) | ✅ | ✅ |
+| `context` (token savings), `run`, `up`, `prepare`... | ✅ | ✅ |
+| Recent advisories by name + kill list in `audit` | — | ✅ `dataset_findings` section |
+| Daily dataset updates (signed Release asset) | — | ✅ |
+| `data status` (dataset state) | ✅ (free) | ✅ |
 
-Regras e limites (por design, ver `docs/design-data.md`):
+Rules and limits (by design, see `docs/design-data.md`):
 
-- **Gate só no `update`** — sem licença válida → `no_license`/`license_invalid`,
-  exit 1, **sem tocar a rede**. `status` é livre.
-- **Assinatura obrigatória**: envelope Ed25519 verificado antes de escrever
-  qualquer byte; recusa (adulterado/chave errada) deixa o dataset anterior
-  intacto. Chave de dataset **separada** da de licença (blast radius).
-- **Staleness honesta**: dataset com mais de 14 dias ganha aviso — o freshness
-  é parte do produto, não escondido.
-- **FP controlado**: advisory casa só por **nome** → achado `low` "possível
-  exposição — confira sua versão" (sem range-matching por ecossistema no v1);
-  kill list casa **exato** → `high`. **Nenhum** fuzzy.
-- **A seção não mexe no CI**: não altera `score`, `passed` nem `--fail-on` —
-  audit grátis e Pro continuam comparáveis; sem dataset, o JSON é
-  **byte idêntico** ao de sempre (sem chave `dataset`).
+- **Gate only on `update`** — no valid license → `no_license`/`license_invalid`,
+  exit 1, **without touching the network**. `status` is free.
+- **Signature required**: the Ed25519 envelope is verified before writing a
+  single byte; a refusal (tampered/wrong key) leaves the previous dataset
+  intact. The dataset key is **separate** from the license key (blast radius).
+- **Honest staleness**: datasets older than 14 days get a warning — freshness
+  is part of the product, not hidden.
+- **Controlled FP**: advisories match by **name only** → a `low` finding "possible
+  exposure — check your version" (no ecosystem range-matching in v1); the kill
+  list matches **exactly** → `high`. **No** fuzzy matching, ever.
+- **The section doesn't touch your CI**: it changes neither `score`, `passed`
+  nor `--fail-on` — free and Pro audits stay comparable; without a dataset the
+  JSON is **byte identical** to before (no `dataset` key).
 
-### Análise de dependências (`analyze`)
+### Dependency analysis (`analyze`)
 
-O `analyze` é **leitura apenas** — não instala nem altera nada. Ele combina duas
-camadas:
+`analyze` is **read-only** — it installs and changes nothing. Two layers:
 
-- **Offline (sempre roda):** versão coringa/não fixada (`*`, `latest`, vazia),
-  dependência sem versão, dependência vinda de fora do registro (git/path/file),
-  **lockfile ausente** e a mesma dependência declarada com versões diferentes.
-- **Online (`--online`):** consulta **crates.io / npm / PyPI** e avisa quando há
-  versão mais nova que a que você pediu. Limita a 40 requisições por execução
-  (por causa de rate limit e tempo).
-
-```
-⚠️  Rust: 'serde' tem versão mais nova no registro: 1.0.100 -> 1.0.229.
-⚠️  JavaScript: nenhum lockfile encontrado (esperado: package-lock.json ou ...).
-ℹ️  JavaScript: 'meu-lib' vem de 'git+https://...' (fora do registro de pacotes).
-```
-
-> Diferente do `prepare`/`docker`, o `analyze` **não pede permissão** porque não
-> executa nada na sua máquina — só o `--online` faz requisições HTTP de leitura.
-
-### Permissões
-
-Por padrão o DevForge **não faz nada sozinho**: antes de cada ação sensível
-(instalar, gerar/sobrescrever arquivo, rodar `docker build`) ele pergunta:
+- **Offline (always runs):** wildcard/unpinned versions (`*`, `latest`, empty),
+  dependencies without a version, dependencies from outside the registry
+  (git/path/file), **missing lockfile**, and the same dependency declared with
+  different versions.
+- **Online (`--online`):** queries **crates.io / npm / PyPI** and warns when a
+  newer version exists than the one you asked for. Capped at 40 requests per
+  run (rate limits and time).
 
 ```
-🔐 Permissão necessária: Instalar dependências (npm)
-   ação   : npm install
-   motivo : Baixa e instala os pacotes do package.json.
-   Executar? [s]im / [n]ão / [a]sim para todas:
+⚠️  Rust: 'serde' has a newer version on the registry: 1.0.100 -> 1.0.229.
+⚠️  JavaScript: no lockfile found (expected: package-lock.json or ...).
+ℹ️  JavaScript: 'my-lib' comes from 'git+https://...' (outside the registry).
 ```
 
-- `s` executa só aquele passo, `n` pula, `a` aprova todos os restantes.
-- Sem terminal (execução não interativa) ele **nega por padrão**, por segurança.
-- Arquivos existentes **nunca** são sobrescritos sem `--force`.
+> Unlike `prepare`/`docker`, `analyze` **asks no permission** because it runs
+> nothing on your machine — only `--online` makes read-only HTTP requests.
 
-### Segurança e supply-chain (verificação automática)
+### Permissions
 
-Um manifesto (`package.json`, `Cargo.toml`, ...) é **input não confiável**: um
-projeto malicioso (ou uma IA dirigindo o DevForge sem perceber) pode mandar
-instalar código arbitrário. Por isso, **antes** de qualquer `prepare`/`docker`
-roda um **pré-flight de confiança** que não confia cegamente no manifest:
+By default DevForge **does nothing on its own**: before each sensitive action
+(install, generate/overwrite a file, run `docker build`) it asks:
 
-- **Scripts de lifecycle do npm** (`preinstall`/`install`/`postinstall`/`prepare`)
-  → rodam código arbitrário no `npm install`. Mostra o comando exato. Isso vale
-  **tanto pro projeto raiz quanto pra cada dependência**: antes de `npm install`,
-  ele busca no registry (sem baixar tarball) os hooks de instalação de cada
-  dependência e agrega tudo num aviso só — ex.: `esbuild → postinstall: node install.js`.
-- **Dependência fora do registro** (git/path/file) → código de terceiros sem
-  auditoria do package manager.
-- **A "busca" no registry**: para npm, confere **downloads/semana** (pega
-  typosquat vivo: `lodahs` ~125 vs `lodash` ~162.000.000); para **Rust, Python,
-  Ruby, PHP, .NET, Dart, Elixir, Go e Java/Maven**, confere se o pacote
-  **existe** no registry oficial (crates.io, PyPI, RubyGems, Packagist, NuGet,
-  pub.dev, Hex, `proxy.golang.org`, Maven Central).
+```
+🔐 Permission required: Install dependencies (npm)
+   action : npm install
+   reason : Downloads and installs the packages in package.json.
+   Run it? [y]es / [n]o / [a]ll:
+```
 
-Cada risco exige confirmação **individual** — **"sim para todas" e `--yes` NÃO
-valem aqui**. Se qualquer risco for recusado (ou `--yes` for usado), o
-`prepare`/`docker` **aborta sem instalar nada**.
+- `y` runs just that step, `n` skips, `a` approves all remaining.
+- Without a terminal (non-interactive execution) it **denies by default**, for
+  safety.
+- Existing files are **never** overwritten without `--force`.
 
-> **Injeção de comando:** já é impossível por construção — os comandos rodam
-> sem shell (`Command::new(prog).args([...])`), então um nome de pacote com
-> `; rm -rf /` vira só um argumento literal. O nome de imagem Docker é saneado
-> pra `[a-z0-9._-]`.
+### Security & supply-chain (automatic verification)
+
+A manifest (`package.json`, `Cargo.toml`, ...) is **untrusted input**: a
+malicious project (or an agent driving DevForge unknowingly) could ask it to
+install arbitrary code. So **before** any `prepare`/`docker` runs, a
+**trust pre-flight** executes that does not blindly trust the manifest:
+
+- **npm lifecycle scripts** (`preinstall`/`install`/`postinstall`/`prepare`)
+  → run arbitrary code on `npm install`. We show the exact command. This covers
+  **both the root project and every dependency**: before `npm install`, we
+  query the registry (without downloading tarballs) the install hooks of each
+  dependency and aggregate everything into a single warning — e.g.
+  `esbuild → postinstall: node install.js`.
+- **Dependency outside the registry** (git/path/file) → third-party code with
+  no package-manager audit.
+- **Registry "sanity"**: for npm we check **weekly downloads** (catches a live
+  typosquat: `lodahs` ~125 vs `lodash` ~162,000,000); for **Rust, Python,
+  Ruby, PHP, .NET, Dart, Elixir, Go and Java/Maven** we check the package
+  **exists** on the official registry (crates.io, PyPI, RubyGems, Packagist,
+  NuGet, pub.dev, Hex, `proxy.golang.org`, Maven Central).
+
+Each risk requires **individual** confirmation — **"yes to all" and `--yes`
+do NOT apply here**. If any risk is refused (or `--yes` is used), the
+`prepare`/`docker` **aborts without installing anything**.
+
+> **Command injection:** already impossible by construction — commands run
+> without a shell (`Command::new(prog).args([...])`), so a package name with
+> `; rm -rf /` becomes a literal argument. Docker image names are sanitized
+> to `[a-z0-9._-]`.
 >
-> **Limitações honestas:** o check de downloads é um sinal, não prova — um
-> typosquat com tráfego alto ou um pacote legítimo muito pequeno podem passar.
-> No `postinstall` de dependências, ele olha a versão que o `npm install`
-> puxaria (exata quando o requisito é pinado; `latest` quando é faixa), então
-> pode perder um script que só existe em outra versão — e nada disso substitui
-> ler o código. É uma rede de proteção extra, não uma garantia.
+> **Honest limitations:** the download check is a signal, not proof — a
+> high-traffic typosquat or a legitimately tiny package may slip through. For
+> dependency `postinstall`s, we look at the version `npm install` would pull
+> (exact when the requirement is pinned; `latest` when it's a range), so a
+> script that only exists in another version can be missed — and none of this
+> replaces reading the code. It's an extra safety net, not a guarantee.
 
-### O que ele prepara
+### What it prepares
 
-- **`prepare`** (sem Docker): roda o instalador de cada stack detectado
-  (`cargo build`, `npm install`, `pip install` em `.venv`, `go mod download`,
-  `composer install`, `bundle install`, `dotnet restore`, `mix deps.get`,
-  `cmake`/`make`, ...) e mostra o comando para rodar depois.
-- **`docker`**: gera um `Dockerfile` por stack (multi-stage quando faz sentido),
-  roda `docker build` e mostra o `docker run`. Os Dockerfiles vêm com um
-  comentário avisando que `CMD`/variáveis podem precisar de ajuste — são um
-  **ponto de partida**, não uma garantia de que todo projeto roda sem ajustes.
+- **`prepare`** (no Docker): runs each detected stack's installer
+  (`cargo build`, `npm install`, `pip install` into `.venv`,
+  `go mod download`, `composer install`, `bundle install`, `dotnet restore`,
+  `mix deps.get`, `cmake`/`make`, ...) and shows the command to run next.
+- **`docker`**: generates a `Dockerfile` per stack (multi-stage when it makes
+  sense), runs `docker build` and shows the `docker run`. Dockerfiles come
+  with a comment warning that `CMD`/variables may need adjustment — they are a
+  **starting point**, not a guarantee that every project runs unmodified.
 
-### Toolchain faltando (node/npm/go/...)
+### Missing toolchain (node/npm/go/...)
 
-Antes de rodar o `prepare` (sem Docker), ele checa se as **ferramentas** do
-stack estão no PATH (`cargo`, `node`+`npm`, `go`, `python3`, `php`+`composer`,
-...) e, se algo faltar, **avisa na hora** com a sugestão de instalação pra **o
-seu sistema** (apt/dnf/pacman no Linux, `brew` no macOS, `winget` no Windows):
+Before running `prepare` (no Docker), it checks the stack's **tools** are on
+the PATH (`cargo`, `node`+`npm`, `go`, `python3`, `php`+`composer`, ...) and,
+if something is missing, **warns immediately** with the install suggestion for
+**your OS** (apt/dnf/pacman on Linux, `brew` on macOS, `winget` on Windows):
 
 ```
-FERRAMENTAS FALTANDO
+MISSING TOOLS
   • ruby (Ruby)
-      sugestão: sudo apt install ruby
+      suggestion: sudo apt install ruby
 ```
 
-- **Oferece instalar (Fase 2, com permissão):** pra um **set curado** de
-  ferramentas (node/npm/go/python3/java/php/ruby), ele **pergunta** se quer que
-  ele rode o comando de instalação. Cada uma é uma confirmação **crítica** —
-  **nem "sim para todas" nem `--yes` cobrem**. Roda **sem shell** (argv a
-  argv) com **stdio herdado**, então um `sudo`/`brew` que peça senha funciona.
-  Depois ele **re-verifica** o PATH e diz se funcionou (pode recusar ou falhar).
-  As demais ferramentas (ex.: Rust, que é via `curl | sh`) ficam **só na
-  sugestão** — ele não chuta comando/versão.
-- No modo **Docker** não checa: a toolchain vive dentro do container.
-- As sugestões são um **palpite razoável** por SO, não garantia — cada máquina
-  pode variar, e o gerenciador de pacotes pode nem existir.
+- **Offers to install (Phase 2, with permission):** for a **curated set** of
+  tools (node/npm/go/python3/java/php/ruby), it **asks** whether to run the
+  install command. Each one is a **critical** confirmation — **neither "yes to
+  all" nor `--yes` cover it**. Runs **without a shell** (argv by argv) with
+  **inherited stdio**, so a password-prompting `sudo`/`brew` works. It then
+  **re-verifies** the PATH and reports honestly (it may refuse or fail). Other
+  tools (e.g. Rust, which is `curl | sh`) stay **suggestion-only** — it won't
+  guess commands/versions.
+- In **Docker** mode no check runs: the toolchain lives inside the container.
+- Suggestions are a **reasonable guess** per OS, not a guarantee — every
+  machine can differ, and the package manager may not even exist.
 
-> ⚠️ Instalar dependências executa comandos na sua máquina (e `npm install`
-> roda scripts do projeto). Use `--dry-run` para inspecionar antes.
+> ⚠️ Installing dependencies executes commands on your machine (and
+> `npm install` runs the project's scripts). Use `--dry-run` to inspect first.
 
-## Arquitetura
+## Architecture
 
-O DevForge segue **Clean Architecture** e o padrão **Microkernel**, garantindo
-modularidade, testabilidade e extensibilidade. Os componentes críticos são:
+DevForge follows **Clean Architecture** with the **Microkernel** pattern for
+modularity, testability and extensibility. The critical components:
 
-- **EventBus:** comunicação reativa e desacoplada entre módulos.
-- **Plugin SDK:** contratos (`Capabilities`) que isolam os plugins.
-- **Workflow Engine:** execução transacional em etapas (`Workflow -> Step -> Action`).
-- **Kernel:** orquestrador que gerencia o ciclo de vida dos plugins.
+- **EventBus:** reactive, decoupled communication between modules.
+- **Plugin SDK:** contracts (`Capabilities`) that isolate plugins.
+- **Workflow Engine:** transactional, staged execution
+  (`Workflow -> Step -> Action`).
+- **Kernel:** the orchestrator managing the plugin lifecycle.
 
-### Estrutura do workspace (`crates/`)
+### Workspace layout (`crates/`)
 
-As dependências fluem de fora para dentro (veja `arquiteture.md`):
+Dependencies flow from outside in (see `arquiteture.md`):
 
 ```text
 shared  ->  events  ->  sdk  ->  { core, kernel } / plugins
 ```
 
-| Crate              | Papel                                                             | Depende de                     |
-| ------------------ | ----------------------------------------------------------------- | ------------------------------ |
-| `devforge-shared`  | Domínio: tipos universais (`Context`, `ProjectStack`, `Language`). | —                              |
-| `devforge-events`  | Barramento de eventos (`EventBus`, `EventEnvelope`).               | `shared`                       |
-| `devforge-sdk`     | Contratos: `Capability`, `FileSystemAccess`, `ProjectDetector`, `CommandRunner` e a porta `PermissionGate`. | `shared`, `events` |
-| `devforge-plugins` | Plugins V1: `LocalFileSystem`, `StackDetector`, `LocalCommandRunner`. | `shared`, `sdk`             |
-| `devforge-core`    | Casos de uso: `WorkflowEngine` e `Provisioner` (preparar projeto).  | `shared`, `sdk`                |
-| `devforge-kernel`  | Microkernel: registry de plugins e ciclo de vida.                  | `shared`, `events`, `sdk`      |
-| `devforge` (CLI)   | Ponto de entrada + `PermissionGate` interativo.                    | todos                          |
+| Crate              | Role                                                             | Depends on                     |
+| ------------------ | ---------------------------------------------------------------- | ------------------------------ |
+| `devforge-shared`  | Domain: universal types (`Context`, `ProjectStack`, `Language`).  | —                              |
+| `devforge-events`  | Event bus (`EventBus`, `EventEnvelope`).                          | `shared`                       |
+| `devforge-sdk`     | Contracts: `Capability`, `FileSystemAccess`, `ProjectDetector`, `CommandRunner` and the `PermissionGate` port. | `shared`, `events` |
+| `devforge-plugins` | V1 plugins: `LocalFileSystem`, `StackDetector`, `LocalCommandRunner`. | `shared`, `sdk`             |
+| `devforge-core`    | Use cases: `WorkflowEngine` and `Provisioner` (project preparation). | `shared`, `sdk`                |
+| `devforge-kernel`  | Microkernel: plugin registry and lifecycle.                       | `shared`, `events`, `sdk`      |
+| `devforge` (CLI)   | Entry point + interactive `PermissionGate`.                        | all                            |
 
-## Detecção de stack
+## Stack detection
 
-O plugin `StackDetector` reconhece a stack de um projeto lendo os manifestos da
-raiz. Um mesmo projeto pode ter **vários** stacks (ex.: um app Tauri tem Rust e
-Node ao mesmo tempo).
+The `StackDetector` plugin recognizes a project's stack by reading the root
+manifests. One project can have **several** stacks (e.g. a Tauri app has both
+Rust and Node).
 
-Com a flag **`--all`**, ele também **desce nas subpastas** procurando manifestos —
-útil pra **monorepo** ou projeto com manifesto aninhado (ex.: `.csproj` em
-`Src/Core/`, `package.json` em `pkgs/api/`). A varredura pula dirs de
-dependência/build (`node_modules`, `target`, ...) e tem limite de profundidade e
-quantidade. Sem `--all`, ele olha só a raiz (comportamento previsível).
+With the **`--all`** flag it also **descends into subfolders** looking for
+manifests — useful for **monorepos** or nested manifests (e.g. `.csproj` under
+`Src/Core/`, `package.json` under `pkgs/api/`). The scan skips
+dependency/build dirs (`node_modules`, `target`, ...) with depth and count
+limits. Without `--all`, only the root is read (predictable behavior).
 
-| Linguagem        | Manifesto                    | Frameworks reconhecidos (exemplos)          |
-| ---------------- | ---------------------------- | ------------------------------------------- |
-| Rust             | `Cargo.toml`                 | Tauri, Actix Web, Axum, Rocket, Bevy, Yew... |
+| Language         | Manifest                     | Recognized frameworks (examples)               |
+| ---------------- | ---------------------------- | ---------------------------------------------- |
+| Rust             | `Cargo.toml`                 | Tauri, Actix Web, Axum, Rocket, Bevy, Yew...   |
 | JavaScript/TS    | `package.json`               | React, Next.js, Vue, Angular, Express, NestJS, Electron, Vite... |
 | Python           | `pyproject.toml`, `requirements.txt`, `Pipfile`, `setup.py` | Django, Flask, FastAPI, Celery, Pytest... |
-| Go               | `go.mod`                     | Gin, Echo, Fiber, GORM, Chi, Cobra          |
-| Java / Kotlin    | `pom.xml`, `build.gradle[.kts]` | Spring, Quarkus, Micronaut, Android      |
-| PHP              | `composer.json`              | Laravel, Symfony, CakePHP, WordPress        |
-| Ruby             | `Gemfile`                    | Ruby on Rails, Sinatra, Hanami, Jekyll      |
-| C# / .NET        | `*.csproj`                   | ASP.NET Core, Entity Framework, MAUI        |
-| Dart / Flutter   | `pubspec.yaml`               | Flutter                                     |
-| Elixir           | `mix.exs`                    | Phoenix, Ecto, LiveView                     |
-| Swift            | `Package.swift`              | Vapor, Hummingbird                          |
-| C / C++          | `CMakeLists.txt`, `Makefile` | —                                           |
+| Go               | `go.mod`                     | Gin, Echo, Fiber, GORM, Chi, Cobra             |
+| Java / Kotlin    | `pom.xml`, `build.gradle[.kts]` | Spring, Quarkus, Micronaut, Android         |
+| PHP              | `composer.json`              | Laravel, Symfony, CakePHP, WordPress           |
+| Ruby             | `Gemfile`                    | Ruby on Rails, Sinatra, Hanami, Jekyll         |
+| C# / .NET        | `*.csproj`                   | ASP.NET Core, Entity Framework, MAUI           |
+| Dart / Flutter   | `pubspec.yaml`               | Flutter                                         |
+| Elixir           | `mix.exs`                    | Phoenix, Ecto, LiveView                        |
+| Swift            | `Package.swift`              | Vapor, Hummingbird                             |
+| C / C++          | `CMakeLists.txt`, `Makefile` | —                                              |
 
-A tabela completa de palavras-chave está em
-`crates/plugins/src/detector/`.
+The full keyword table lives in `crates/plugins/src/detector/`.
 
-## Status
+## Status & honesty
 
-- [x] Estrutura do workspace e direção de dependências.
-- [x] EventBus funcional com assinantes.
-- [x] Contratos de capability (`FileSystemAccess`, `ProjectDetector`, `CommandRunner`).
-- [x] Caso de uso: verificar `README.md` (POC inicial).
-- [x] Caso de uso: detecção de linguagem, framework e dependências.
-- [x] Caso de uso: preparar projeto para rodar (sem Docker e com Docker).
-- [x] Sistema de permissão (interativo, `--yes`, `--dry-run`, `--force`).
-- [ ] Analisador de dependências desatualizadas/vulneráveis.
-- [ ] Execução isolada (sandbox) para instalações.
-- [ ] UI desktop via Tauri v2 (ADR 0006).
+- Everything described above is implemented and under test (135 passing,
+  clippy clean). Pre-launch roadmap (i18n catalog, installer, brew/npx/winget):
+  [ROADMAP.md](ROADMAP.md).
+- **Language**: human-facing CLI messages are currently **pt-BR**; the machine
+  contract (JSON, SARIF, exit codes) is **always English**. A `--lang` catalog
+  (pt-BR + en, default en) lands **before** the public launch.
+- Honest limitations are called out inline throughout this README — nothing
+  claims more than the tool does. Automatic fix execution is **out of scope**
+  by design: DevForge only **proposes** fixes.
+- License: [MIT](LICENSE).

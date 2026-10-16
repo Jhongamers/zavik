@@ -252,6 +252,14 @@ swift-argument-parser, googletest). Achados:
       mensagens soltas em `println!` + taxinha contínua de 2 entradas por
       mensagem nova. Racional do padrão en: erro técnico em inglês é
       pesquisável; PH/issues são em inglês.
+- [x] **README em inglês como principal** ✅ (16/10): `README.md` traduzido
+      (EN) + cópia em pt-BR (`README.pt-BR.md`, sincronizada nos **marcos**,
+      não a cada commit — custo honesto de manter dois textos). Posicionamento
+      **agent-agnóstico**: seção "Works with any agent" (Claude Code, Codex,
+      OpenCode, Cursor, Antigravity, aider, Copilot) como **compatibilidade,
+      não filiação** — o título antigo dizia "OpenCode Agent" (corrigido;
+      associação a um único agente limitaria o mercado e induziria a erro).
+      Nota honesta no README: mensagens humanas seguem pt-BR até o i18n.
 - [ ] **Lançar no Product Hunt** (repo aberto + LICENSE + GIF no topo + tag
       v0.1.0; terça–quinta manhã EUA; primeiro comentário com limitações
       honestas).
