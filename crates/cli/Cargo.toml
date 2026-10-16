@@ -9,6 +9,13 @@ license.workspace = true
 name = "devforge"
 path = "src/main.rs"
 
+# The vendor tool's unit tests run with `cargo test` (builder = staged
+# code, every stage tested).
+[[example]]
+name = "license_tool"
+path = "examples/license_tool.rs"
+test = true
+
 [dependencies]
 devforge-shared.workspace = true
 devforge-events.workspace = true
@@ -22,6 +29,8 @@ toml.workspace = true
 ed25519-dalek.workspace = true
 base64.workspace = true
 ctrlc.workspace = true
+# Same family the `--online` signals use (sync, no runtime) — `data update` download.
+ureq = { version = "2" }
 
 # Only for the example tool (license minting) and integration tests.
 [dev-dependencies]

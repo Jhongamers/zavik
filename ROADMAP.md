@@ -190,10 +190,35 @@ swift-argument-parser, googletest). Achados:
 - [x] **Ferramenta de cunho** `examples/license_tool.rs` (`genkey`/`mint`) —
       não entra no binário; chave privada fica com o vendor, **nunca** no repo.
 - Limitações honestas: gate anti-honesto (patch burla), não defende relógio
-  atrasado; licença hoje não bloqueia features (não há tier pago ainda).
-- [ ] **Próximo (custo $0)**: dataset de risco assinado (GHSA snapshot +
-      typosquat) distribuído via GitHub Releases/CI, desbloqueado pela
-      licença; CLI atualiza opcionalmente e avisa staleness com honestidade.
+  atrasado; hoje ela bloqueia **apenas** `data update` — o resto do CLI,
+  incluindo `context`, segue 100% grátis.
+- [x] **Dataset de risco fase 1 — `devforge data status|update`** ✅
+      (design + amendments: `docs/design-data.md`; staging 1–3, 5, 6 feitos):
+      envelope Ed25519 com **chave separada** da licença (privada em
+      `~/.devforge-dataset.key` + secret `DF_DATASET_KEY` — nunca no repo);
+      `status` livre/offline (ausente / inválido / idade / stale >14d);
+      `update` gate de licença **antes da rede** (`no_license`/
+      `license_invalid`, exit 1), download `https`/`file://` com teto de
+      32 MB, verificação → escrita atômica (recusa deixa o anterior
+      intacto); `audit` ganha seção `dataset_findings` — kill list **exata**
+      → `high`, advisory só por **nome** → `low` (sem fuzzy, sem
+      range-matching) — que **não toca** `score`/`passed`/`--fail-on`; sem
+      dataset, o JSON do audit é **byte idêntico** (invariante testada).
+      24 testes novos (15 unit + 9 integração; total 123) + E2E real com as
+      chaves de produção: update → status → audit com a seção → dataset
+      adulterado recusado com o anterior permanecendo.
+- [x] **Dataset fase 1 completa (staging 4)** ✅: builder
+      `license_tool build-dataset` (GHSA **reviewed** só, janela 90d;
+      kill list por 4 patterns de título medidos nos 389.683 arquivos
+      reais → 61 nomes; exclui título version-scoped = anti-FP) +
+      workflow `.github/workflows/dataset.yml` (cron diário + dispatch,
+      clone esparso, build → sign `DF_DATASET_KEY` → **verifica contra a
+      chave do binário antes de publicar** → asset `dataset-latest` via
+      `gh`, sem action de terceiro). 11 testes + E2E real (36.885 GHSAs →
+      750 KB → audit com kill list real). Ativação real pende do F0:
+      push+tag, secret `DF_DATASET_KEY` e preencher `DEFAULT_DATASET_URL`.
+      Upgrade opcional (founder): corpus OSV `ossf/malicious-packages`
+      (238k nomes ≈ 28 MB/asset vs ~1 MB hoje) — ver design-data §2.
 - [ ] Action no GitHub Marketplace (billing deles, compute do cliente) —
       após publicar repo + tags.
 - [ ] Gate server-side (GitHub App, dashboard, trilha de auditoria) — só
@@ -230,6 +255,25 @@ swift-argument-parser, googletest). Achados:
 - [ ] **Lançar no Product Hunt** (repo aberto + LICENSE + GIF no topo + tag
       v0.1.0; terça–quinta manhã EUA; primeiro comentário com limitações
       honestas).
+- [ ] **Matriz de distribuição (F0–F3) — 3 portas: instalador, prompt
+      (gerenciador), IA/Action**. Recomendado por público marcado ✅;
+      página do Chocolatey olhada (convenção padrão `choco install
+      devforge` — sem inspiração extra necessária):
+  - **F0 (founder — bloqueante de todas)**: `git push -u origin main` +
+    `git tag v0.1.0 && git push origin v0.1.0` → `release.yml` publica
+    binários (linux x64/arm64, macOS arm, windows) + `.sha256`.
+  - **F1**: `install.sh` ✅ **recomendado (usuário final, inclui WSL e
+    macOS)** — detecta OS/arch, baixa da Release, confere sha256,
+    não-interativo; versão manual de 2 linhas documentada ao lado
+    (comemos o pastel: nosso próprio `audit` classifica `curl|sh` como
+    risco) + seção "Install" do README escrita pra humano E pra IA
+    (linha canônica copiável por OS — a IA usa o mesmo prompt).
+  - **F2**: `cargo install` ✅ **recomendado (dev com Rust já instalado)**
+    + testar `action.yml` no E2E do release — caminho zero-install de CI
+    (é o que a IA escreve num workflow).
+  - **F3** (conforme adoção): brew tap, `npx` (binário por plataforma),
+    winget/scoop, **`choco install devforge`** ✅ **recomendado (Windows
+    nativo)** — até lá o `.zip` da Release é a porta Windows.
 - [x] **5.1 `devforge run` v1 — FEITO**: resolve start (declarado > convenção >
       perguntar), readiness heurístico (heurística de porta + `/proc` com
       descendentes — pega o neto npm→node), SIGTERM→SIGKILL no **grupo**,

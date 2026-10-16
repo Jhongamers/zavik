@@ -28,6 +28,7 @@ devforge run [caminho] [flags]         # sobe o projeto (resolve o start e esper
 devforge up [url|caminho] [flags]      # pipeline: clone? → audit → prepare → run (mesmos gates)
 devforge audit [caminho] [flags]       # auditoria de supply-chain (--fail-on gateia CI)
 devforge license status|install|remove # licença offline (assinatura Ed25519, local)
+devforge data status|update            # dataset de risco (grátis: status; Pro: update)
 devforge prepare [caminho] [flags]     # instala dependências (SEM Docker)
 devforge docker  [caminho] [flags]     # gera Dockerfile + build da imagem
 ```
@@ -46,6 +47,8 @@ Flags:
 | `--policy`  | (`audit`) Arquivo de política TOML (`fail_on`, `allowlist`).       |
 | `--ignore`  | (`audit`) Supressões TOML com **expiração obrigatória**.           |
 | `--sarif`   | (`audit`) Emite SARIF 2.1.0 (GitHub Code Scanning).                |
+| `--url`     | (`data`) Origem do dataset: `https://...` ou `file://<caminho>`    |
+|             | (alternativa: env `DF_DATASET_URL`).                               |
 | `--message` | (`diagnose`) Texto de erro inline.                                  |
 | `--input`   | (`diagnose`) Arquivo com a saída de erro.                           |
 | `--timeout` | (`run`) Segundos esperando ficar pronto (padrão 60).                |
@@ -71,6 +74,8 @@ devforge up --dry-run --json     # plano do pipeline (etapa a etapa, sem executa
 devforge up --json               # JSON Lines: 1 objeto por etapa + resumo final
 devforge audit --json            # relatório de supply-chain (score, fatores, veredito)
 devforge license status --json   # licença instalada (plan, holder, expires, valid)
+devforge data status --json      # dataset instalado? versão, idade, staleness (livre)
+devforge data update --json      # Pro: baixa+verifica; sem licença → no_license, exit 1
 devforge prepare --json          # plano + verificação de confiança (não executa)
 devforge docker  --json          # idem, modo Docker
 ```
@@ -317,12 +322,50 @@ devforge license remove
 - **Honestidade:** é um gate **anti-honesto**, não anti-atacante — patchear o
   binário burla (é o mesmo trato de TablePlus/Transmit). Também não defende
   relógio do sistema atrasado. A proteção de verdade chega na fase server-side.
-- **Hoje ela não bloqueia nada** — não existe tier pago ainda. É a fundação:
-  o próximo passo é dataset de risco assinado (GHSA/typosquat) distribuído via
-  GitHub Releases, desbloqueado por esta licença.
+- **O que ela bloqueia hoje:** só o `data update` (dataset Pro abaixo). Todo o
+  restante do CLI — incluindo `context`, que economiza token de IA — segue
+  **100% grátis**. É a fundação da fase server-side, não uma DRM.
 - Cunho de licenças (vendor-only, não vai no binário):
   `cargo run --example license_tool -- genkey|mint ...` — a chave privada fica
   com o vendor, **nunca** no repo.
+
+#### Dataset de risco Pro (`data`)
+
+O `audit` offline de hoje (fatores de confluência, `--online`) é **o tier
+grátis, intacto**. O `data update` acrescenta, por cima, dados de risco
+**assinados e frescos** — advisories recentes (GHSA **revisados**, janela de
+~90 dias) e uma kill list **exata** de typosquat/maliciosos (patterns
+precisos de título medidos no banco real — sem fuzzy), baixados daqui da
+Release e verificados com a chave pública embutida.
+
+```bash
+devforge data status [--json]              # livre, offline: versão, idade, staleness
+devforge data update [--json] [--url <url>]# Pro: baixa, VERIFICA e instala (exige licença)
+```
+
+| | Grátis (hoje) | Pro (licença + `data update`) |
+| --- | --- | --- |
+| `audit` offline (confluência, FP controlado) | ✅ | ✅ |
+| `context` (economia de token), `run`, `up`, `prepare`... | ✅ | ✅ |
+| Advisories recentes por nome + kill list no `audit` | — | ✅ seção `dataset_findings` |
+| Atualização diária do dataset (Release assinada) | — | ✅ |
+| `data status` (estado do dataset) | ✅ (livre) | ✅ |
+
+Regras e limites (por design, ver `docs/design-data.md`):
+
+- **Gate só no `update`** — sem licença válida → `no_license`/`license_invalid`,
+  exit 1, **sem tocar a rede**. `status` é livre.
+- **Assinatura obrigatória**: envelope Ed25519 verificado antes de escrever
+  qualquer byte; recusa (adulterado/chave errada) deixa o dataset anterior
+  intacto. Chave de dataset **separada** da de licença (blast radius).
+- **Staleness honesta**: dataset com mais de 14 dias ganha aviso — o freshness
+  é parte do produto, não escondido.
+- **FP controlado**: advisory casa só por **nome** → achado `low` "possível
+  exposição — confira sua versão" (sem range-matching por ecossistema no v1);
+  kill list casa **exato** → `high`. **Nenhum** fuzzy.
+- **A seção não mexe no CI**: não altera `score`, `passed` nem `--fail-on` —
+  audit grátis e Pro continuam comparáveis; sem dataset, o JSON é
+  **byte idêntico** ao de sempre (sem chave `dataset`).
 
 ### Análise de dependências (`analyze`)
 

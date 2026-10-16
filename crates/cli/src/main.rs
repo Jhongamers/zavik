@@ -18,6 +18,7 @@
 //!     --json      structured output (pure JSON on stdout) for AIs
 //!     --all       descends into subfolders looking for projects (monorepo/nested)
 
+mod dataset;
 mod license;
 mod output;
 mod permission;
@@ -60,6 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("run") => ("run", &args[1..]),
         Some("up") => ("up", &args[1..]),
         Some("license") => ("license", &args[1..]),
+        Some("data") => ("data", &args[1..]),
         Some("help") | Some("--help") | Some("-h") => ("help", &[]),
         Some("--version") | Some("-V") => ("version", &[]),
         _ => ("detect", &args[..]),
@@ -76,6 +78,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // The license needs neither kernel nor banner — it is purely local verification.
     if command == "license" {
         return run_license(rest);
+    }
+    // Same for `data`: `status` is a local read (free); `update` is the one
+    // network command and the only license-gated one (docs/design-data.md).
+    if command == "data" {
+        return run_data(rest);
     }
 
     let (path, options) = parse_options(rest)?;
@@ -362,13 +369,27 @@ fn run_audit(
     let report =
         devforge_plugins::audit_packages(&snapshots, &policy, &suppressions, &today_iso());
 
+    // Pro: a valid signed LOCAL dataset adds an advisory section. Absent →
+    // output stays byte-identical to the free tier (design-data §6 invariant).
+    // Installed-but-invalid is a loud warning on stderr (never a silent pass).
+    let installed = match dataset::load_installed() {
+        Ok(installed) => installed,
+        Err(error) => {
+            eprintln!("(dataset instalado INVÁLIDO — ignorado: {error})");
+            None
+        }
+    };
+    let dataset_report = installed
+        .as_ref()
+        .map(|ds| dataset::build_report(&stacks, ds, &today_iso()));
+
     if options.sarif {
         let sarif = build_sarif(&report, &stacks, &context.project_root);
         println!("{}", serde_json::to_string_pretty(&sarif)?);
     } else if options.json {
-        output::audit(&report);
+        output::audit(&report, dataset_report.as_ref());
     } else {
-        print_audit(&report, options.online);
+        print_audit(&report, options.online, dataset_report.as_ref());
     }
 
     if !report.passed {
@@ -509,7 +530,7 @@ fn load_suppressions(path: Option<&Path>) -> Result<Vec<Suppression>, Box<dyn st
     Ok(out)
 }
 
-fn print_audit(report: &AuditReport, online: bool) {
+fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::DatasetReport>) {
     section("AUDITORIA DE SUPPLY-CHAIN");
     println!("Pacotes auditados: {}", report.packages_audited);
     println!("Score (pior pacote): {}/100", report.score);
@@ -558,9 +579,60 @@ fn print_audit(report: &AuditReport, online: bool) {
         }
     }
 
+    if let Some(dataset) = dataset {
+        print_dataset_section(dataset);
+    }
+
     println!(
         "\nVeredito: {}",
         if report.passed { "APROVADO ✅" } else { "REPROVADO ❌" }
+    );
+}
+
+/// Pro section of `audit`: findings from the signed local dataset. Advisory
+/// only — never touches score, `passed` or `--fail-on` (design-data §2.1).
+fn print_dataset_section(report: &dataset::DatasetReport) {
+    section("DADOS FRESCOS (Pro — dataset assinado)");
+    println!(
+        "dataset {} de {} (idade: {} dia(s); {} advisories na janela, {} na kill list)",
+        report.version, report.generated, report.age_days, report.advisories_total,
+        report.bad_names_total
+    );
+    if report.stale {
+        println!(
+            "⚠ atrasado (>{} dias) — rode: devforge data update",
+            dataset::STALE_AFTER_DAYS
+        );
+    }
+
+    if report.findings.is_empty() {
+        println!("\nNenhum achado novo nas dependências deste projeto.");
+        return;
+    }
+    let (bad, advisories): (Vec<_>, Vec<_>) = report
+        .findings
+        .iter()
+        .partition(|f| f.kind == "bad_name");
+    if !bad.is_empty() {
+        println!("\n🛑 Nome malicioso/typosquat presente nas dependências:");
+        for finding in bad {
+            println!("   • {} ({}) — {}", finding.package, finding.ecosystem, finding.detail);
+            if let Some(url) = &finding.url {
+                println!("     ↳ {url}");
+            }
+        }
+    }
+    if !advisories.is_empty() {
+        println!("\n⚠ Possível exposição (casamento só por nome — confira sua versão):");
+        for finding in advisories {
+            println!("   • {} ({}) — {}", finding.package, finding.ecosystem, finding.detail);
+            if let Some(url) = &finding.url {
+                println!("     ↳ {url}");
+            }
+        }
+    }
+    println!(
+        "\n(seção informativa: não altera o score nem o --fail-on do audit)"
     );
 }
 
@@ -847,6 +919,237 @@ fn pick_start_candidate(candidates: &[RunCandidate]) -> Option<RunPlan> {
 
 /// `devforge license status|install|remove` — offline license (Ed25519).
 /// 100% local verification: no network calls.
+/// `devforge data status|update` — the Pro risk dataset.
+///
+/// `status` is always free and never touches the network; `update` is the
+/// only network command and the only one gated by a valid license.
+/// Refusals print their JSON line on stdout and exit 1 (design §4.2).
+fn run_data(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    let mut as_json = false;
+    let mut url: Option<String> = None;
+    let mut positional: Vec<&String> = Vec::new();
+    let mut index = 0;
+    while index < args.len() {
+        let arg = args[index].as_str();
+        if arg == "--json" {
+            as_json = true;
+        } else if arg == "--url" {
+            index += 1;
+            let value = args
+                .get(index)
+                .ok_or("--url exige um valor (<https://...> ou file://<caminho>)")?;
+            url = Some(value.clone());
+        } else if arg.starts_with("--") {
+            return Err(format!(
+                "opção desconhecida: {arg} (uso: devforge data status|update [--json] [--url <url>])"
+            )
+            .into());
+        } else {
+            positional.push(&args[index]);
+        }
+        index += 1;
+    }
+
+    match positional.first().map(|s| s.as_str()).unwrap_or("status") {
+        "status" => data_status(as_json),
+        "update" => data_update(url, as_json),
+        other => Err(format!("subcomando desconhecido: {other} (use: status | update)").into()),
+    }
+}
+
+/// `data status` — local, free, offline. Distinguishes absent / invalid /
+/// installed (an installed-but-invalid dataset is never silently ignored).
+fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let file = dataset::dataset_file();
+    match dataset::load_installed() {
+        Ok(Some(ds)) => {
+            let age = dataset::age_days(&ds.generated, &crate::today_iso()).unwrap_or(-1);
+            let stale = age >= 0 && dataset::is_stale(age);
+            if as_json {
+                println!(
+                    "{}",
+                    json!({"schema": 1, "command": "data", "sub": "status",
+                           "installed": true, "valid": true,
+                           "file": file.display().to_string(),
+                           "version": ds.version, "generated": ds.generated,
+                           "age_days": age, "stale": stale,
+                           "advisories": ds.advisories.len(),
+                           "bad_names": ds.bad_names.len()})
+                );
+            } else {
+                println!("dataset instalado ✅");
+                println!("   versão:  {} (gerado em {})", ds.version, ds.generated);
+                println!(
+                    "   idade:   {age} dia(s) — {} advisories na janela + {} na kill list",
+                    ds.advisories.len(),
+                    ds.bad_names.len()
+                );
+                println!("   path:    {}", file.display());
+                if stale {
+                    println!(
+                        "\n⚠ atrasado (>{} dias) — rode: devforge data update",
+                        dataset::STALE_AFTER_DAYS
+                    );
+                } else {
+                    println!("\n(fresco)");
+                }
+            }
+            Ok(())
+        }
+        Ok(None) => {
+            if as_json {
+                println!(
+                    "{}",
+                    json!({"schema": 1, "command": "data", "sub": "status",
+                           "installed": false,
+                           "file": file.display().to_string(),
+                           "tier": "free",
+                           "hint": "audit segue offline com o motor embutido; dados frescos são Pro (devforge data update)"})
+                );
+            } else {
+                println!("nenhum dataset instalado ({})", file.display());
+                println!("   grátis: o audit usa o motor offline — nada muda no tier gratuito.");
+                println!("   Pro:    devforge data update (dados de risco frescos, exige licença).");
+            }
+            Ok(())
+        }
+        Err(error) => {
+            if as_json {
+                println!(
+                    "{}",
+                    json!({"schema": 1, "command": "data", "sub": "status",
+                           "installed": true, "valid": false,
+                           "file": file.display().to_string(),
+                           "error": error.to_string()})
+                );
+            } else {
+                println!("dataset instalado, mas INVÁLIDO: {error}");
+                println!("   nada é usado sem assinatura válida — rode devforge data update.");
+            }
+            Ok(())
+        }
+    }
+}
+
+/// `data update` — license gate FIRST (no network for unlicensed installs),
+/// then download → verify → atomic install. Refused = previous stays intact.
+fn data_update(
+    url: Option<String>,
+    as_json: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let license_problem: Option<(&'static str, String)> = match license::load_installed() {
+        None => Some(("no_license", "nenhuma licença instalada".to_string())),
+        Some(token) => license::verify_token(&token)
+            .err()
+            .map(|error| ("license_invalid", error.to_string())),
+    };
+    if let Some((status, error)) = license_problem {
+        if as_json {
+            println!(
+                "{}",
+                json!({"schema": 1, "command": "data", "sub": "update",
+                       "status": status, "error": error})
+            );
+        } else {
+            println!("⛔ Recurso Pro (dataset de risco fresco): {error}.");
+            println!("   Instale sua licença:  devforge license install <token>");
+            println!("   (confira:             devforge license status)");
+            println!("   Sem licença o audit segue grátis e offline — o tier gratuito não muda.");
+        }
+        std::process::exit(1);
+    }
+
+    let target = url.or_else(|| {
+        std::env::var("DF_DATASET_URL")
+            .ok()
+            .filter(|value| !value.trim().is_empty())
+    });
+    let target = match target {
+        Some(target) => target,
+        None if !dataset::DEFAULT_DATASET_URL.is_empty() => {
+            dataset::DEFAULT_DATASET_URL.to_string()
+        }
+        None => {
+            return Err(
+                "URL do dataset não configurada nesta build (use --url <url> ou env DF_DATASET_URL)"
+                    .into(),
+            )
+        }
+    };
+
+    if !as_json {
+        println!("baixando dataset de {target} ...");
+    }
+    let bytes = fetch_dataset(&target, dataset::MAX_DATASET_BYTES)?;
+
+    match dataset::install(&bytes) {
+        Ok(ds) => {
+            if as_json {
+                println!(
+                    "{}",
+                    json!({"schema": 1, "command": "data", "sub": "update",
+                           "status": "updated",
+                           "version": ds.version, "generated": ds.generated,
+                           "advisories": ds.advisories.len(),
+                           "bad_names": ds.bad_names.len(),
+                           "file": dataset::dataset_file().display().to_string()})
+                );
+            } else {
+                println!("dataset instalado ✅");
+                println!("   versão:  {} (gerado em {})", ds.version, ds.generated);
+                println!(
+                    "   dados:   {} advisories na janela + {} nomes na kill list",
+                    ds.advisories.len(),
+                    ds.bad_names.len()
+                );
+                println!("   path:    {}", dataset::dataset_file().display());
+                println!("\nO audit desta máquina já usa os dados frescos (offline até o próximo update).");
+            }
+            Ok(())
+        }
+        Err(error) => {
+            if as_json {
+                println!(
+                    "{}",
+                    json!({"schema": 1, "command": "data", "sub": "update",
+                           "status": "refused", "error": error.to_string()})
+                );
+            } else {
+                println!("❌ dataset recusado: {error}");
+                println!("   (nada foi instalado — o dataset anterior, se houver, permanece)");
+            }
+            std::process::exit(1);
+        }
+    }
+}
+
+/// Fetches the dataset bytes: `file://`/local for tests and air-gapped
+/// mirrors, HTTPS for the Release. Size-capped (`MAX + 1` to detect overflow).
+fn fetch_dataset(target: &str, max_bytes: usize) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    use std::io::Read;
+    if let Some(path) = target.strip_prefix("file://") {
+        return std::fs::read(path)
+            .map_err(|error| format!("não li o dataset local {path}: {error}").into());
+    }
+    if !target.starts_with("https://") && !target.starts_with("http://") {
+        return Err(format!("origem não suportada (use https:// ou file://): {target}").into());
+    }
+    let response = ureq::get(target)
+        .timeout(std::time::Duration::from_secs(60))
+        .call()
+        .map_err(|error| format!("falha ao baixar de {target}: {error}"))?;
+    let mut buffer = Vec::new();
+    response
+        .into_reader()
+        .take(max_bytes as u64 + 1)
+        .read_to_end(&mut buffer)
+        .map_err(|error| format!("falha ao ler a resposta de {target}: {error}"))?;
+    if buffer.len() > max_bytes {
+        return Err(format!("resposta acima de {max_bytes} bytes — recusada").into());
+    }
+    Ok(buffer)
+}
+
 fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     let as_json = args.iter().any(|a| a == "--json");
     let positional: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
@@ -1794,6 +2097,10 @@ fn print_help() {
          \x20 devforge license status               mostra a licença instalada (offline)\n\
          \x20 devforge license install <chave|@arq> valida (Ed25519, local) e instala\n\
          \x20 devforge license remove               remove a licença\n\
+         \x20 devforge data status                 estado do dataset Pro (livre e offline;\n\
+         \x20               sem dataset o audit segue igual — o tier grátis não muda)\n\
+         \x20 devforge data update [flags]         baixa + verifica o dataset de risco fresco\n\
+         \x20               (Pro: exige licença instalada e válida; recusa assinatura inválida)\n\
          \x20 devforge prepare [caminho] [flags]    instala dependências (sem Docker)\n\
          \x20 devforge docker  [caminho] [flags]    gera Dockerfile + build da imagem\n\n\
          FLAGS:\n\
@@ -1810,6 +2117,8 @@ fn print_help() {
          \x20 --policy      (audit) arquivo de política TOML (fail_on, allowlist)\n\
          \x20 --ignore      (audit) supressões TOML com expiração obrigatória\n\
          \x20 --sarif       (audit) emite SARIF 2.1.0 (GitHub Code Scanning)\n\
+         \x20 --url         (data) origem do dataset: https://... ou file://<caminho>\n\
+         \x20               (alternativa: env DF_DATASET_URL)\n\
          \x20 --timeout     (run) segundos esperando ficar pronto (padrão 60)\n\
          \x20 --health      (run) readiness explícito: tcp:<porta> | http://...\n\
          \x20 --until etapa (up) para depois da etapa: clone|audit|prepare|run\n\

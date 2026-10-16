@@ -135,7 +135,11 @@ pub fn diagnose(diagnosis: &Diagnosis) {
 
 /// `devforge audit --json` — supply-chain report (schema 1). One finding
 /// per package, with factors, score, confidence and the evidence; plus the CI verdict.
-pub fn audit(report: &AuditReport) {
+///
+/// `dataset` = Pro: when a valid signed local dataset exists, its advisory
+/// section is appended (`dataset` + `dataset_findings`). Absent (free tier)
+/// → keys are omitted entirely: output stays byte-identical (design §6).
+pub fn audit(report: &AuditReport, dataset: Option<&crate::dataset::DatasetReport>) {
     let suppression_json = |s: &devforge_shared::Suppression| {
         json!({
             "package": s.package,
@@ -144,7 +148,7 @@ pub fn audit(report: &AuditReport) {
             "expires": s.expires,
         })
     };
-    emit(&json!({
+    let mut value = json!({
         "schema": 1,
         "command": "audit",
         "score": report.score,
@@ -161,7 +165,30 @@ pub fn audit(report: &AuditReport) {
         })).collect::<Vec<_>>(),
         "suppressed": report.suppressed.iter().map(suppression_json).collect::<Vec<_>>(),
         "expired_suppressions": report.expired_suppressions.iter().map(suppression_json).collect::<Vec<_>>(),
-    }));
+    });
+    if let Some(dataset) = dataset {
+        value["dataset"] = json!({
+            "version": dataset.version,
+            "generated": dataset.generated,
+            "age_days": dataset.age_days,
+            "stale": dataset.stale,
+            "advisories": dataset.advisories_total,
+            "bad_names": dataset.bad_names_total,
+        });
+        value["dataset_findings"] = json!(
+            dataset.findings.iter().map(|f| json!({
+                "package": f.package,
+                "ecosystem": f.ecosystem,
+                "kind": f.kind,
+                "severity": f.severity,
+                "id": f.id,
+                "detail": f.detail,
+                "url": f.url,
+                "source": "dataset",
+            })).collect::<Vec<_>>()
+        );
+    }
+    emit(&value);
 }
 
 /// `devforge prepare|docker --json` — delivers the **plan**, the **trust
