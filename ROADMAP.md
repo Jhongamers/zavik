@@ -299,11 +299,15 @@ swift-argument-parser, googletest). Achados:
       JSON só. Existe demanda real (`npm why`, `cargo tree -i`,
       `why-is-installed`); humano debuga na mão, IA substitui 5 comandos por 1
       chamada. Read-only, zero execução, reforça o cunha de supply-chain.
-- [ ] **5.4 `devforge env --json`** (analisada, aguardando aprovação):
-      fingerprint do ambiente (toolchains, versões, o que falta — já temos
-      `missing_tools`). Mata "works on my machine", alimenta o `diagnose` com
-      evidência de ambiente, e é 1 call de IA em vez de sondar 10 comandos.
-      Read-only.
+- [x] **5.4 `devforge env --json`** ✅ (16/10): fingerprint do ambiente numa
+      chamada — `os`/`arch` + toolchains por stack detectado com presença
+      (PATH) e **versão real** (`<tool> --version`, argv sem shell; falha →
+      `version: null`, nunca inventa) + lista `missing`. Mata "works on my
+      machine", é 1 call de IA em vez de sondar 10 comandos, e alimenta o
+      `diagnose` com evidência de ambiente. Read-only, sem gate (não instala
+      nada, não lê `.env`). Humano: seções por stack + sugestão de instalação
+      do que falta. 4 testes novos (presença+versão, dedupe JS/TS, versão
+      nunca inventada, integração --json/PATH vazio).
 
 ---
 

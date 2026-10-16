@@ -94,9 +94,73 @@ fn required_tools(stack: &ProjectStack) -> Vec<String> {
     }
 }
 
+// --- env snapshot (`devforge env`) ------------------------------------------
+
+/// One tool of the project's toolchain: on the PATH? which version?
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ToolStatus {
+    pub tool: String,
+    pub language: Language,
+    pub present: bool,
+    pub version: Option<String>,
+}
+
+/// Snapshot of the toolchain the detected stacks need — the ground truth
+/// behind `devforge env`. Pure read: `which`/`where` for presence and
+/// `<tool> --version` (argv, no shell) for the version of tools already
+/// installed. Never installs, never probes project code.
+pub fn env_snapshot(
+    runner: &dyn CommandRunner,
+    stacks: &[ProjectStack],
+    root: &Path,
+) -> Result<Vec<ToolStatus>, Error> {
+    let mut tools: Vec<ToolStatus> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+
+    for stack in stacks {
+        for tool in required_tools(stack) {
+            if !seen.insert(tool.clone()) {
+                continue;
+            }
+            let present = on_path(runner, root, &tool);
+            let version = if present {
+                tool_version(runner, root, &tool)
+            } else {
+                None
+            };
+            tools.push(ToolStatus {
+                tool,
+                language: stack.language,
+                present,
+                version,
+            });
+        }
+    }
+    Ok(tools)
+}
+
+/// `<tool> --version` → first line, trimmed. Failure → `None` (honest: we
+/// don't know, we don't invent a version).
+fn tool_version(runner: &dyn CommandRunner, root: &Path, tool: &str) -> Option<String> {
+    let spec = CommandSpec::new(tool, ["--version"], root);
+    let output = runner.run(&spec).ok()?;
+    if !output.success {
+        return None;
+    }
+    let text = if output.stdout.trim().is_empty() {
+        &output.stderr
+    } else {
+        &output.stdout
+    };
+    let line = text.lines().next()?.trim();
+    (!line.is_empty()).then(|| line.to_string())
+}
+
 // --- per-OS suggestion ------------------------------------------------------
 
-fn install_hint(tool: &str) -> String {
+/// Install suggestion for the current OS family — a reasonable guess per OS,
+/// not a guarantee (see module docs).
+pub fn install_hint(tool: &str) -> String {
     match std::env::consts::OS {
         "macos" => format!("brew install {}", brew_formula(tool)),
         "windows" => format!("winget install {}", winget_id(tool)),
@@ -294,13 +358,27 @@ mod tests {
 
     impl CommandRunner for FakeRunner {
         fn run(&self, command: &CommandSpec) -> Result<CommandOutput, Error> {
-            let tool = command.args.first().cloned().unwrap_or_default();
-            self.asked.lock().unwrap().push(tool.clone());
-            let success = self.present.contains(&tool);
+            self.asked.lock().unwrap().push(command.program.clone());
+            if command.program == "which" || command.program == "where" {
+                let tool = command.args.first().cloned().unwrap_or_default();
+                let success = self.present.contains(&tool);
+                return Ok(CommandOutput {
+                    success,
+                    code: Some(if success { 0 } else { 1 }),
+                    stdout: String::new(),
+                    stderr: String::new(),
+                });
+            }
+            // `<tool> --version` of an installed tool prints a version.
+            let success = self.present.contains(&command.program);
             Ok(CommandOutput {
                 success,
                 code: Some(if success { 0 } else { 1 }),
-                stdout: String::new(),
+                stdout: if success {
+                    format!("{} 9.9.9", command.program)
+                } else {
+                    String::new()
+                },
                 stderr: String::new(),
             })
         }
@@ -336,5 +414,72 @@ mod tests {
         };
         let missing = missing_tools(&runner, &[node_stack()], Path::new("/p")).unwrap();
         assert!(missing.is_empty());
+    }
+
+    /// Fake runner: every tool IS on the PATH but every `--version` fails.
+    struct VersionBrokenRunner;
+
+    impl Capability for VersionBrokenRunner {
+        fn name(&self) -> &'static str {
+            "version_broken_runner"
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+        fn as_command_runner(&self) -> Option<&dyn CommandRunner> {
+            Some(self)
+        }
+    }
+
+    impl CommandRunner for VersionBrokenRunner {
+        fn run(&self, command: &CommandSpec) -> Result<CommandOutput, Error> {
+            let presence_check = command.program == "which" || command.program == "where";
+            Ok(CommandOutput {
+                success: presence_check,
+                code: Some(if presence_check { 0 } else { 1 }),
+                stdout: String::new(),
+                stderr: String::new(),
+            })
+        }
+    }
+
+    #[test]
+    fn env_snapshot_reports_presence_and_version() {
+        let runner = FakeRunner {
+            present: vec!["node".into()],
+            asked: Mutex::new(Vec::new()),
+        };
+        let tools = env_snapshot(&runner, &[node_stack()], Path::new("/p")).unwrap();
+        let node = tools.iter().find(|t| t.tool == "node").expect("node");
+        assert!(node.present);
+        assert_eq!(node.version.as_deref(), Some("node 9.9.9"));
+        let npm = tools.iter().find(|t| t.tool == "npm").expect("npm");
+        assert!(!npm.present, "npm não tava no fake");
+        assert_eq!(npm.version, None, "ausente não tem versão");
+    }
+
+    #[test]
+    fn env_snapshot_dedupes_tools_across_stacks() {
+        // JS and TS stacks both need node/npm — each tool listed once.
+        let ts = ProjectStack::new(
+            Language::TypeScript,
+            PathBuf::from("/p/tsconfig.json"),
+            Some("npm".into()),
+        );
+        let runner = FakeRunner {
+            present: vec!["node".into(), "npm".into()],
+            asked: Mutex::new(Vec::new()),
+        };
+        let tools = env_snapshot(&runner, &[node_stack(), ts], Path::new("/p")).unwrap();
+        assert_eq!(tools.len(), 2, "node+npm uma vez só: {tools:?}");
+    }
+
+    #[test]
+    fn env_snapshot_never_invents_a_version() {
+        // Tool on the PATH but `--version` fails → present, version None.
+        let tools = env_snapshot(&VersionBrokenRunner, &[node_stack()], Path::new("/p")).unwrap();
+        let node = tools.iter().find(|t| t.tool == "node").expect("node");
+        assert!(node.present, "which funcionou");
+        assert_eq!(node.version, None, "sem versão = None, nunca inventada");
     }
 }

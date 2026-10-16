@@ -1,13 +1,17 @@
+<div align="center">
+
 # DevForge
 
 **Motor de dev CLI & orquestração por IA** de código aberto — detecta sua
 stack, audita a **supply-chain** das suas dependências, entrega a qualquer
 agente de IA um briefing de uma chamada.
 
-![License: MIT](https://img.shields.io/badge/license-MIT-blue)
-![CI](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml/badge.svg)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![CI](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml)
 
-[English](README.md) | [Português (Brasil)](README.pt-BR.md)
+[English](README.md) · [Português (Brasil)](README.pt-BR.md)
+
+</div>
 
 **Funciona com qualquer agente** — Claude Code, Codex, OpenCode, Cursor,
 Antigravity, aider, Copilot — ou sem agente nenhum. O DevForge é uma CLI pura:
@@ -34,6 +38,7 @@ devforge detect [caminho]              # idem
 devforge analyze [caminho] [flags]     # analisa as dependências do projeto
 devforge context [caminho] [flags]     # briefing: runbook + entradas + riscos (1 chamada)
 devforge diagnose [flags]              # resume um erro: causa real + conserto
+devforge env [caminho] [flags]         # fingerprint do ambiente: versões das toolchains + o que falta
 devforge run [caminho] [flags]         # sobe o projeto (resolve o start e espera ficar pronto)
 devforge up [url|caminho] [flags]      # pipeline: clone? → audit → prepare → run (mesmos gates)
 devforge audit [caminho] [flags]       # auditoria de supply-chain (--fail-on gateia CI)
@@ -78,6 +83,7 @@ devforge detect  --json          # o que é este projeto (ground truth)
 devforge context --json          # briefing: runbook + entradas + riscos (1 chamada)
 devforge analyze --json          # dependências doentes
 devforge diagnose --json         # causa real de um erro (+ conserto)
+devforge env --json              # fingerprint do ambiente: OS/arch, versões, o que falta
 devforge run --dry-run --json    # comando de start resolvido + de onde veio
 devforge run --json              # plano sem executar (modo IA) ou resultado final
 devforge up --dry-run --json     # plano do pipeline (etapa a etapa, sem executar)
@@ -460,6 +466,31 @@ valem aqui**. Se qualquer risco for recusado (ou `--yes` for usado), o
   roda `docker build` e mostra o `docker run`. Os Dockerfiles vêm com um
   comentário avisando que `CMD`/variáveis podem precisar de ajuste — são um
   **ponto de partida**, não uma garantia de que todo projeto roda sem ajustes.
+
+### Fingerprint do ambiente (`env`)
+
+Uma chamada read-only que substitui ~10 sondagens de um agente por *"essa
+máquina sequer funciona?"*:
+
+```bash
+devforge env --json
+```
+
+```json
+{"schema":1,"command":"env","os":"linux","arch":"x86_64",
+ "stacks":[{"language":"JavaScript","tools":[
+   {"name":"node","present":true,"version":"v22.10.0"},
+   {"name":"npm","present":true,"version":"10.9.0"}]}],
+ "missing":[]}
+```
+
+- **Presença** = busca no PATH; **versão** = `<tool> --version` de ferramentas
+  já instaladas (argv, **sem shell**). Se a sonda falhar,
+  `"version": null` — ele nunca inventa uma versão.
+- **Read-only**: não instala nada e **nunca lê arquivos `.env`** (seus
+  segredos não são assunto dele).
+- Modo humano mostra o mesmo em seções (OS + ferramentas por stack + sugestão
+  de instalação do que falta) — o formato JSON é a interface pro agente.
 
 ### Toolchain faltando (node/npm/go/...)
 

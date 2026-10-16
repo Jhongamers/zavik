@@ -9,7 +9,7 @@
 //! we bump that number.
 
 use devforge_core::provision::PreparePlan;
-use devforge_core::toolchain::MissingTool;
+use devforge_core::toolchain::{MissingTool, ToolStatus};
 use devforge_shared::{
     AnalysisReport, AuditReport, Briefing, Context, Diagnosis, ProjectStack, Severity, TrustReport,
 };
@@ -235,4 +235,47 @@ pub fn prepare_plan(
             "run_hints": plan.run_hints,
         },
     }));
+}
+
+/// `devforge env --json`: environment fingerprint for agents — OS/arch plus
+/// each stack's tools with presence + version, and a flat `missing` list.
+pub fn env(stacks: &[ProjectStack], tools: &[ToolStatus]) {
+    let stacks_json: Vec<Value> = stacks
+        .iter()
+        .filter_map(|stack| {
+            let lang_tools: Vec<Value> = tools
+                .iter()
+                .filter(|tool| tool.language == stack.language)
+                .map(|tool| {
+                    json!({
+                        "name": tool.tool,
+                        "present": tool.present,
+                        "version": tool.version,
+                    })
+                })
+                .collect();
+            (!lang_tools.is_empty()).then(|| {
+                json!({
+                    "language": stack.language.to_string(),
+                    "tools": lang_tools,
+                })
+            })
+        })
+        .collect();
+    let missing: Vec<&str> = tools
+        .iter()
+        .filter(|tool| !tool.present)
+        .map(|tool| tool.tool.as_str())
+        .collect();
+    println!(
+        "{}",
+        json!({
+            "schema": 1,
+            "command": "env",
+            "os": std::env::consts::OS,
+            "arch": std::env::consts::ARCH,
+            "stacks": stacks_json,
+            "missing": missing,
+        })
+    );
 }

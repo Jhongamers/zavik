@@ -6,6 +6,7 @@
 //!     devforge analyze [path] [flags]          # analyzes dependencies (lockfile, versions)
 //!     devforge context [path] [flags]          # briefing: runbook/entrypoints/risks (good for AI)
 //!     devforge diagnose [flags]                # summarizes an error: root cause + fix
+//!     devforge env [path] [flags]              # environment fingerprint: tool versions + what's missing
 //!     devforge audit [path] [flags]            # supply-chain audit (--fail-on gates CI)
 //!     devforge prepare [path] [flags]          # installs dependencies (no Docker)
 //!     devforge docker  [path] [flags]          # generates Dockerfile + builds the image
@@ -25,7 +26,9 @@ mod permission;
 mod up;
 
 use devforge_core::provision::{ExecuteOptions, PrepareMode, PrepareReport, Provisioner};
-use devforge_core::toolchain::{install_command, missing_tools, MissingTool};
+use devforge_core::toolchain::{
+    env_snapshot, install_command, install_hint, missing_tools, MissingTool, ToolStatus,
+};
 use devforge_core::WorkflowEngine;
 use devforge_kernel::Kernel;
 use devforge_plugins::{
@@ -57,6 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("detect") => ("detect", &args[1..]),
         Some("context") => ("context", &args[1..]),
         Some("diagnose") => ("diagnose", &args[1..]),
+        Some("env") => ("env", &args[1..]),
         Some("audit") => ("audit", &args[1..]),
         Some("run") => ("run", &args[1..]),
         Some("up") => ("up", &args[1..]),
@@ -114,6 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "context" => run_context(&kernel, &context, &options)?,
         "diagnose" => run_diagnose(&options)?,
         "audit" => run_audit(&kernel, &context, &options)?,
+        "env" => run_env(&kernel, &context, &options)?,
         "run" => run_run(&kernel, &context, &options)?,
         "up" => run_up(up_url.as_deref(), &kernel, &context, &options)?,
         "prepare" => {
@@ -171,6 +176,69 @@ fn run_detect(
     let steps = vec!["step_1_setup".to_string(), "dependency_scan".to_string()];
     let report = WorkflowEngine::new().run_workflow(&steps, context, detector)?;
     print_stacks(&report.detected_stacks);
+    Ok(())
+}
+
+/// Read-only environment fingerprint: OS/arch + each detected stack's tools
+/// with presence and version. No permission gate (nothing executes beyond
+/// `--version` probes of tools already on the PATH) — pure agent ground truth
+/// for "does this machine even work?" (ROADMAP 5.4).
+fn run_env(
+    kernel: &Kernel,
+    context: &Context,
+    options: &Options,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let stacks = kernel.detect_stacks(context)?;
+    let Some(runner) = kernel.command_runner() else {
+        return Err("plugin 'local_command_runner' não registrado".into());
+    };
+    let tools = env_snapshot(runner, &stacks, &context.project_root)?;
+
+    if options.json {
+        output::env(&stacks, &tools);
+        return Ok(());
+    }
+
+    section("AMBIENTE");
+    println!(
+        "  os: {} ({})\n",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
+    for stack in &stacks {
+        let lang_tools: Vec<&ToolStatus> = tools
+            .iter()
+            .filter(|tool| tool.language == stack.language)
+            .collect();
+        if lang_tools.is_empty() {
+            continue;
+        }
+        println!("  {}:", stack.language);
+        for tool in lang_tools {
+            if tool.present {
+                println!(
+                    "    • {} ✅ {}",
+                    tool.tool,
+                    tool.version.as_deref().unwrap_or("(versão não lida)")
+                );
+            } else {
+                println!(
+                    "    • {} ❌ fora do PATH — sugestão: {}",
+                    tool.tool,
+                    install_hint(&tool.tool)
+                );
+            }
+        }
+    }
+    if stacks.is_empty() {
+        println!("  nenhum stack detectado nesta pasta.");
+    }
+    println!(
+        "\n(leitura apenas: checa o PATH e roda `<tool> --version` de ferramentas",
+    );
+    println!(
+        "já instaladas; não instala nada e nunca lê arquivos .env)",
+    );
     Ok(())
 }
 
@@ -2085,6 +2153,8 @@ fn print_help() {
          \x20               arquivos-chave e riscos — numa chamada só (bom pra IA)\n\
          \x20 devforge diagnose [flags]              resume um erro: causa real + conserto\n\
          \x20               (aceita --message \"...\", --input <arq> ou pipe: cmd 2>&1 | devforge diagnose)\n\
+         \x20 devforge env [caminho] [flags]          fingerprint do ambiente: toolchains com versão,\n\
+         \x20               presença no PATH e o que falta — 1 chamada (bom pra IA)\n\
          \x20 devforge run [caminho] [flags]         sobe o projeto: resolve o start (scripts.start,\n\
          \x20               Procfile, Makefile, convenção), espera ficar pronto e mostra o log;\n\
          \x20               ambiguidade pergunta; crash cedo vira diagnose; executa = pergunta\n\
