@@ -7,7 +7,7 @@ agente de IA um briefing de uma chamada.
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml/badge.svg)
 
-[English](README.md) | Português (Brasil)
+[English](README.md) | [Português (Brasil)](README.pt-BR.md)
 
 **Funciona com qualquer agente** — Claude Code, Codex, OpenCode, Cursor,
 Antigravity, aider, Copilot — ou sem agente nenhum. O DevForge é uma CLI pura:

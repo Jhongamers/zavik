@@ -6,7 +6,7 @@ audit your dependency **supply chain**, hand any AI agent a one-call briefing.
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml/badge.svg)
 
-English | [Português (Brasil)](README.pt-BR.md)
+[English](README.md) | [Português (Brasil)](README.pt-BR.md)
 
 **Works with any agent** — Claude Code, Codex, OpenCode, Cursor, Antigravity,
 aider, Copilot — or with no agent at all. DevForge is a plain CLI: stable
