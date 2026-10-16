@@ -1,0 +1,59 @@
+# Packaging: publishes pre-built `devforge` binaries on every `v*` tag.
+# This is what lets the GitHub Action install fast (no Rust compilation in the
+# consumer's CI) with checksum verification.
+#
+# To publish:  git tag v0.1.0 && git push origin v0.1.0
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # publishes the Release
+
+jobs:
+  build:
+    name: build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, ext: .tar.gz }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, ext: .tar.gz }
+          - { os: macos-14, target: aarch64-apple-darwin, ext: .tar.gz }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, ext: .zip }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build (release)
+        run: cargo build --release -p devforge --target ${{ matrix.target }}
+      - name: Empacota
+        shell: bash
+        run: |
+          bin="target/${{ matrix.target }}/release/devforge"
+          name="devforge-${{ github.ref_name }}-${{ matrix.target }}"
+          if [[ "${{ matrix.ext }}" == ".zip" ]]; then
+            cp "$bin.exe" devforge.exe
+            7z a "${name}.zip" devforge.exe
+            echo "ASSET=${name}.zip" >> "$GITHUB_ENV"
+          else
+            cp "$bin" devforge
+            tar -czf "${name}.tar.gz" devforge
+            echo "ASSET=${name}.tar.gz" >> "$GITHUB_ENV"
+          fi
+      - name: Checksum (sha256)
+        shell: bash
+        run: |
+          if command -v sha256sum >/dev/null; then sha256sum "$ASSET" > "${ASSET}.sha256";
+          else shasum -a 256 "$ASSET" > "${ASSET}.sha256"; fi
+      - name: Publica Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ASSET }}
+            ${{ env.ASSET }}.sha256
+          generate_release_notes: true

@@ -1,0 +1,126 @@
+name: "DevForge Audit"
+description: >-
+  Runs `devforge audit` (supply-chain) on the repository, uploads the SARIF to
+  GitHub Code Scanning and gates the PR on the exit code. Pre-built binary
+  downloaded from the Release with sha256 verification (no Rust compilation in
+  the consumer's CI).
+branding:
+  icon: shield
+  color: red
+
+inputs:
+  version:
+    description: "devforge tag to install (e.g. v0.1.0). Pinned on purpose."
+    required: false
+    default: "v0.1.0"
+  repository:
+    description: "devforge repository (owner/name) to download the Release from."
+    required: false
+    default: "OWNER/devforge"
+  path:
+    description: "Path of the project to audit."
+    required: false
+    default: "."
+  fail-on:
+    description: "Minimum severity that fails the job (low|medium|high|critical)."
+    required: false
+    default: "high"
+  online:
+    description: >-
+      'true' = enriches npm online (install hooks + downloads). Default 'true'
+      on purpose: offline the score only reaches Medium (origin + pin), so with
+      fail-on high an offline audit would never fail the PR.
+    required: false
+    default: "true"
+  upload-sarif:
+    description: "'true' = uploads to Code Scanning (requires GHAS on private repos)."
+    required: false
+    default: "true"
+  sha256:
+    description: >-
+      (optional) expected sha256 of the tarball. When provided, it wins over the
+      downloaded .sha256 file — bringing integrity anchored to the action.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    # Inputs go through `env:` and are never interpolated into `run:` — this
+    # prevents script injection (GitHub Actions security standard).
+    - name: Install devforge (verified binary)
+      id: install
+      shell: bash
+      env:
+        REPO: ${{ inputs.repository }}
+        REF: ${{ inputs.version }}
+        EXPECTED_SHA: ${{ inputs.sha256 }}
+      run: |
+        set -euo pipefail
+        os=$(uname -s); arch=$(uname -m)
+        case "$os-$arch" in
+          Linux-x86_64)  target=x86_64-unknown-linux-gnu ;;
+          Linux-aarch64) target=aarch64-unknown-linux-gnu ;;
+          Darwin-arm64)  target=aarch64-apple-darwin ;;
+          *) echo "::error::platform not supported by the action: $os/$arch (Windows: download the .zip manually from the Release)"; exit 1 ;;
+        esac
+
+        asset="devforge-${REF}-${target}.tar.gz"
+        base="https://github.com/${REPO}/releases/download/${REF}"
+        dir="$RUNNER_TEMP/devforge-install"
+        mkdir -p "$dir"
+        cd "$dir"
+
+        if command -v sha256sum >/dev/null; then CHECK="sha256sum"; else CHECK="shasum -a 256"; fi
+
+        curl -fsSL -o "$asset" "$base/$asset"
+        curl -fsSL -o "$asset.sha256" "$base/$asset.sha256"
+
+        # Plain sha256 guards against transfer corruption; the `sha256` input
+        # anchors the expected hash to the action itself (real integrity).
+        if [ -n "$EXPECTED_SHA" ]; then
+          echo "$EXPECTED_SHA  $asset" | $CHECK -c -
+        else
+          $CHECK -c "$asset.sha256"
+        fi
+
+        tar -xzf "$asset"
+        chmod +x devforge
+        echo "$dir" >> "$GITHUB_PATH"
+        ./devforge --version
+
+    - name: Audit (SARIF)
+      id: audit
+      shell: bash
+      env:
+        TARGET_PATH: ${{ inputs.path }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        ONLINE: ${{ inputs.online }}
+      run: |
+        set +e   # we need to capture the gate's exit code
+        args=(audit "$TARGET_PATH" --sarif --fail-on "$FAIL_ON")
+        if [ "$ONLINE" = "true" ]; then args+=(--online); fi
+        devforge "${args[@]}" > "$RUNNER_TEMP/devforge.sarif"
+        code=$?
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+        if [ -s "$RUNNER_TEMP/devforge.sarif" ]; then
+          echo "has_sarif=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has_sarif=false" >> "$GITHUB_OUTPUT"
+        fi
+        exit 0
+
+    # Before the gate: the SARIF is published even when the audit fails the PR —
+    # that is exactly where the inline annotation is most useful.
+    - name: Upload SARIF (Code Scanning)
+      if: steps.audit.outputs.has_sarif == 'true' && inputs.upload-sarif == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ runner.temp }}/devforge.sarif
+        category: devforge-audit
+
+    - name: Gate (audit exit code)
+      shell: bash
+      env:
+        CODE: ${{ steps.audit.outputs.code }}
+      run: exit "${CODE:-1}"

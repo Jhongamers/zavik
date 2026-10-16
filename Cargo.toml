@@ -1,0 +1,45 @@
+# Cargo.toml — DevForge workspace root.
+#
+# The project is split into independent crates following the dependency
+# direction described in `arquiteture.md` (Clean Architecture):
+#
+#     shared  ->  events  ->  sdk  ->  { core, kernel } / plugins
+#
+# No internal crate depends on external frameworks (Tauri, SQLite, etc.).
+[workspace]
+resolver = "2"
+members = [
+    "crates/shared",
+    "crates/events",
+    "crates/sdk",
+    "crates/plugins",
+    "crates/core",
+    "crates/kernel",
+    "crates/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["DevForge"]
+
+[workspace.dependencies]
+# --- Internal workspace crates ---
+devforge-shared = { path = "crates/shared" }
+devforge-events = { path = "crates/events" }
+devforge-sdk = { path = "crates/sdk" }
+devforge-plugins = { path = "crates/plugins" }
+devforge-core = { path = "crates/core" }
+devforge-kernel = { path = "crates/kernel" }
+
+# --- External dependencies (centralized to standardize versions) ---
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+regex = "1"
+tempfile = "3"
+ed25519-dalek = "2"   # offline license (Ed25519 verification)
+base64 = "0.22"       # license token (b64url, unpadded)
+libc = "0.2"          # signals (SIGTERM) in `run` supervision
+ctrlc = "3"           # graceful Ctrl-C in `run` (CLI)

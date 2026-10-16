@@ -1,0 +1,18 @@
+[package]
+name = "devforge-plugins"
+description = "Plugins V1 estáticos: acesso a arquivos e detecção de stack do projeto."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+devforge-shared.workspace = true
+devforge-sdk.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+regex.workspace = true
+libc.workspace = true
+ureq = { version = "2", features = ["json"] }
+
+[dev-dependencies]
+tempfile.workspace = true

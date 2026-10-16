@@ -1,0 +1,10 @@
+[package]
+name = "devforge-core"
+description = "Casos de uso: Workflow Engine (Workflow -> Step -> Action)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+devforge-shared.workspace = true
+devforge-sdk.workspace = true

@@ -1,0 +1,9 @@
+[package]
+name = "devforge-shared"
+description = "Tipos de domínio universais do DevForge (sem lógica de negócio)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+# The domain does not depend on any external crate.

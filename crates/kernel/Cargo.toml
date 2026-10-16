@@ -1,0 +1,14 @@
+[package]
+name = "devforge-kernel"
+description = "Orquestrador (Microkernel): ciclo de vida de plugins e registry de capabilities."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+devforge-shared.workspace = true
+devforge-events.workspace = true
+devforge-sdk.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
