@@ -1,15 +1,18 @@
 # DevForge
 
-**Motor de dev CLI & orquestração por IA** de código aberto: detecta sua
-stack, audita a **supply-chain** das suas dependências e entrega a um agente
-de IA um briefing de uma chamada em vez de uma pasta cheia de arquivos.
+**Motor de dev CLI & orquestração por IA** de código aberto — detecta sua
+stack, audita a **supply-chain** das suas dependências, entrega a qualquer
+agente de IA um briefing de uma chamada.
+
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+![CI](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml/badge.svg)
+
+[English](README.md) | Português (Brasil)
 
 **Funciona com qualquer agente** — Claude Code, Codex, OpenCode, Cursor,
 Antigravity, aider, Copilot — ou sem agente nenhum. O DevForge é uma CLI pura:
 saída `--json` estável e exit codes *são* a interface; não existe plugin de
 vendor pra instalar. *(Compatibilidade, não filiação.)*
-
-[Disponível também em: **English**](README.md)
 
 ## Como rodar
 

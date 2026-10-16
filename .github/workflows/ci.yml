@@ -1,0 +1,24 @@
+# CI: runs the workspace test suite + clippy on every push to main and PR.
+# Only GitHub-official actions (house supply-chain stance: we audit what we
+# would ship — no third-party actions in our own pipelines).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain (rustup, no third-party action)
+        run: rustup toolchain install stable --profile minimal --no-self-update || rustc --version
+      - name: cargo test (workspace)
+        run: cargo test --workspace
+      - name: cargo clippy (deny warnings)
+        run: cargo clippy --workspace --all-targets -- -D warnings

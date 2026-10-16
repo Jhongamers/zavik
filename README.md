@@ -1,15 +1,17 @@
 # DevForge
 
-**Open-source dev CLI & AI-orchestration engine**: it detects your stack,
-audits your dependency **supply chain**, and hands AI agents a one-call
-briefing instead of a folder full of files.
+**The open-source dev CLI & AI-orchestration engine** — detect your stack,
+audit your dependency **supply chain**, hand any AI agent a one-call briefing.
+
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+![CI](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml/badge.svg)
+
+English | [Português (Brasil)](README.pt-BR.md)
 
 **Works with any agent** — Claude Code, Codex, OpenCode, Cursor, Antigravity,
 aider, Copilot — or with no agent at all. DevForge is a plain CLI: stable
 `--json` output and exit codes *are* the interface; there is no vendor plugin
 to install. *(Compatibility, not affiliation.)*
-
-[Also available in: **Português (pt-BR)**](README.pt-BR.md)
 
 ## Install
 
