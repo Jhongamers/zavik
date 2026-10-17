@@ -53,7 +53,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().skip(1).collect();
+    let mut args: Vec<String> = env::args().skip(1).collect();
+    // `--lang` is pulled before dispatch so it reaches EVERY parser —
+    // including `license`/`data`, which parse their own flags. Values after
+    // `--` belong to the child command and are left alone.
+    let lang_flag = extract_lang(&mut args)?;
+    devforge_shared::i18n::set_lang(devforge_shared::i18n::resolve(lang_flag.as_deref())?);
 
     let (command, rest): (&str, &[String]) = match args.first().map(String::as_str) {
         Some("prepare") => ("prepare", &args[1..]),
@@ -201,6 +206,7 @@ fn run_env(
         return Ok(());
     }
 
+    use devforge_shared::i18n::{t, t_fmt};
     section("AMBIENTE");
     println!(
         "  os: {} ({})\n",
@@ -221,25 +227,29 @@ fn run_env(
                 println!(
                     "    • {} ✅ {}",
                     tool.tool,
-                    tool.version.as_deref().unwrap_or("(versão não lida)")
+                    tool.version.as_deref().unwrap_or(t("(versão não lida)"))
                 );
             } else {
                 println!(
-                    "    • {} ❌ fora do PATH — sugestão: {}",
-                    tool.tool,
-                    install_hint(&tool.tool)
+                    "{}",
+                    t_fmt(
+                        "    • {} ❌ fora do PATH — sugestão: {}",
+                        &[&tool.tool, &install_hint(&tool.tool)]
+                    )
                 );
             }
         }
     }
     if stacks.is_empty() {
-        println!("  nenhum stack detectado nesta pasta.");
+        println!("{}", t("  nenhum stack detectado nesta pasta."));
     }
     println!(
-        "\n(leitura apenas: checa o PATH e roda `<tool> --version` de ferramentas",
+        "{}",
+        t("\n(leitura apenas: checa o PATH e roda `<tool> --version` de ferramentas")
     );
     println!(
-        "já instaladas; não instala nada e nunca lê arquivos .env)",
+        "{}",
+        t("já instaladas; não instala nada e nunca lê arquivos .env)")
     );
     Ok(())
 }
@@ -2146,6 +2156,57 @@ struct Options {
     skip: Option<String>,
 }
 
+/// Flags of `parse_options` whose NEXT argument is a value — kept in sync
+/// with the match there, so `--lang` extraction never eats a value by
+/// mistake (e.g. `--message "--lang"`).
+const VALUE_FLAGS: &[&str] = &[
+    "--message",
+    "--input",
+    "--fail-on",
+    "--policy",
+    "--ignore",
+    "--timeout",
+    "--health",
+    "--until",
+    "--skip",
+    "--url",
+];
+
+/// Pulls `--lang <pt-BR|en>` (or `--lang=...`) out of `args` BEFORE dispatch,
+/// so every parser honors it — including `license`/`data`, which parse their
+/// own flags. Stops at `--`: what follows belongs to the child command
+/// (e.g. `run . -- --lang ...` passes it through untouched).
+fn extract_lang(args: &mut Vec<String>) -> Result<Option<String>, String> {
+    let mut lang: Option<String> = None;
+    let mut index = 0;
+    while index < args.len() {
+        let arg = args[index].clone();
+        if arg == "--" {
+            break;
+        }
+        if VALUE_FLAGS.contains(&arg.as_str()) {
+            index += 2;
+            continue;
+        }
+        if let Some(value) = arg.strip_prefix("--lang=") {
+            lang = Some(value.to_string());
+            args.remove(index);
+            continue;
+        }
+        if arg == "--lang" {
+            let value = args
+                .get(index + 1)
+                .ok_or("--lang exige um valor (pt-BR | en)")?
+                .clone();
+            lang = Some(value);
+            args.drain(index..=index + 1);
+            continue;
+        }
+        index += 1;
+    }
+    Ok(lang)
+}
+
 fn parse_options(args: &[String]) -> Result<(Option<PathBuf>, Options), String> {
     let mut path = None;
     let mut options = Options::default();
@@ -2267,14 +2328,18 @@ fn print_help() {
 }
 
 fn banner(title: &str, project_root: &std::path::Path) {
+    use devforge_shared::i18n::t_fmt;
     println!("=============================================");
     println!("✨ {title} ✨");
-    println!("   projeto: {}", project_root.display());
+    println!(
+        "{}",
+        t_fmt("   projeto: {}", &[&project_root.display().to_string()])
+    );
     println!("=============================================");
 }
 
 fn section(title: &str) {
     println!("\n---------------------------------------------");
-    println!("{title}");
+    println!("{}", devforge_shared::i18n::t(title));
     println!("---------------------------------------------");
 }

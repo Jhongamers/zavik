@@ -23,13 +23,14 @@ impl UpStep {
         }
     }
 
-    /// One-line description for `--dry-run`.
+    /// One-line description for `--dry-run` (translated: human surface).
     pub fn description(self) -> &'static str {
+        use devforge_shared::i18n::t;
         match self {
-            UpStep::Clone => "git clone --depth 1 (sem submódulos, sem hooks)",
-            UpStep::Audit => "devforge audit (relatório; não bloqueia o pipeline)",
-            UpStep::Prepare => "devforge prepare (confiança + toolchain + instalação, com gates)",
-            UpStep::Run => "devforge run (resolve o start; execução crítica, humano confirma)",
+            UpStep::Clone => t("git clone --depth 1 (sem submódulos, sem hooks)"),
+            UpStep::Audit => t("devforge audit (relatório; não bloqueia o pipeline)"),
+            UpStep::Prepare => t("devforge prepare (confiança + toolchain + instalação, com gates)"),
+            UpStep::Run => t("devforge run (resolve o start; execução crítica, humano confirma)"),
         }
     }
 }

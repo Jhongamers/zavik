@@ -242,10 +242,24 @@ swift-argument-parser, googletest). Achados:
       risco). 17 testes novos (10 unit + 7 integração), E2E real com repo git
       local: clone + pipeline completo saiu 0; trust negada interrompeu antes
       do `run`; destino existente → erro honesto + exit1; non-TTY → nega.
-- [ ] **i18n da CLI (decidido, implementar ANTES do PH)**: mensagens humanas
-      em catálogo hand-rolled (`pt-BR` + `en`, zero dependência — mantém
-      offline-first), idioma automático pelo locale (`LC_ALL`/`LANG`) com
-      override `--lang pt-BR|en`, **padrão `en`** quando não há locale BR.
+- [ ] **i18n da CLI (decidido, implementar ANTES do PH)** — **FASE 1 ✅
+      (17/10**, design `docs/design-i18n.md`): infra no shared (`Lang`,
+      `t`/`t_fmt` — pt-BR é a chave, `EN` é o catálogo, fallback honesto =
+      identidade), resolução `--lang` > `DEVFORGE_LANG` > locale >
+      default; `--lang` extraído **pré-dispatch** (vale pra `license`/
+      `data`), respeita flags de valor e para em `--`; migrados na fase 1:
+      `section()` (17 cabeçalhos), banner, saída humana do `env`, prompts
+      do gate de permissão, títulos de etapa do `up`; +14 testes (paridade
+      e placeholders do catálogo, ordem de resolução, integração: flag/env/
+      default/inválido/JSON independente/pós-`--`). Fase 2: corpos dos
+      comandos (`audit`/`run`/`prepare`/`context`/`diagnose`/`analyze`/
+      `license`/`data`), help completo, strings de erro, `diagnose` em
+      plugins. Fase 3 (gate de lançamento): migração completa verificada +
+      **flip do default `en`** + testes atualizados. Catálogo hand-rolled
+      (`pt-BR` + `en`, zero dependência — mantém offline-first), idioma
+      automático pelo locale (`LC_ALL`/`LANG`) com override `--lang
+      pt-BR|en`, **padrão `en`** quando não há locale BR (vigoroso pós-flip;
+      durante a migração o default é `pt-BR` pra nunca sair texto misto).
       Regras: **JSON/SARIF/exit codes nunca traduzem** (contrato travado em
       en); identificadores, comentários e rustdoc **em inglês desde o 1º
       commit** (migração feita antes de versionar). Custo: extrair ~100+

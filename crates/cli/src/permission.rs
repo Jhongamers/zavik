@@ -10,6 +10,7 @@
 //! a `--yes` in CI) does not install arbitrary code without a human deciding.
 
 use devforge_sdk::{Decision, PermissionGate, PermissionRequest};
+use devforge_shared::i18n::{t, t_fmt};
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -29,21 +30,28 @@ impl InteractivePermissionGate {
     /// `allow_batch` controls whether "yes to all" is offered (never for risks).
     fn ask(&self, request: &PermissionRequest, allow_batch: bool) -> Decision {
         if request.critical {
-            println!("\n⚠️  RISCO DE SEGURANÇA: {}", request.title);
+            println!(
+                "{}",
+                t_fmt("\n⚠️  RISCO DE SEGURANÇA: {}", &[&request.title])
+            );
         } else {
-            println!("\n🔐 Permissão necessária: {}", request.title);
+            println!(
+                "{}",
+                t_fmt("\n🔐 Permissão necessária: {}", &[&request.title])
+            );
         }
-        println!("   ação   : {}", request.detail);
-        println!("   motivo : {}", request.reason);
+        println!("{}", t_fmt("   ação   : {}", &[&request.detail]));
+        println!("{}", t_fmt("   motivo : {}", &[&request.reason]));
 
-        let prompt = if allow_batch {
+        let prompt = t(if allow_batch {
             " [s]im / [n]ão / [a]sim para todas: "
         } else {
             " [s]im / [n]ão: "
-        };
+        })
+        .to_string();
 
         loop {
-            print!("   Executar?{prompt}");
+            print!("{}", t_fmt("   Executar?{}", &[&prompt]));
             let _ = io::stdout().flush();
 
             let mut line = String::new();
@@ -64,7 +72,14 @@ impl InteractivePermissionGate {
                     return Decision::Approved;
                 }
                 "n" | "nao" | "não" | "no" | "" => return Decision::Denied,
-                _ => println!("   resposta inválida (use s{}).", if allow_batch { ", n ou a" } else { " ou n" }),
+                _ => println!(
+                    "{}",
+                    t(if allow_batch {
+                        "   resposta inválida (use s, n ou a)."
+                    } else {
+                        "   resposta inválida (use s ou n)."
+                    })
+                ),
             }
         }
     }

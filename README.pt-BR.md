@@ -126,6 +126,21 @@ Exemplo (`detect --json`, enxugado):
 > é as mãos (sabe como, com permissão + verificação). Um agente chama
 > `detect --json` e recebe o fato em vez de ler N arquivos de manifesto.
 
+### Idioma (`--lang`)
+
+Texto humano da CLI: **pt-BR por padrão hoje**; `--lang en` (também
+`--lang=pt-BR` e `DEVFORGE_LANG=en`) troca as mensagens pro inglês, e
+locale BR do sistema (`LC_ALL`/`LANG=pt_BR…`) opta pelo pt-BR sem flag
+nenhuma. **Saída de máquina nunca troca**: chaves/valores de JSON, SARIF e
+exit codes são sempre inglês. O default vira `en` no lançamento, quando o
+catálogo estiver completo — design e status da migração:
+`docs/design-i18n.md`.
+
+```bash
+devforge env --lang en            # seções humanas em inglês
+DEVFORGE_LANG=en devforge audit   # idem, via env (agentes/CI)
+```
+
 ### Briefing de uma chamada (`context`)
 
 O maior gasto de uma IA num projeto estranho é **exploração** (glob/grep/ler
