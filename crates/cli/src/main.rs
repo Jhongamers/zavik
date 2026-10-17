@@ -728,47 +728,73 @@ fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::Dat
 /// Pro section of `audit`: findings from the signed local dataset. Advisory
 /// only — never touches score, `passed` or `--fail-on` (design-data §2.1).
 fn print_dataset_section(report: &dataset::DatasetReport) {
-    section("DADOS FRESCOS (Pro — dataset assinado)");
+    use devforge_shared::i18n::{t, t_fmt};
+    section(t("DADOS FRESCOS (Pro — dataset assinado)"));
     println!(
-        "dataset {} de {} (idade: {} dia(s); {} advisories na janela, {} na kill list)",
-        report.version, report.generated, report.age_days, report.advisories_total,
-        report.bad_names_total
+        "{}",
+        t_fmt(
+            "dataset {} de {} (idade: {} dia(s); {} advisories na janela, {} na kill list)",
+            &[
+                &report.version.to_string(),
+                &report.generated,
+                &report.age_days.to_string(),
+                &report.advisories_total.to_string(),
+                &report.bad_names_total.to_string(),
+            ]
+        )
     );
     if report.stale {
         println!(
-            "⚠ atrasado (>{} dias) — rode: devforge data update",
-            dataset::STALE_AFTER_DAYS
+            "{}",
+            t_fmt(
+                "⚠ atrasado (>{} dias) — rode: devforge data update",
+                &[&dataset::STALE_AFTER_DAYS.to_string()]
+            )
         );
     }
 
     if report.findings.is_empty() {
-        println!("\nNenhum achado novo nas dependências deste projeto.");
+        println!(
+            "{}",
+            t("\nNenhum achado novo nas dependências deste projeto.")
+        );
         return;
     }
-    let (bad, advisories): (Vec<_>, Vec<_>) = report
-        .findings
-        .iter()
-        .partition(|f| f.kind == "bad_name");
+    let (bad, advisories): (Vec<_>, Vec<_>) =
+        report.findings.iter().partition(|f| f.kind == "bad_name");
     if !bad.is_empty() {
-        println!("\n🛑 Nome malicioso/typosquat presente nas dependências:");
+        println!(
+            "{}",
+            t("\n🛑 Nome malicioso/typosquat presente nas dependências:")
+        );
         for finding in bad {
-            println!("   • {} ({}) — {}", finding.package, finding.ecosystem, finding.detail);
+            println!(
+                "   • {} ({}) — {}",
+                finding.package, finding.ecosystem, finding.detail
+            );
             if let Some(url) = &finding.url {
                 println!("     ↳ {url}");
             }
         }
     }
     if !advisories.is_empty() {
-        println!("\n⚠ Possível exposição (casamento só por nome — confira sua versão):");
+        println!(
+            "{}",
+            t("\n⚠ Possível exposição (casamento só por nome — confira sua versão):")
+        );
         for finding in advisories {
-            println!("   • {} ({}) — {}", finding.package, finding.ecosystem, finding.detail);
+            println!(
+                "   • {} ({}) — {}",
+                finding.package, finding.ecosystem, finding.detail
+            );
             if let Some(url) = &finding.url {
                 println!("     ↳ {url}");
             }
         }
     }
     println!(
-        "\n(seção informativa: não altera o score nem o --fail-on do audit)"
+        "{}",
+        t("\n(seção informativa: não altera o score nem o --fail-on do audit)")
     );
 }
 
@@ -782,8 +808,18 @@ fn run_run(
     context: &Context,
     options: &Options,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    use devforge_shared::i18n::{t_fmt_in, translate, Lang};
     let health = options.health.as_deref().map(parse_health).transpose()?;
     let timeout_secs = options.timeout.unwrap_or(60);
+    // One target language per invocation: JSON prose is always English,
+    // human output follows --lang (docs/design-i18n.md). Strings shared by
+    // both paths compose here, in that language; human-only messages use
+    // `lang` too (identical to the current language when not JSON).
+    let lang = if options.json {
+        Lang::En
+    } else {
+        devforge_shared::i18n::lang()
+    };
 
     let mut plan = match resolve_run(&context.project_root) {
         RunResolution::Ready(plan) => plan,
@@ -797,14 +833,27 @@ fn run_run(
             languages.dedup();
             let languages = languages.join(", ");
             if options.json {
-                println!("{}", json!({"schema": 1, "command": "run", "status": "not_found"}));
+                println!(
+                    "{}",
+                    json!({"schema": 1, "command": "run", "status": "not_found"})
+                );
             } else {
-                println!("Não achei como iniciar este projeto.");
+                println!(
+                    "{}",
+                    translate(lang, "Não achei como iniciar este projeto.")
+                );
                 if !languages.is_empty() {
-                    println!("   linguagens detectadas: {languages}");
+                    println!(
+                        "{}",
+                        t_fmt_in(lang, "   linguagens detectadas: {}", &[&languages])
+                    );
                 }
                 println!(
-                    "   declare um start (ex.: package.json scripts.start, Procfile, Makefile com alvo 'run')"
+                    "{}",
+                    translate(
+                        lang,
+                        "   declare um start (ex.: package.json scripts.start, Procfile, Makefile com alvo 'run')"
+                    )
                 );
             }
             std::process::exit(1);
@@ -829,7 +878,7 @@ fn run_run(
             match pick_start_candidate(&candidates) {
                 Some(chosen) => chosen,
                 None => {
-                    println!("   (cancelado — nada foi executado)");
+                    println!("{}", translate(lang, "   (cancelado — nada foi executado)"));
                     std::process::exit(1);
                 }
             }
@@ -849,10 +898,10 @@ fn run_run(
                        "resolved": display, "source": plan.source})
             );
         } else {
-            println!("\nPlano de execução:");
-            println!("   comando : {display}");
-            println!("   origem  : {}", plan.source);
-            println!("   (dry-run: nada foi executado)");
+            println!("{}", translate(lang, "\nPlano de execução:"));
+            println!("{}", t_fmt_in(lang, "   comando : {}", &[&display]));
+            println!("{}", t_fmt_in(lang, "   origem  : {}", &[&plan.source]));
+            println!("{}", translate(lang, "   (dry-run: nada foi executado)"));
         }
         return Ok(());
     }
@@ -864,16 +913,29 @@ fn run_run(
         Box::new(InteractivePermissionGate::new())
     };
     let decision = gate.confirm(&PermissionRequest {
-        title: "Executar o projeto".to_string(),
+        title: translate(lang, "Executar o projeto").to_string(),
         detail: display.clone(),
-        reason: "roda código do projeto local com as credenciais do seu usuário".to_string(),
+        reason: translate(
+            lang,
+            "roda código do projeto local com as credenciais do seu usuário",
+        )
+        .to_string(),
         critical: true,
     });
     if decision == Decision::Denied {
         if options.json {
-            println!("{}", json!({"schema": 1, "command": "run", "status": "denied"}));
+            println!(
+                "{}",
+                json!({"schema": 1, "command": "run", "status": "denied"})
+            );
         } else {
-            println!("   ✗ negado (nada foi executado). --yes não cobre execução de código.");
+            println!(
+                "{}",
+                translate(
+                    lang,
+                    "   ✗ negado (nada foi executado). --yes não cobre execução de código."
+                )
+            );
         }
         std::process::exit(1);
     }
@@ -885,16 +947,26 @@ fn run_run(
     if options.detach {
         let log_dir = context.project_root.join(".devforge");
         let log_path = log_dir.join("run.log");
+        // These error strings can land in JSON (`error`) too: compose them
+        // in the target language, not the current one.
         let spawn_result = std::fs::create_dir_all(&log_dir)
             .map_err(|error| {
-                format!(
-                    "não preparei o diretório de log {}: {error}",
-                    log_dir.display()
+                t_fmt_in(
+                    lang,
+                    "não preparei o diretório de log {}: {}",
+                    &[&log_dir.display().to_string(), &error.to_string()],
                 )
             })
             .and_then(|_| {
-                spawn_detached(&plan.command, &plan.args, &context.project_root, &log_path)
-                    .map_err(|error| format!("não foi possível executar '{display}': {error}"))
+                spawn_detached(&plan.command, &plan.args, &context.project_root, &log_path).map_err(
+                    |error| {
+                        t_fmt_in(
+                            lang,
+                            "não foi possível executar '{}': {}",
+                            &[&display, &error.to_string()],
+                        )
+                    },
+                )
             });
         match spawn_result {
             Ok(pid) => {
@@ -907,18 +979,48 @@ fn run_run(
                                "stop_command": format!("kill {pid}")})
                     );
                 } else {
-                    println!("\n▶ rodando em background: {display}");
+                    println!(
+                        "{}",
+                        t_fmt_in(lang, "\n▶ rodando em background: {}", &[&display])
+                    );
                     println!("   pid  : {pid}");
                     println!(
-                        "   log  : {}   (tail -f pra acompanhar)",
-                        log_path.display()
+                        "{}",
+                        t_fmt_in(
+                            lang,
+                            "   log  : {}   (tail -f pra acompanhar)",
+                            &[&log_path.display().to_string()]
+                        )
                     );
-                    println!("   parar: kill {pid}   (se precisar: kill -9 {pid})");
-                    println!("\n   (detached não espera ficar pronto nem supervisiona — pra isso");
-                    println!("    rode `devforge run` sem --detach, com health check e diagnose)");
+                    println!(
+                        "{}",
+                        t_fmt_in(
+                            lang,
+                            "   parar: kill {}   (se precisar: kill -9 {})",
+                            &[&pid.to_string(), &pid.to_string()]
+                        )
+                    );
+                    println!(
+                        "{}",
+                        translate(
+                            lang,
+                            "\n   (detached não espera ficar pronto nem supervisiona — pra isso"
+                        )
+                    );
+                    println!(
+                        "{}",
+                        translate(
+                            lang,
+                            "    rode `devforge run` sem --detach, com health check e diagnose)"
+                        )
+                    );
                     #[cfg(windows)]
                     println!(
-                        "    no Windows o processo continua ligado ao console (limitação conhecida)"
+                        "{}",
+                        translate(
+                            lang,
+                            "    no Windows o processo continua ligado ao console (limitação conhecida)"
+                        )
                     );
                 }
                 return Ok(());
@@ -956,7 +1058,11 @@ fn run_run(
     let child = match command.spawn() {
         Ok(child) => child,
         Err(error) => {
-            let message = format!("não foi possível executar '{display}': {error}");
+            let message = t_fmt_in(
+                lang,
+                "não foi possível executar '{}': {}",
+                &[&display, &error.to_string()],
+            );
             let diagnosis = diagnose(&message);
             if options.json {
                 println!(
@@ -978,8 +1084,11 @@ fn run_run(
     }
 
     if !options.json {
-        println!("\n▶ rodando: {display}");
-        println!("   (Ctrl-C encerra: SIGTERM → espera → SIGKILL)\n");
+        println!("{}", t_fmt_in(lang, "\n▶ rodando: {}", &[&display]));
+        println!(
+            "{}\n",
+            translate(lang, "   (Ctrl-C encerra: SIGTERM → espera → SIGKILL)")
+        );
     }
 
     let supervise_options = SuperviseOptions {
@@ -999,7 +1108,16 @@ fn run_run(
                                       "ready": outcome.ready, "port": outcome.port,
                                       "duration_ms": outcome.duration_ms}));
             } else {
-                println!("\n✨ terminou normalmente em {seconds:.1}s{}", readiness_note(&outcome));
+                // No format specs in the catalog: compose the number outside.
+                let note = readiness_note(&outcome);
+                println!(
+                    "{}",
+                    t_fmt_in(
+                        lang,
+                        "\n✨ terminou normalmente em {}s{}",
+                        &[&format!("{seconds:.1}"), &note]
+                    )
+                );
             }
         }
         RunState::Exited => {
@@ -1030,10 +1148,16 @@ fn run_run(
                            "causes": causes})
                 );
             } else {
+                // {:?} and {:.1} compose OUTSIDE the template (catalog rule).
+                let code = format!("{:?}", outcome.exit_code);
+                let note = readiness_note(&outcome);
                 println!(
-                    "\n❌ o projeto saiu com código {:?} após {seconds:.1}s{}",
-                    outcome.exit_code,
-                    readiness_note(&outcome)
+                    "{}",
+                    t_fmt_in(
+                        lang,
+                        "\n❌ o projeto saiu com código {} após {}s{}",
+                        &[&code, &format!("{seconds:.1}"), &note]
+                    )
                 );
                 print_diagnosis(&diagnosis);
             }
@@ -1047,8 +1171,15 @@ fn run_run(
                            "duration_ms": outcome.duration_ms, "tail": outcome.tail_stderr})
                 );
             } else {
-                println!("\n⏱  não ficou \"pronto\" em {timeout_secs}s — processo derrubado.");
-                println!("   últimas linhas:");
+                println!(
+                    "{}",
+                    t_fmt_in(
+                        lang,
+                        "\n⏱  não ficou \"pronto\" em {}s — processo derrubado.",
+                        &[&timeout_secs.to_string()]
+                    )
+                );
+                println!("{}", translate(lang, "   últimas linhas:"));
                 let lines: Vec<&String> = outcome
                     .tail_stderr
                     .iter()
@@ -1057,7 +1188,13 @@ fn run_run(
                 for line in lines.iter().rev().take(8).rev() {
                     println!("     {line}");
                 }
-                println!("   (prontidão = heurística de porta; use --health se o serviço é lento)");
+                println!(
+                    "{}",
+                    translate(
+                        lang,
+                        "   (prontidão = heurística de porta; use --health se o serviço é lento)"
+                    )
+                );
             }
             std::process::exit(1);
         }
@@ -1069,7 +1206,14 @@ fn run_run(
                            "port": outcome.port, "duration_ms": outcome.duration_ms})
                 );
             } else {
-                println!("\n■ interrompido{} em {seconds:.1}s", readiness_note(&outcome));
+                println!(
+                    "{}",
+                    t_fmt_in(
+                        lang,
+                        "\n■ interrompido{} em {}s",
+                        &[&readiness_note(&outcome), &format!("{seconds:.1}")]
+                    )
+                );
             }
             std::process::exit(130);
         }
@@ -1079,8 +1223,9 @@ fn run_run(
 }
 
 fn readiness_note(outcome: &SupervisedOutcome) -> String {
+    use devforge_shared::i18n::t_fmt;
     match (outcome.ready, outcome.port) {
-        (true, Some(port)) => format!(" (pronto na porta {port})"),
+        (true, Some(port)) => t_fmt(" (pronto na porta {})", &[&port.to_string()]),
         _ => String::new(),
     }
 }
@@ -1091,8 +1236,10 @@ fn combine_output(stdout: &[String], stderr: &[String]) -> String {
 
 /// Interactive choice among ambiguous entrypoints — we never decide on our own.
 fn pick_start_candidate(candidates: &[RunCandidate]) -> Option<RunPlan> {
-    println!("   Vários pontos de entrada — escolha um:");
+    use devforge_shared::i18n::t;
+    println!("{}", t("   Vários pontos de entrada — escolha um:"));
     for (index, item) in candidates.iter().enumerate() {
+        // The list line has no translatable words (numbers + labels + command).
         println!(
             "   {}) {}  →  {} {}",
             index + 1,
@@ -1102,7 +1249,7 @@ fn pick_start_candidate(candidates: &[RunCandidate]) -> Option<RunPlan> {
         );
     }
     loop {
-        print!("   número (vazio = cancelar): ");
+        print!("{}", t("   número (vazio = cancelar): "));
         let _ = std::io::Write::flush(&mut std::io::stdout());
 
         let mut line = String::new();
@@ -1124,7 +1271,7 @@ fn pick_start_candidate(candidates: &[RunCandidate]) -> Option<RunPlan> {
                 });
             }
         }
-        println!("   opção inválida.");
+        println!("{}", t("   opção inválida."));
     }
 }
 

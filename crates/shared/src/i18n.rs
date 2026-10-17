@@ -568,6 +568,129 @@ static EN: &[(&str, &str)] = &[
         "cole a saída do erro, ou use --message \"...\", --input <arquivo> (ou pipe: `meu_comando 2>&1 | devforge diagnose`)",
         "paste the error output, or use --message \"...\", --input <file> (or pipe: `my_command 2>&1 | devforge diagnose`)",
     ),
+    // --- `run` human output (main.rs: run_run + helpers) ---
+    ("Não achei como iniciar este projeto.", "I couldn't find how to start this project."),
+    (
+        "   linguagens detectadas: {}",
+        "   detected languages: {}",
+    ),
+    (
+        "   declare um start (ex.: package.json scripts.start, Procfile, Makefile com alvo 'run')",
+        "   declare a start (e.g. package.json scripts.start, Procfile, Makefile with a 'run' target)",
+    ),
+    (
+        "   (cancelado — nada foi executado)",
+        "   (cancelled — nothing was executed)",
+    ),
+    ("\nPlano de execução:", "\nExecution plan:"),
+    ("   comando : {}", "   command : {}"),
+    ("   origem  : {}", "   source  : {}"),
+    (
+        "   (dry-run: nada foi executado)",
+        "   (dry-run: nothing was executed)",
+    ),
+    ("Executar o projeto", "Run the project"),
+    (
+        "roda código do projeto local com as credenciais do seu usuário",
+        "runs the project's code locally with your user credentials",
+    ),
+    (
+        "   ✗ negado (nada foi executado). --yes não cobre execução de código.",
+        "   ✗ denied (nothing was executed). --yes does not cover code execution.",
+    ),
+    (
+        "não preparei o diretório de log {}: {}",
+        "could not prepare the log directory {}: {}",
+    ),
+    (
+        "não foi possível executar '{}': {}",
+        "could not execute '{}': {}",
+    ),
+    (
+        "\n▶ rodando em background: {}",
+        "\n▶ running in background: {}",
+    ),
+    (
+        "   log  : {}   (tail -f pra acompanhar)",
+        "   log  : {}   (tail -f to follow)",
+    ),
+    (
+        "   parar: kill {}   (se precisar: kill -9 {})",
+        "   stop: kill {}   (if needed: kill -9 {})",
+    ),
+    (
+        "\n   (detached não espera ficar pronto nem supervisiona — pra isso",
+        "\n   (detached doesn't wait for readiness nor supervises — for that",
+    ),
+    (
+        "    rode `devforge run` sem --detach, com health check e diagnose)",
+        "    run `devforge run` without --detach, with health check and diagnose)",
+    ),
+    (
+        "    no Windows o processo continua ligado ao console (limitação conhecida)",
+        "    on Windows the process stays attached to the console (known limitation)",
+    ),
+    ("\n▶ rodando: {}", "\n▶ running: {}"),
+    (
+        "   (Ctrl-C encerra: SIGTERM → espera → SIGKILL)",
+        "   (Ctrl-C stops: SIGTERM → wait → SIGKILL)",
+    ),
+    (
+        "\n✨ terminou normalmente em {}s{}",
+        "\n✨ finished normally in {}s{}",
+    ),
+    (
+        "\n❌ o projeto saiu com código {} após {}s{}",
+        "\n❌ the project exited with code {} after {}s{}",
+    ),
+    (" (pronto na porta {})", " (ready on port {})"),
+    (
+        "\n⏱  não ficou \"pronto\" em {}s — processo derrubado.",
+        "\n⏱  didn't become \"ready\" within {}s — process killed.",
+    ),
+    ("   últimas linhas:", "   last lines:"),
+    (
+        "   (prontidão = heurística de porta; use --health se o serviço é lento)",
+        "   (readiness = port heuristic; use --health if the service is slow)",
+    ),
+    (
+        "\n■ interrompido{} em {}s",
+        "\n■ interrupted{} in {}s",
+    ),
+    (
+        "   Vários pontos de entrada — escolha um:",
+        "   Several entrypoints — pick one:",
+    ),
+    (
+        "   número (vazio = cancelar): ",
+        "   number (empty = cancel): ",
+    ),
+    ("   opção inválida.", "   invalid option."),
+    // --- `audit` dataset section (main.rs: print_dataset_section) ---
+    (
+        "dataset {} de {} (idade: {} dia(s); {} advisories na janela, {} na kill list)",
+        "dataset {} of {} (age: {} day(s); {} advisories in the window, {} on the kill list)",
+    ),
+    (
+        "⚠ atrasado (>{} dias) — rode: devforge data update",
+        "⚠ stale (>{} days) — run: devforge data update",
+    ),
+    (
+        "\nNenhum achado novo nas dependências deste projeto.",
+        "\nNo new findings in this project's dependencies.",
+    ),
+    (
+        "\n🛑 Nome malicioso/typosquat presente nas dependências:",
+        "\n🛑 Malicious/typosquat name present in the dependencies:",
+    ),
+    (
+        "\n⚠ Possível exposição (casamento só por nome — confira sua versão):",
+        "\n⚠ Possible exposure (name-only match — check your version):",
+    ),
+    (
+        "\n(seção informativa: não altera o score nem o --fail-on do audit)",
+        "\n(informational section: doesn't change the score or the audit's --fail-on)",
+    ),
 ];
 
 #[cfg(test)]

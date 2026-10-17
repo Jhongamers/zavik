@@ -300,3 +300,59 @@ fn diagnose_json_prose_is_always_english_whatever_the_lang_flag() {
         "cause em EN: {cause}"
     );
 }
+
+#[test]
+fn run_output_follows_lang_flag() {
+    // NotFound path: how-to-start guidance in English, no pt residue.
+    let bare = TempDir::new().unwrap();
+    std::fs::write(
+        bare.path().join("package.json"),
+        r#"{"name":"i18n-run-bare","version":"1.0.0"}"#,
+    )
+    .unwrap();
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["run", bare.path().to_str().unwrap(), "--lang", "en"])
+        .output()
+        .unwrap();
+    let stdout = stdout_of(&en);
+    assert!(
+        stdout.contains("I couldn't find how to start this project."),
+        "not_found em EN: {stdout}"
+    );
+    assert!(
+        stdout.contains("declare a start") && !stdout.contains("Não achei"),
+        "sem pt no --lang en: {stdout}"
+    );
+
+    // Planned path: the dry-run plan headers in English.
+    let runnable = TempDir::new().unwrap();
+    std::fs::write(
+        runnable.path().join("package.json"),
+        r#"{"name":"i18n-run-ok","scripts":{"start":"node server.js"}}"#,
+    )
+    .unwrap();
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args([
+            "run",
+            runnable.path().to_str().unwrap(),
+            "--dry-run",
+            "--lang",
+            "en",
+        ])
+        .output()
+        .unwrap();
+    assert!(en.status.success());
+    let stdout = stdout_of(&en);
+    assert!(stdout.contains("Execution plan:"), "plano em EN: {stdout}");
+    assert!(stdout.contains("   command :"), "label em EN: {stdout}");
+    assert!(
+        stdout.contains("(dry-run: nothing was executed)"),
+        "nota em EN: {stdout}"
+    );
+    assert!(
+        !stdout.contains("Plano de execução") && !stdout.contains("nada foi executado"),
+        "sem pt no plano: {stdout}"
+    );
+}
