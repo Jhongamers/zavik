@@ -54,6 +54,26 @@ Golden files só onde a comparação é justa: **formato** (schema/keys do
 entra como golden (é opinião do motor, muda com política — aferir é outro
 jogo, §9).
 
+### 3.1 Sondas duplas: anti-FP e anti-FN (exigência do fundador, 17/10)
+
+Toda entrada do corpus carrega **duas asserções** — uma sem a outra é
+meio teste:
+
+- **Anti-FP** ("não pode acusar X"): ground truth limpo/esperado — se o
+  DevForge acusar (linguagem errada, finding sem base, sugerir comando que
+  falharia), **o teste falha**. Exemplos reais já vistos: Makefile de
+  projeto Go acusado como C/C++ (§1.5); `cargo run` sugerido em projeto
+  só-lib (corpus Fase A, NOVO-1).
+- **Anti-FN** ("tem que acusar Y"): entrada onde o problema é **real e
+  conhecido** — se o DevForge passar limpo, **o teste falha**. Exemplos:
+  manifesto sintético declarando pacote da kill list (**só declarado,
+  nunca executado**), manifest com fatores de risco reais (install script,
+  shell access), stderr real de erro pro `diagnose` (Fase C).
+
+O veredito de audit ganha as duas sondas nos **fixtures sintéticos**
+(motor offline, determinístico, roda em qualquer lugar); confronto com
+GHSA real do mundo continua sendo linha separada (§6).
+
 ## 4. Fases
 
 - **Fase A — Rust**: seed = projetos já usados no §1.5 (anyhow) + **1
@@ -93,8 +113,9 @@ fundador na hora da fase — sugestões de classe, não commit de nome.
 - Monorepo não-Rust e entrypoint de crate Rust (dogfooding #5/#7) seguem
   registrados como pendências próprias — o corpus os *exporá*, não os
   resolve.
-- O corpus **não prova veredito de audit** (aprovar/reprovar é juízo do
-  motor offline; validar isso é linha separada, design-data §9 /
-  confronto com GHSA conhecido).
+- O corpus **não prova o veredito de audit contra o mundo real**
+  (aprovar/reprovar é juízo do motor offline; confronto com GHSA conhecido
+  é linha separada, design-data §9). As **sondas sintéticas** anti-FP/anti-FN
+  do §3.1 (kill list, fatores reais) valem e entram sim no corpus.
 - Fora de escopo por ora: executar projetos no corpus, rede fora do fetch,
   comparação entre versões antigas do DevForge (regressão temporal).

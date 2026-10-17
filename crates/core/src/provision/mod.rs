@@ -273,12 +273,40 @@ mod tests {
 
     #[test]
     fn rust_local_plan_includes_cargo() {
-        let plan = Provisioner::build_plan(PrepareMode::Local, &[rust_stack()], Path::new("/p"));
+        // The cargo hint gates on a REAL binary target on disk (NOVO-1):
+        // point the stack at a runnable temp package (manifest + main.rs).
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("src")).unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+        std::fs::write(dir.path().join("src").join("main.rs"), "fn main(){}").unwrap();
+        let mut stack = rust_stack();
+        stack.manifest = dir.path().join("Cargo.toml");
+
+        let plan = Provisioner::build_plan(PrepareMode::Local, &[stack], dir.path());
         assert!(plan
             .steps
             .iter()
             .any(|s| s.detail.contains("cargo build")));
         assert!(plan.run_hints.iter().any(|h| h.contains("cargo run")));
+    }
+
+    #[test]
+    fn rust_lib_package_gets_no_cargo_run_hint() {
+        // NOVO-1 (corpus Fase A): lib-only package → no "cargo run" hint
+        // (the command would fail — a wrong hint is worse than none).
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("src")).unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+        std::fs::write(dir.path().join("src").join("lib.rs"), "").unwrap();
+        let mut stack = rust_stack();
+        stack.manifest = dir.path().join("Cargo.toml");
+
+        let plan = Provisioner::build_plan(PrepareMode::Local, &[stack], dir.path());
+        assert!(
+            plan.run_hints.is_empty(),
+            "sem binário = sem dica de run: {:?}",
+            plan.run_hints
+        );
     }
 
     #[test]

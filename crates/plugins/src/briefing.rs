@@ -33,7 +33,13 @@ fn build_runbook(root: &Path, stack: &ProjectStack, rb: &mut Runbook) {
             push(&mut rb.setup, "cargo fetch");
             push(&mut rb.build, "cargo build");
             push(&mut rb.test, "cargo test");
-            push(&mut rb.run, "cargo run");
+            // NOVO-1 (corpus Fase A): a lib-only package has no `cargo run`
+            // — the runbook stays silent instead of promising a command
+            // that would fail.
+            let package_dir = stack.manifest.parent().unwrap_or(root);
+            if !crate::runner::cargo_bin_names(package_dir).is_empty() {
+                push(&mut rb.run, "cargo run");
+            }
             push(&mut rb.lint, "cargo clippy");
         }
         Language::JavaScript | Language::TypeScript => js_runbook(stack, rb),
@@ -382,5 +388,39 @@ mod tests {
             .key_files
             .iter()
             .any(|k| k.kind == "manifest" && k.path == "package.json"));
+    }
+
+    #[test]
+    fn briefing_rust_runbook_only_promises_cargo_run_with_a_binary() {
+        // NOVO-1 (corpus Fase A): lib-only package must not be promised a
+        // `cargo run`; the same package with src/main.rs must be.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("src")).unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[package]\nname = \"libonly\"\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("src/lib.rs"), "").unwrap();
+        let lib_stack = ProjectStack::new(
+            Language::Rust,
+            dir.path().join("Cargo.toml"),
+            Some("cargo".to_string()),
+        );
+        let briefing = extract_briefing(dir.path(), &[lib_stack]);
+        assert!(
+            briefing.runbook.run.is_empty(),
+            "lib não promete cargo run: {:?}",
+            briefing.runbook.run
+        );
+
+        std::fs::write(dir.path().join("src/main.rs"), "fn main(){}").unwrap();
+        let bin_stack = ProjectStack::new(
+            Language::Rust,
+            dir.path().join("Cargo.toml"),
+            Some("cargo".to_string()),
+        );
+        let briefing = extract_briefing(dir.path(), &[bin_stack]);
+        assert!(briefing.runbook.run.contains(&"cargo run".to_string()));
     }
 }

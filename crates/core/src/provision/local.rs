@@ -237,7 +237,14 @@ fn jvm_steps(stack: &ProjectStack, manifest: &str, root: &Path) -> Vec<Provision
 /// Hints on "how to run" after preparation.
 pub(crate) fn run_hints_for(stack: &ProjectStack) -> Vec<String> {
     let hint = match stack.language {
-        Language::Rust => "cargo run".to_string(),
+        // NOVO-1 (corpus Fase A, docs/dogfooding.md): a package without
+        // binary targets cannot `cargo run` — no hint beats a wrong one.
+        Language::Rust => {
+            if !has_cargo_bin(stack.manifest.parent().unwrap_or(std::path::Path::new("."))) {
+                return Vec::new();
+            }
+            "cargo run".to_string()
+        }
         Language::JavaScript | Language::TypeScript => {
             format!(
                 "{} start",
@@ -263,6 +270,31 @@ pub(crate) fn run_hints_for(stack: &ProjectStack) -> Vec<String> {
         Language::Unknown => return Vec::new(),
     };
     vec![hint]
+}
+
+/// Whether this package would expose a binary to `cargo run`: an explicit
+/// `[[bin]]`, `src/main.rs`, or `src/bin/*`. Package scope, textual
+/// `[[bin]]` check (core carries no TOML parser); the runner in plugins
+/// keeps the parsing twin — both pinned by tests (NOVO-1).
+fn has_cargo_bin(dir: &std::path::Path) -> bool {
+    if let Ok(text) = std::fs::read_to_string(dir.join("Cargo.toml")) {
+        if text.contains("[[bin]]") {
+            return true;
+        }
+    }
+    if dir.join("src").join("main.rs").exists() {
+        return true;
+    }
+    if let Ok(entries) = std::fs::read_dir(dir.join("src").join("bin")) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let is_rs = path.extension().and_then(|e| e.to_str()) == Some("rs");
+            if is_rs || (path.is_dir() && path.join("main.rs").exists()) {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn has_framework(stack: &ProjectStack, name: &str) -> bool {

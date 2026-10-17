@@ -775,12 +775,14 @@ fn run_run(
     let mut plan = match resolve_run(&context.project_root) {
         RunResolution::Ready(plan) => plan,
         RunResolution::NotFound => {
-            let languages = kernel
+            let mut languages: Vec<String> = kernel
                 .detect_stacks(context)?
                 .iter()
                 .map(|stack| stack.language.to_string())
-                .collect::<Vec<_>>()
-                .join(", ");
+                .collect();
+            languages.sort();
+            languages.dedup();
+            let languages = languages.join(", ");
             if options.json {
                 println!("{}", json!({"schema": 1, "command": "run", "status": "not_found"}));
             } else {

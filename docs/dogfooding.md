@@ -45,8 +45,12 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
 
 ### Registrados, ainda pendentes
 
-5. `context --json` → `entrypoints: []` num crate binário Rust
-   (`src/main.rs` existe e não é listado como entrada).
+5. ~~`context --json` → `entrypoints: []`~~ **FECHADO (17/10, corpus
+   Fase A)**: era artefato da raiz virtual **pré-expansão** (1 stack, sem
+   `src/` na raiz). O detector já cobre `src/main.rs` (`briefing.rs`);
+   pós-fix o context do próprio DevForge lista 7 entrypoints incl.
+   `crates/cli/src/main.rs`. Verificado também em projeto externo: só
+   lista o que existe (serde omitiu um layout fora do padrão, sem inventar).
 6. **Prose dentro de JSON está em pt-BR** (ex.: `diagnose.summary`).
    O contrato é "JSON sempre inglês": chaves/enums já são EN; a prose que
    máquina lê deve usar EN **forçado** (`t_en()` — tradução direta do
@@ -58,6 +62,18 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
 8. `diagnose` em saída de `cargo bench` caiu no fallback com top_errors
    ruins (linhas "ignored") — o fallback é honesto, mas dá pra cobrir
    `no bench targets`/`error: no tests` (futuro, baixa prioridade).
+
+### Achado extra — corpus Fase A (17/10, mesmo dia)
+
+9. **`run`/`up`/runbook/hint do prepare sugeriam `cargo run` em projeto
+   só-lib (NOVO-1)**: serde e anyhow (reais, SHA pinado) têm **zero bins**
+   (ground truth: `cargo metadata`) — o comando falharia. **Corrigido**:
+   a resolução Rust conta binários do pacote **e dos membros do
+   workspace** (`[[bin]]`, `src/main.rs`, `src/bin/*`); zero → `NotFound`
+   honesto ("Não achei como iniciar"), `runbook.run` e hint do prepare
+   ficam em silêncio; workspace com **1 único bin** segue `cargo run` (o
+   caso do DevForge — verificado sem regressão). Testes: runner ×4,
+   briefing ×1, provision ×2. Detalhes: `~/devforge-corpus/pagina-interna.md`.
 
 ### Comportamentos verificados OK (sem achado)
 

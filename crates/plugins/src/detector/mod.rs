@@ -241,6 +241,11 @@ pub(crate) fn dep_names(deps: &[Dependency]) -> Vec<String> {
     deps.iter().map(|d| normalize(&d.name)).collect()
 }
 
+/// Member-pattern expansion, re-exported for the runner: `cargo run`
+/// resolution must also see bins of a virtual workspace's members
+/// (NOVO-1, docs/dogfooding.md — corpus Fase A in serde/anyhow).
+pub(crate) use compiled::expand_members;
+
 /// Looks for an exact file in the project root.
 pub(crate) fn find_file(root: &Path, name: &str) -> Option<PathBuf> {
     let path = root.join(name);

@@ -8,3 +8,6 @@ license.workspace = true
 [dependencies]
 devforge-shared.workspace = true
 devforge-sdk.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -211,7 +211,7 @@ fn workspace_list(value: &toml::Value, key: &str) -> Vec<String> {
 /// Expands `[workspace].members` patterns (literal segments and `*`
 /// wildcards) into member directories holding a `Cargo.toml`, honoring
 /// `exclude`, sorted + deduped for deterministic output.
-fn expand_members(root: &Path, members: &[toml::Value], exclude: &[String]) -> Vec<PathBuf> {
+pub(crate) fn expand_members(root: &Path, members: &[toml::Value], exclude: &[String]) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
     for pattern in members.iter().filter_map(|v| v.as_str()) {
         let segments: Vec<&str> = pattern.split('/').filter(|s| !s.is_empty()).collect();

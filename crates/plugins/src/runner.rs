@@ -160,7 +160,10 @@ pub fn resolve_run(root: &Path) -> RunResolution {
         }
     }
 
-    // Rust: 1 binary → cargo run; several → ask
+    // Rust: several bins → ask; one → cargo run; none → nothing to run.
+    // NOVO-1 (corpus Fase A, docs/dogfooding.md): lib-only projects used
+    // to resolve a `cargo run` that would fail — NotFound is the truth,
+    // and the workspace's members are scanned for real binaries.
     if root.join("Cargo.toml").exists() {
         let bins = cargo_bin_names(root);
         if bins.len() > 1 {
@@ -169,6 +172,9 @@ pub fn resolve_run(root: &Path) -> RunResolution {
                 .map(|name| candidate("cargo", &["run", "--bin", name], &format!("binário '{name}'")))
                 .collect();
             return RunResolution::Ambiguous(candidates);
+        }
+        if bins.is_empty() {
+            return RunResolution::NotFound;
         }
         return plan("cargo", &["run"], "Cargo.toml");
     }
@@ -286,10 +292,18 @@ fn makefile_targets(text: &str) -> Vec<String> {
 }
 
 /// Names of the binaries declared in `Cargo.toml` (default: `src/main.rs`).
-fn cargo_bin_names(root: &Path) -> Vec<String> {
+/// Binary names exposed by a single package directory: explicit `[[bin]]`,
+/// `src/main.rs` (named after the package) and `src/bin/*`.
+fn package_bin_names(dir: &Path) -> Vec<String> {
     let mut names = Vec::new();
-    if let Ok(text) = std::fs::read_to_string(root.join("Cargo.toml")) {
+    let mut package_name: Option<String> = None;
+    if let Ok(text) = std::fs::read_to_string(dir.join("Cargo.toml")) {
         if let Ok(doc) = text.parse::<toml::Value>() {
+            package_name = doc
+                .get("package")
+                .and_then(|p| p.get("name"))
+                .and_then(|n| n.as_str())
+                .map(str::to_string);
             if let Some(bins) = doc.get("bin").and_then(|b| b.as_array()) {
                 for bin in bins {
                     if let Some(name) = bin.get("name").and_then(|n| n.as_str()) {
@@ -299,9 +313,66 @@ fn cargo_bin_names(root: &Path) -> Vec<String> {
             }
         }
     }
-    if names.is_empty() && root.join("src").join("main.rs").exists() {
-        names.push("default".to_string());
+    if dir.join("src").join("main.rs").exists() {
+        names.push(package_name.unwrap_or_else(|| "default".to_string()));
     }
+    if let Ok(entries) = std::fs::read_dir(dir.join("src").join("bin")) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            match path.extension().and_then(|e| e.to_str()) {
+                Some("rs") => {
+                    if let Some(stem) =
+                        path.file_stem().map(|s| s.to_string_lossy().into_owned())
+                    {
+                        names.push(stem);
+                    }
+                }
+                None if path.is_dir() && path.join("main.rs").exists() => {
+                    names.push(entry.file_name().to_string_lossy().into_owned());
+                }
+                _ => {}
+            }
+        }
+    }
+    names.sort();
+    names.dedup();
+    names
+}
+
+/// Binary names reachable from `root`: its own package plus, when the
+/// manifest declares `[workspace].members`, every member's package — a
+/// virtual workspace root has no `src/` of its own. NOVO-1 (corpus Fase A,
+/// docs/dogfooding.md): a lib-only project must resolve to `NotFound`
+/// instead of a doomed `cargo run`, while a workspace with exactly one
+/// member binary still resolves to the `cargo run` cargo itself would run.
+pub(crate) fn cargo_bin_names(root: &Path) -> Vec<String> {
+    let mut names = package_bin_names(root);
+    if let Ok(text) = std::fs::read_to_string(root.join("Cargo.toml")) {
+        if let Ok(doc) = text.parse::<toml::Value>() {
+            if let Some(members) = doc
+                .get("workspace")
+                .and_then(|w| w.get("members"))
+                .and_then(|m| m.as_array())
+            {
+                let exclude: Vec<String> = doc
+                    .get("workspace")
+                    .and_then(|w| w.get("exclude"))
+                    .and_then(|e| e.as_array())
+                    .map(|items| {
+                        items
+                            .iter()
+                            .filter_map(|v| v.as_str().map(str::to_string))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                for dir in crate::detector::expand_members(root, members, &exclude) {
+                    names.extend(package_bin_names(&dir));
+                }
+            }
+        }
+    }
+    names.sort();
+    names.dedup();
     names
 }
 
@@ -777,6 +848,78 @@ mod tests {
         std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
         std::fs::create_dir_all(dir.path().join("src")).unwrap();
         std::fs::write(dir.path().join("src").join("main.rs"), "fn main(){}").unwrap();
+        assert_eq!(ready(resolve_run(dir.path())).command, "cargo");
+    }
+
+    #[test]
+    fn rust_lib_only_is_not_found() {
+        // NOVO-1: corpus Fase A caught serde/anyhow (lib-only) resolving
+        // a `cargo run` that would fail. No binaries = nothing to run.
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[package]\nname = \"x\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(dir.path().join("src")).unwrap();
+        std::fs::write(dir.path().join("src").join("lib.rs"), "").unwrap();
+        assert_eq!(resolve_run(dir.path()), RunResolution::NotFound);
+    }
+
+    #[test]
+    fn rust_virtual_workspace_with_one_member_bin_runs() {
+        // The DevForge repo shape: virtual root + exactly one member bin
+        // is genuinely runnable — `cargo run` at the root works there.
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(dir.path().join("crates/app").join("src")).unwrap();
+        std::fs::write(
+            dir.path().join("crates/app/Cargo.toml"),
+            "[package]\nname = \"app\"\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("crates/app/src/main.rs"),
+            "fn main(){}",
+        )
+        .unwrap();
+        let plan = ready(resolve_run(dir.path()));
+        assert_eq!(plan.command, "cargo");
+        assert_eq!(plan.args, vec!["run"]);
+    }
+
+    #[test]
+    fn rust_virtual_workspace_lib_only_is_not_found() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(dir.path().join("crates/lib").join("src")).unwrap();
+        std::fs::write(
+            dir.path().join("crates/lib/Cargo.toml"),
+            "[package]\nname = \"libcrate\"\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("crates/lib/src/lib.rs"), "").unwrap();
+        assert_eq!(resolve_run(dir.path()), RunResolution::NotFound);
+    }
+
+    #[test]
+    fn rust_src_bin_autodiscovery() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+        std::fs::create_dir_all(dir.path().join("src/bin/cli")).unwrap();
+        std::fs::write(
+            dir.path().join("src/bin/cli/main.rs"),
+            "fn main(){}",
+        )
+        .unwrap();
         assert_eq!(ready(resolve_run(dir.path())).command, "cargo");
     }
 
