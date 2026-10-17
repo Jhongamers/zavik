@@ -20,6 +20,7 @@
 //!     --all       descends into subfolders looking for projects (monorepo/nested)
 
 mod dataset;
+mod detached;
 mod license;
 mod output;
 mod permission;
@@ -43,6 +44,7 @@ use devforge_shared::{
 use devforge_sdk::{AnalysisOptions, CommandSpec, Decision, PermissionGate, PermissionRequest, PluginContext};
 use permission::{AutoApprovePermissionGate, InteractivePermissionGate};
 use serde_json::json;
+use detached::spawn_detached;
 use up::UpStep;
 use std::collections::HashMap;
 use std::env;
@@ -806,6 +808,67 @@ fn run_run(
             println!("   ✗ negado (nada foi executado). --yes não cobre execução de código.");
         }
         std::process::exit(1);
+    }
+
+    // Detached mode: start in the background and return the PID immediately
+    // (an AI must never wait). Honest limitation: no readiness supervision
+    // here — the log goes to `.devforge/run.log`; `run` without `--detach`
+    // keeps the health check + crash→diagnose.
+    if options.detach {
+        let log_dir = context.project_root.join(".devforge");
+        let log_path = log_dir.join("run.log");
+        let spawn_result = std::fs::create_dir_all(&log_dir)
+            .map_err(|error| {
+                format!(
+                    "não preparei o diretório de log {}: {error}",
+                    log_dir.display()
+                )
+            })
+            .and_then(|_| {
+                spawn_detached(&plan.command, &plan.args, &context.project_root, &log_path)
+                    .map_err(|error| format!("não foi possível executar '{display}': {error}"))
+            });
+        match spawn_result {
+            Ok(pid) => {
+                if options.json {
+                    println!(
+                        "{}",
+                        json!({"schema": 1, "command": "run", "status": "detached",
+                               "pid": pid, "resolved": display, "source": plan.source,
+                               "log": log_path.to_string_lossy(),
+                               "stop_command": format!("kill {pid}")})
+                    );
+                } else {
+                    println!("\n▶ rodando em background: {display}");
+                    println!("   pid  : {pid}");
+                    println!(
+                        "   log  : {}   (tail -f pra acompanhar)",
+                        log_path.display()
+                    );
+                    println!("   parar: kill {pid}   (se precisar: kill -9 {pid})");
+                    println!("\n   (detached não espera ficar pronto nem supervisiona — pra isso");
+                    println!("    rode `devforge run` sem --detach, com health check e diagnose)");
+                    #[cfg(windows)]
+                    println!(
+                        "    no Windows o processo continua ligado ao console (limitação conhecida)"
+                    );
+                }
+                return Ok(());
+            }
+            Err(message) => {
+                let diagnosis = diagnose(&message);
+                if options.json {
+                    println!(
+                        "{}",
+                        json!({"schema": 1, "command": "run", "status": "failed", "error": message})
+                    );
+                } else {
+                    println!("❌ {message}");
+                    print_diagnosis(&diagnosis);
+                }
+                std::process::exit(1);
+            }
+        }
     }
 
     let mut command = std::process::Command::new(&plan.command);
@@ -2074,6 +2137,9 @@ struct Options {
     health: Option<String>,
     /// (`run`) arguments after `--`, passed through to the start command.
     extra_args: Vec<String>,
+    /// (`run`) start in the background and return the PID immediately — no
+    /// readiness supervision; the log goes to `.devforge/run.log`.
+    detach: bool,
     /// (`up`) stop after this step (`clone|audit|prepare|run`).
     until: Option<String>,
     /// (`up`) comma-separated steps to skip (`clone,audit,prepare,run`).
@@ -2093,6 +2159,7 @@ fn parse_options(args: &[String]) -> Result<(Option<PathBuf>, Options), String> 
             "--force" => options.force = true,
             "--online" => options.online = true,
             "--json" => options.json = true,
+            "--detach" => options.detach = true,
             "--all" => options.all = true,
             "--sarif" => options.sarif = true,
             // Flags that consume the next argument as their value.
@@ -2158,6 +2225,7 @@ fn print_help() {
          \x20 devforge run [caminho] [flags]         sobe o projeto: resolve o start (scripts.start,\n\
          \x20               Procfile, Makefile, convenção), espera ficar pronto e mostra o log;\n\
          \x20               ambiguidade pergunta; crash cedo vira diagnose; executa = pergunta\n\
+         \x20               --detach: sobe em background e devolve o PID (sem supervisionar)\n\
          \x20 devforge up [url|caminho] [flags]     pipeline completo: clone? → audit → prepare → run\n\
          \x20               (mesmos gates de cada etapa isolada; --until/--skip controlam o corte;\n\
          \x20               url git é clonada com --depth 1 e sem hooks)\n\
@@ -2191,6 +2259,7 @@ fn print_help() {
          \x20               (alternativa: env DF_DATASET_URL)\n\
          \x20 --timeout     (run) segundos esperando ficar pronto (padrão 60)\n\
          \x20 --health      (run) readiness explícito: tcp:<porta> | http://...\n\
+         \x20 --detach      (run) sobe em background e devolve o PID (log: .devforge/run.log)\n\
          \x20 --until etapa (up) para depois da etapa: clone|audit|prepare|run\n\
          \x20 --skip etapas (up) pula etapa(s), separadas por vírgula\n\
          \x20 --            (run) repassa o resto ao comando de start (ex.: -- --port 3001)\n"

@@ -19,7 +19,22 @@ to install. *(Compatibility, not affiliation.)*
 
 ## Install
 
-**From source** (prebuilt binaries ship with the `v0.1.0` release):
+**Quick install** (linux x64/arm64, macOS arm64; needs the `v0.1.0` release
+published):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jhongamers/devforge/main/install.sh | sh
+```
+
+Detects your OS/arch, downloads the release tarball, **verifies its sha256**
+(no skip flag) and installs to `~/.local/bin`. Prefer downloading the script,
+reading it, then running it — our own `audit` classifies `curl | sh` as a
+risk. Windows: grab the `.zip` from
+[Releases](https://github.com/Jhongamers/devforge/releases). Overrides:
+`DEVFORGE_VERSION`, `DEVFORGE_INSTALL_DIR`, `DEVFORGE_BASE_URL` (mirrors,
+air-gapped, tests).
+
+**From source** (always works):
 
 ```bash
 git clone https://github.com/Jhongamers/devforge && cd devforge
@@ -29,9 +44,9 @@ cp target/release/devforge ~/.local/bin/   # or anywhere on your PATH
 
 Requires Rust stable. Every `v*` tag publishes binaries
 (linux x64/arm64, macOS arm64, Windows) + `.sha256` checksums on
-[Releases](https://github.com/Jhongamers/devforge/releases); a `curl | sh`
-installer and package-manager one-liners are on the launch roadmap
-(`cargo install` works from the repo today).
+[Releases](https://github.com/Jhongamers/devforge/releases); the installer
+above and `cargo install` cover the main doors (package-manager one-liners
+are on the launch roadmap).
 
 > **For AI agents:** clone + `cargo build --release` is the canonical
 > zero-mystery install. After that, `devforge context --json` is the fastest
@@ -56,7 +71,7 @@ devforge analyze [path] [flags]     # analyze the project's dependencies
 devforge context [path] [flags]     # briefing: runbook + entrypoints + risks (1 call)
 devforge diagnose [flags]           # summarize an error: root cause + fix
 devforge env [path] [flags]         # environment fingerprint: tool versions + what's missing
-devforge run [path] [flags]         # boot the project (resolves start, waits until ready)
+devforge run [path] [--detach]      # boot the project (--detach: background + PID)
 devforge up [url|path] [flags]      # pipeline: clone? → audit → prepare → run (same gates)
 devforge audit [path] [flags]       # supply-chain audit (--fail-on gates CI)
 devforge license status|install|remove # offline license (Ed25519 signature, local)
@@ -103,6 +118,7 @@ devforge diagnose --json         # root cause of an error (+ fix)
 devforge env --json              # environment fingerprint: OS/arch, tool versions, missing
 devforge run --dry-run --json    # resolved start command + where it came from
 devforge run --json              # plan without executing (agent mode) or final result
+devforge run --detach --json     # background: pid + log + stop_command (no supervision)
 devforge up --dry-run --json     # pipeline plan (stage by stage, nothing executed)
 devforge up --json               # JSON Lines: 1 object per stage + final summary
 devforge audit --json            # supply-chain report (score, factors, verdict)
@@ -202,12 +218,21 @@ project boots** and boots it — never silently guesses:
 
 ```bash
 devforge run                      # resolves, ASKS permission to execute, boots
+devforge run --detach             # background: returns pid + log (no readiness wait)
 devforge run --dry-run            # only shows the resolved command (no execution)
 devforge run --timeout 90         # wait up to 90s for readiness (default 60)
 devforge run --health http://localhost:3000/health   # explicit readiness
 devforge run . -- --port 3001     # args after -- go to the start command
 devforge run --json               # structured plan/result (agent mode)
 ```
+
+**Detached:** `--detach` starts the project in its **own session** — closing
+the terminal doesn't take the dev server down — and returns `pid`, `log`
+(`.devforge/run.log`, follow with `tail -f`) and `stop_command` (e.g.
+`kill 1234`). The trade is honest: it does **not** wait for readiness or
+supervise; run without `--detach` for health check + crash→diagnose. Same
+gate: executing is critical risk, `--yes` doesn't cover it. *(On Windows the
+detached process stays tied to the console — known limitation.)*
 
 **What makes "it worked" honest:** a server doesn't terminate, so the exit code
 isn't enough — `run` detects a **port accepting connections** (heuristics:
@@ -219,7 +244,7 @@ SIGKILL). A crash before booting becomes a `diagnose` entry (cause + fix).
 **Honest limitations (v1):** readiness is port heuristics (not a guarantee);
 `--health http` has no https; no port discovery on macOS (use
 `--health`/candidates); `--json` doesn't stream live (delivers the tail in the
-result); foreground only (no `--detach`); POSIX (Linux/macOS).
+result); `--detach` doesn't supervise readiness; POSIX (Linux/macOS).
 And the standing rule: **executing is critical risk — `--yes` never covers
 it**, the human decides (agent mode: `--json` delivers the plan, doesn't
 execute).

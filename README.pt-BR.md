@@ -20,7 +20,22 @@ vendor pra instalar. *(Compatibilidade, não filiação.)*
 
 ## Como rodar
 
-O projeto é um **workspace Cargo** padrão:
+**Instalação rápida** (linux x64/arm64, macOS arm64; precisa da release
+`v0.1.0` publicada):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jhongamers/devforge/main/install.sh | sh
+```
+
+Detecta seu OS/arch, baixa o tarball da release, **confere o sha256** (sem
+flag de pular) e instala em `~/.local/bin`. De preferência baixe o script,
+leia e rode — o nosso próprio `audit` classifica `curl | sh` como risco.
+Windows: pegue o `.zip` em
+[Releases](https://github.com/Jhongamers/devforge/releases). Overrides:
+`DEVFORGE_VERSION`, `DEVFORGE_INSTALL_DIR`, `DEVFORGE_BASE_URL` (espelhos,
+ambiente air-gapped, testes).
+
+**Da fonte** (sempre funciona):
 
 ```bash
 cargo build            # compila todos os crates
@@ -39,7 +54,7 @@ devforge analyze [caminho] [flags]     # analisa as dependências do projeto
 devforge context [caminho] [flags]     # briefing: runbook + entradas + riscos (1 chamada)
 devforge diagnose [flags]              # resume um erro: causa real + conserto
 devforge env [caminho] [flags]         # fingerprint do ambiente: versões das toolchains + o que falta
-devforge run [caminho] [flags]         # sobe o projeto (resolve o start e espera ficar pronto)
+devforge run [caminho] [--detach]  # sobe o projeto (--detach: background + PID)
 devforge up [url|caminho] [flags]      # pipeline: clone? → audit → prepare → run (mesmos gates)
 devforge audit [caminho] [flags]       # auditoria de supply-chain (--fail-on gateia CI)
 devforge license status|install|remove # licença offline (assinatura Ed25519, local)
@@ -86,6 +101,7 @@ devforge diagnose --json         # causa real de um erro (+ conserto)
 devforge env --json              # fingerprint do ambiente: OS/arch, versões, o que falta
 devforge run --dry-run --json    # comando de start resolvido + de onde veio
 devforge run --json              # plano sem executar (modo IA) ou resultado final
+devforge run --detach --json     # background: pid + log + stop_command (sem supervisionar)
 devforge up --dry-run --json     # plano do pipeline (etapa a etapa, sem executar)
 devforge up --json               # JSON Lines: 1 objeto por etapa + resumo final
 devforge audit --json            # relatório de supply-chain (score, fatores, veredito)
@@ -182,12 +198,21 @@ sobe** e sobe — nunca adivinha em silêncio:
 
 ```bash
 devforge run                      # resolve, PERGUNTA se pode executar, e sobe
+devforge run --detach             # background: devolve pid + log (sem esperar readiness)
 devforge run --dry-run            # só mostra o comando resolvido (sem executar)
 devforge run --timeout 90         # espera ficar pronto por até 90s (padrão 60)
 devforge run --health http://localhost:3000/health   # readiness explícito
 devforge run . -- --port 3001     # args após -- vão pro comando de start
 devforge run --json               # plano/resultado estruturado (modo IA)
 ```
+
+**Detached:** `--detach` sobe o projeto na **própria sessão** — fechar o
+terminal não derruba o dev server — e devolve `pid`, `log`
+(`.devforge/run.log`, acompanhe com `tail -f`) e `stop_command` (ex.:
+`kill 1234`). O trato é honesto: **não** espera readiness nem supervisiona;
+rode sem `--detach` pra ter health check + crash→diagnose. Mesmo gate:
+executar é risco crítico, `--yes` não cobre. *(No Windows o processo
+detached continua preso ao console — limitação conhecida.)*
 
 **O que torna "deu certo" honesto:** um servidor não termina, então exit code
 não basta — o `run` detecta **porta aceitando conexão** (heurística: `--health`,
@@ -199,7 +224,7 @@ inteiro** (SIGTERM → espera → SIGKILL). Crash antes de subir vira entrada do
 **Limitações honestas (v1):** prontidão é heurística de porta (não é garantia);
 `--health http` sem https; no macOS não há descoberta de porta (use
 `--health`/candidatas); `--json` não faz stream ao vivo (entrega o tail no
-resultado); foreground apenas (sem `--detach`); POSIX (Linux/macOS).
+resultado); `--detach` não supervisiona readiness; POSIX (Linux/macOS).
 E a regra de sempre: **executar é risco crítico — `--yes` não cobre**, o humano
 decide (modo IA: `--json` entrega o plano, não executa).
 

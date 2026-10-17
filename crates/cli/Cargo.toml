@@ -37,3 +37,7 @@ ureq = { version = "2" }
 rand = "0.8"
 tempfile.workspace = true
 ed25519-dalek = { workspace = true, features = ["rand_core"] }
+
+# `run --detach`: setsid, so the background process survives the terminal.
+[target.'cfg(unix)'.dependencies]
+libc.workspace = true

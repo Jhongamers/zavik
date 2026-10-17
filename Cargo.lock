@@ -170,6 +170,7 @@ dependencies = [
  "devforge-sdk",
  "devforge-shared",
  "ed25519-dalek",
+ "libc",
  "rand",
  "serde",
  "serde_json",

@@ -271,11 +271,16 @@ swift-argument-parser, googletest). Achados:
     `git tag v0.1.0 && git push origin v0.1.0` → `release.yml` publica
     binários (linux x64/arm64, macOS arm, windows) + `.sha256`.
   - **F1**: `install.sh` ✅ **recomendado (usuário final, inclui WSL e
-    macOS)** — detecta OS/arch, baixa da Release, confere sha256,
-    não-interativo; versão manual de 2 linhas documentada ao lado
-    (comemos o pastel: nosso próprio `audit` classifica `curl|sh` como
-    risco) + seção "Install" do README escrita pra humano E pra IA
-    (linha canônica copiável por OS — a IA usa o mesmo prompt).
+    macOS)** — **FEITO** (17/10): detecta OS/arch, baixa da Release, confere
+    sha256 (sem flag de pular — adulterado é recusado, com teste), não
+    interativo; overrides `DEVFORGE_VERSION`/`DEVFORGE_INSTALL_DIR`/
+    `DEVFORGE_BASE_URL`; 4 testes (sintaxe POSIX, E2E via `file://`
+    instalando binário funcional, recusa de checksum divergente, SO
+    desconhecido com mensagem clara). Versão manual de 2 linhas documentada
+    ao lado (comemos o pastel: nosso próprio `audit` classifica `curl|sh`
+    como risco) + seção "Install" do README escrita pra humano E pra IA
+    (linha canônica copiável por OS — a IA usa o mesmo prompt). Ativa quando
+    a tag `v0.1.0` publicar os binários (F0).
   - **F2**: `cargo install` ✅ **recomendado (dev com Rust já instalado)**
     + testar `action.yml` no E2E do release — caminho zero-install de CI
     (é o que a IA escreve num workflow).
@@ -288,7 +293,15 @@ swift-argument-parser, googletest). Achados:
       Ctrl-C gracioso, crash cedo → `diagnose`, gate crítico (humano decide),
       `--dry-run`/`--timeout`/`--health`/`--`/`--json`. 23 testes novos
       (18 unit + 5 integração). Desenho: `docs/design-run.md`.
-- [ ] **5.1.1 `run` v1.1**: `--detach` + PID file; health https.
+- [x] **5.1.1 `run` v1.1 — `--detach` FEITO** (17/10): sobe em **sessão própria**
+      (`setsid` — sobrevive ao terminal), devolve `pid` + `log`
+      (`.devforge/run.log`) + `stop_command` no `--json`; sem supervisão de
+      readiness (limitação honesta documentada); mesmo gate crítico (nem
+      `--yes` cobre — teste trava o invariante); no Windows fica preso ao
+      console (limitação conhecida). Testes: 3 unit (sessão própria provada
+      via `getsid`, log capturado, falha vira erro) + 2 integração (negado
+      sem humano mesmo com `--yes`, dry-run não executa). Resta de v1.1:
+      health https.
 - [ ] **5.2 `git clone` integrado** — **absorvido pelo `up <url>`** (o passo de
       clone do pipeline substitui um comando isolado `from`; ver
       `docs/design-up.md`). Clone seguro: sem hooks (`core.hooksPath=/dev/null`),
