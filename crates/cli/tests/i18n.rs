@@ -186,3 +186,32 @@ fn lang_after_double_dash_is_passed_to_the_child_not_consumed() {
         "o --lang foi pro comando filho: {resolved}"
     );
 }
+
+#[test]
+fn help_translates_to_english_and_stays_pt_by_default() {
+    let pt = Command::new(env!("CARGO_BIN_EXE_devforge"))
+        .arg("help")
+        .output()
+        .unwrap();
+    assert!(pt.status.success());
+    let pt = String::from_utf8_lossy(&pt.stdout);
+    assert!(pt.contains("USO:"), "help default continua pt-BR: {pt}");
+
+    let en = Command::new(env!("CARGO_BIN_EXE_devforge"))
+        .args(["help", "--lang", "en"])
+        .output()
+        .unwrap();
+    assert!(en.status.success());
+    let en = String::from_utf8_lossy(&en.stdout);
+    assert!(en.contains("USAGE:"), "help em EN: {en}");
+    assert!(!en.contains("USO:"), "sem pt vazando no --lang en: {en}");
+    assert!(
+        en.contains("--lang       human-output language: pt-BR | en"),
+        "--lang documentado em EN: {en}"
+    );
+    // O texto novo vale nos dois idiomas (chave = const HELP_PT, sem drift).
+    assert!(
+        pt.contains("--lang       idioma da saída humana: pt-BR | en"),
+        "--lang documentado em pt-BR: {pt}"
+    );
+}

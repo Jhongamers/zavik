@@ -82,6 +82,20 @@ Mensagem humana não migrada no meio do caminho aparece em pt-BR mesmo com
 `--lang en` — **limite aceitável enquanto o repo é privado**; some na fase 3,
 que é gate de lançamento.
 
+### Status da migração (atualização 17/10)
+
+- **Fase 2 em curso**: migrados o corpo humano completo do `audit` (incl.
+  veredito "SEM DADOS") e o `help` inteiro. O help foi movido para as
+  consts `HELP_PT`/`HELP_EN` no shared — **a chave do catálogo é o texto
+  emitido** (const compartilhada), impossível driftar; `--lang` documentado
+  nos dois idiomas. Cada superfície ganhou teste de integração `--lang en`.
+- **Decisão (dogfooding, `docs/dogfooding.md` #6)**: *prose dentro de JSON*
+  (`diagnose.summary`, `causes[].cause`/`fix`, hints) sai em **inglês
+  forçado** via `t_en()` — tradução direta do catálogo, ignorando o
+  `--lang` (contrato "JSON sempre inglês": chaves/enums já eram EN; a
+  prose que máquina lê também deve ser). Saída humana segue o idioma
+  corrente. Implementar junto da migração do `diagnose` (fase 2).
+
 ## 5. Fora de escopo (por ora)
 
 - Pluralização/gênero (não temos mensagens com plural em contagem).

@@ -2314,60 +2314,8 @@ fn parse_options(args: &[String]) -> Result<(Option<PathBuf>, Options), String> 
 }
 
 fn print_help() {
-    println!(
-        "DevForge - agente de preparação de ambientes\n\n\
-         USO:\n\
-         \x20 devforge [caminho]                    detecta a stack (padrão)\n\
-         \x20 devforge detect [caminho]             idem\n\
-         \x20 devforge analyze [caminho] [flags]    analisa dependências (lockfile, versões)\n\
-         \x20 devforge context [caminho] [flags]    briefing: runbook (build/test/run), entradas,\n\
-         \x20               arquivos-chave e riscos — numa chamada só (bom pra IA)\n\
-         \x20 devforge diagnose [flags]              resume um erro: causa real + conserto\n\
-         \x20               (aceita --message \"...\", --input <arq> ou pipe: cmd 2>&1 | devforge diagnose)\n\
-         \x20 devforge env [caminho] [flags]          fingerprint do ambiente: toolchains com versão,\n\
-         \x20               presença no PATH e o que falta — 1 chamada (bom pra IA)\n\
-         \x20 devforge run [caminho] [flags]         sobe o projeto: resolve o start (scripts.start,\n\
-         \x20               Procfile, Makefile, convenção), espera ficar pronto e mostra o log;\n\
-         \x20               ambiguidade pergunta; crash cedo vira diagnose; executa = pergunta\n\
-         \x20               --detach: sobe em background e devolve o PID (sem supervisionar)\n\
-         \x20 devforge up [url|caminho] [flags]     pipeline completo: clone? → audit → prepare → run\n\
-         \x20               (mesmos gates de cada etapa isolada; --until/--skip controlam o corte;\n\
-         \x20               url git é clonada com --depth 1 e sem hooks)\n\
-         \x20 devforge audit [caminho] [flags]        auditoria de supply-chain (Socket/Snyk/OWASP):\n\
-         \x20               risco por confluência de fatores; --fail-on gateia o CI (exit 1);\n\
-         \x20               --policy/--ignore (TOML), --online pra checar hooks/downloads do npm\n\
-         \x20 devforge license status               mostra a licença instalada (offline)\n\
-         \x20 devforge license install <chave|@arq> valida (Ed25519, local) e instala\n\
-         \x20 devforge license remove               remove a licença\n\
-         \x20 devforge data status                 estado do dataset Pro (livre e offline;\n\
-         \x20               sem dataset o audit segue igual — o tier grátis não muda)\n\
-         \x20 devforge data update [flags]         baixa + verifica o dataset de risco fresco\n\
-         \x20               (Pro: exige licença instalada e válida; recusa assinatura inválida)\n\
-         \x20 devforge prepare [caminho] [flags]    instala dependências (sem Docker)\n\
-         \x20 devforge docker  [caminho] [flags]    gera Dockerfile + build da imagem\n\n\
-         FLAGS:\n\
-         \x20 --dry-run    mostra o plano sem executar nada\n\
-         \x20 --yes, -y    aprova tudo automaticamente\n\
-         \x20 --force      permite sobrescrever arquivos existentes\n\
-         \x20 --online     (analyze/audit) consulta registries (versões / hooks)\n\
-         \x20 --json       saída estruturada p/ IA (stdout = JSON puro; prepare/docker\n\
-         \x20               entregam o plano, sem executar)\n\
-         \x20 --all         desce em subpastas procurando projetos (monorepo /\n\
-         \x20               manifesto aninhado); padrão é olhar só a raiz\n\
-         \x20 --fail-on     (audit) severidade mínima que reprova o CI (exit 1):\n\
-         \x20               low|medium|high|critical (padrão: high)\n\
-         \x20 --policy      (audit) arquivo de política TOML (fail_on, allowlist)\n\
-         \x20 --ignore      (audit) supressões TOML com expiração obrigatória\n\
-         \x20 --sarif       (audit) emite SARIF 2.1.0 (GitHub Code Scanning)\n\
-         \x20 --url         (data) origem do dataset: https://... ou file://<caminho>\n\
-         \x20               (alternativa: env DF_DATASET_URL)\n\
-         \x20 --timeout     (run) segundos esperando ficar pronto (padrão 60)\n\
-         \x20 --health      (run) readiness explícito: tcp:<porta> | http://...\n\
-         \x20 --detach      (run) sobe em background e devolve o PID (log: .devforge/run.log)\n\
-         \x20 --until etapa (up) para depois da etapa: clone|audit|prepare|run\n\
-         \x20 --skip etapas (up) pula etapa(s), separadas por vírgula\n\
-         \x20 --            (run) repassa o resto ao comando de start (ex.: -- --port 3001)\n"
-    );
+    use devforge_shared::i18n::{t, HELP_PT};
+    println!("{}", t(HELP_PT));
 }
 
 fn banner(title: &str, project_root: &std::path::Path) {

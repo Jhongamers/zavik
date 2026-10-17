@@ -251,10 +251,14 @@ swift-argument-parser, googletest). Achados:
       `section()` (17 cabeçalhos), banner, saída humana do `env`, prompts
       do gate de permissão, títulos de etapa do `up`; +14 testes (paridade
       e placeholders do catálogo, ordem de resolução, integração: flag/env/
-      default/inválido/JSON independente/pós-`--`). Fase 2: corpos dos
-      comandos (`audit`/`run`/`prepare`/`context`/`diagnose`/`analyze`/
-      `license`/`data`), help completo, strings de erro, `diagnose` em
-      plugins. Fase 3 (gate de lançamento): migração completa verificada +
+      default/inválido/JSON independente/pós-`--`). **FASE 2 EM CURSO
+      (17/10)**: corpo do `audit` (incl. "SEM DADOS" anti-false-positive)
+      + `help` completo migrados (consts `HELP_PT`/`HELP_EN` — a chave é o
+      texto emitido, sem drift), decisão registrada de prose de JSON em EN
+      forçado via `t_en` (achado do dogfooding, `docs/dogfooding.md`);
+      faltam corpos de `run`/`prepare`/`context`/`diagnose`/`analyze`/
+      `license`/`data`, strings de erro e `diagnose` em plugins. Fase 3
+      (gate de lançamento): migração completa verificada +
       **flip do default `en`** + testes atualizados. Catálogo hand-rolled
       (`pt-BR` + `en`, zero dependência — mantém offline-first), idioma
       automático pelo locale (`LC_ALL`/`LANG`) com override `--lang
