@@ -135,6 +135,17 @@ swift-argument-parser, googletest). Achados:
       Padrão continua olhando só a raiz (comportamento estável).
 - [ ] Cobertura de frameworks: nos testes reais só o Phoenix acusou framework;
       ampliar/validar o matching de frameworks contra manifests do mundo real.
+- [ ] **Corpus de validação por ecossistema (design `docs/design-corpus.md`,
+      aprovado 17/10)** — transformar o teste-em-projeto-real (que achou o
+      bug do Makefile e os 4 do dogfooding) em prática permanente: projetos
+      reais **pinados em SHA**, partial clone com cache, **sem vendorizar**
+      código de terceiro (repo vira público no PH), corpus **só read-only**
+      (`run`/`prepare`/`up` **nunca** rodam código alheio — doutrina de
+      permissão), ground truth anti-circular (lockfile = verdade de
+      versão + metadados curados por projeto), testes `#[ignore]` fora do
+      `cargo test` padrão (segue offline). Fases: A Rust → B npm/Python/Go
+      → C diagnose com stderr reais → D monorepo não-Rust (decidir
+      implementar ou documentar). Seed: os12 do §1.5.
 
 ---
 
