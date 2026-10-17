@@ -215,3 +215,88 @@ fn help_translates_to_english_and_stays_pt_by_default() {
         "--lang documentado em pt-BR: {pt}"
     );
 }
+
+#[test]
+fn diagnose_human_output_follows_lang_flag() {
+    // Human path: section, composed summary, cause and labels all follow `--lang`.
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args([
+            "diagnose",
+            "--message",
+            "sh: 1: cargo: not found",
+            "--lang",
+            "en",
+        ])
+        .output()
+        .unwrap();
+    assert!(en.status.success());
+    let stdout = stdout_of(&en);
+    assert!(stdout.contains("DIAGNOSIS"), "seção em EN: {stdout}");
+    assert!(
+        stdout.contains("Recognized 1 pattern(s)"),
+        "summary composto em EN: {stdout}"
+    );
+    assert!(
+        stdout.contains("not installed on the PATH"),
+        "causa em EN: {stdout}"
+    );
+    assert!(stdout.contains("  fix:"), "rótulo em EN: {stdout}");
+    assert!(
+        !stdout.contains("conserto:") && !stdout.contains("DIAGNÓSTICO"),
+        "sem pt vazando no --lang en: {stdout}"
+    );
+
+    // Default stays pt-BR until the phase-3 flip.
+    let pt = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["diagnose", "--message", "sh: 1: cargo: not found"])
+        .output()
+        .unwrap();
+    assert!(pt.status.success());
+    let stdout = stdout_of(&pt);
+    assert!(
+        stdout.contains("DIAGNÓSTICO") && stdout.contains("  conserto:"),
+        "default continua pt-BR: {stdout}"
+    );
+}
+
+#[test]
+fn diagnose_json_prose_is_always_english_whatever_the_lang_flag() {
+    // JSON contract: prose inside JSON is English even with the default
+    // (pt-BR) language — and the document is byte-for-byte the same.
+    let pt = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["diagnose", "--message", "sh: 1: cargo: not found", "--json"])
+        .output()
+        .unwrap();
+    let en = devforge()
+        .args([
+            "diagnose",
+            "--message",
+            "sh: 1: cargo: not found",
+            "--json",
+            "--lang",
+            "en",
+        ])
+        .output()
+        .unwrap();
+    assert!(pt.status.success() && en.status.success());
+
+    let pt_json: serde_json::Value = serde_json::from_slice(&pt.stdout).expect("json default");
+    let en_json: serde_json::Value = serde_json::from_slice(&en.stdout).expect("json en");
+    assert_eq!(
+        pt_json, en_json,
+        "JSON não muda com --lang (chaves, enums e prose)"
+    );
+    let summary = pt_json["summary"].as_str().expect("summary string");
+    assert!(
+        summary.starts_with("Recognized 1 pattern(s)"),
+        "prose de JSON em EN sob default pt: {summary}"
+    );
+    let cause = pt_json["causes"][0]["cause"].as_str().expect("cause string");
+    assert!(
+        cause.contains("not installed on the PATH"),
+        "cause em EN: {cause}"
+    );
+}

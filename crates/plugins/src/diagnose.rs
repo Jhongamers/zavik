@@ -8,6 +8,7 @@
 //! returns the root cause, with the proof (the lines that matched) and the next
 //! step. It is local Rust, deterministic, zero tokens.
 
+use devforge_shared::i18n::{lang, t_fmt_in, translate, Lang};
 use devforge_shared::{Cause, Diagnosis};
 use regex::Regex;
 use std::sync::OnceLock;
@@ -210,8 +211,19 @@ const RULES: &[Rule] = &[
     },
 ];
 
-/// Diagnoses a failed command's output.
+/// Diagnoses a failed command's output under the process-wide language
+/// (human output path).
 pub fn diagnose(output: &str) -> Diagnosis {
+    diagnose_in(lang(), output)
+}
+
+/// Diagnoses a failed command's output in an **explicit language**.
+///
+/// Texts (including composed summaries and dynamic fixes) are translated
+/// BEFORE formatting, at construction — there is exactly one target
+/// language per invocation: human output uses the current one, JSON callers
+/// pass [`Lang::En`] (prose inside JSON is always English).
+pub fn diagnose_in(lang: Lang, output: &str) -> Diagnosis {
     let mut hits: Vec<(u8, &Rule, Vec<String>)> = Vec::new();
     for rule in RULES {
         let evidence = evidence_lines(output, rule);
@@ -226,24 +238,28 @@ pub fn diagnose(output: &str) -> Diagnosis {
     let causes: Vec<Cause> = hits
         .into_iter()
         .map(|(_, rule, evidence)| {
-            let (cause, fix) = dynamic(rule, output);
+            let (cause, fix) = dynamic(lang, rule, output);
             Cause {
                 id: rule.id.to_string(),
                 cause,
                 fix,
-                note: rule.note.map(str::to_string),
+                note: rule.note.map(|note| translate(lang, note).to_string()),
                 evidence,
             }
         })
         .collect();
 
     let summary = match causes.first() {
-        Some(top) => format!(
+        Some(top) => t_fmt_in(
+            lang,
             "Reconheci {} padrão(ões); o mais provável: {}",
-            causes.len(),
-            top.cause
+            &[&causes.len().to_string(), &top.cause],
         ),
-        None => "Não reconheci o padrão do erro — seguem as linhas com mais cara de erro.".to_string(),
+        None => translate(
+            lang,
+            "Não reconheci o padrão do erro — seguem as linhas com mais cara de erro.",
+        )
+        .to_string(),
     };
 
     Diagnosis {
@@ -267,21 +283,30 @@ fn evidence_lines(output: &str, rule: &Rule) -> Vec<String> {
 }
 
 /// Cause/fix with a dynamic part extracted from the output itself, when possible.
-fn dynamic(rule: &Rule, output: &str) -> (String, String) {
-    let cause = rule.cause.to_string();
+/// Values are substituted AFTER the template is translated (a key with baked-in
+/// values would never match the catalog — docs/design-i18n.md §2).
+fn dynamic(lang: Lang, rule: &Rule, output: &str) -> (String, String) {
+    let cause = translate(lang, rule.cause).to_string();
     let fix = match rule.id {
         "missing-lib" => extract(output, dash_l_regex()).map(|lib| {
-            format!(
-                "instale o pacote de dev da lib `{lib}` (Debian: lib{lib}-dev, Fedora: {lib}-devel) e rode de novo"
+            t_fmt_in(
+                lang,
+                "instale o pacote de dev da lib `{}` (Debian: lib{}-dev, Fedora: {}-devel) e rode de novo",
+                &[&lib, &lib, &lib],
             )
         }),
         "python-module" => extract(output, no_module_regex())
-            .map(|m| format!("pip install {m} (no mesmo venv/ambiente do projeto)")),
-        "command-not-found" => extract_command(output)
-            .map(|c| format!("`{c}` não está no PATH — instale ou rode `devforge prepare` pra toolchain")),
+            .map(|m| t_fmt_in(lang, "pip install {} (no mesmo venv/ambiente do projeto)", &[&m])),
+        "command-not-found" => extract_command(output).map(|c| {
+            t_fmt_in(
+                lang,
+                "`{}` não está no PATH — instale ou rode `devforge prepare` pra toolchain",
+                &[&c],
+            )
+        }),
         _ => None,
     };
-    let fix = fix.unwrap_or_else(|| rule.fix.to_string());
+    let fix = fix.unwrap_or_else(|| translate(lang, rule.fix).to_string());
     (cause, fix)
 }
 
@@ -409,6 +434,41 @@ mod tests {
         let d = diagnose("algo totalmente estranho sem padrao conhecido");
         assert!(d.causes.is_empty());
         assert!(d.summary.contains("Não reconheci"));
+    }
+
+    #[test]
+    fn english_diagnosis_translates_texts_and_keeps_raw_evidence() {
+        let out = "sh: 1: cargo: not found";
+        let d = diagnose_in(Lang::En, out);
+        // ids are identifiers: never translated.
+        assert_eq!(d.causes[0].id, "command-not-found");
+        assert!(
+            d.causes[0].cause.contains("not installed on the PATH"),
+            "cause: {}",
+            d.causes[0].cause
+        );
+        assert!(
+            d.causes[0].fix.contains("`cargo` is not on the PATH"),
+            "fix: {}",
+            d.causes[0].fix
+        );
+        assert!(
+            d.summary.starts_with("Recognized 1 pattern(s)"),
+            "summary: {}",
+            d.summary
+        );
+        // Evidence = the program's own output (machine fact): untouched.
+        assert_eq!(d.causes[0].evidence, vec![out.to_string()]);
+        // The no-match fallback composes in English too.
+        let none = diagnose_in(Lang::En, "texto estranho sem padrao");
+        assert!(
+            none.summary.starts_with("I did not recognize"),
+            "fallback: {}",
+            none.summary
+        );
+        // Under pt-BR the same input stays Portuguese (source language).
+        let pt = diagnose_in(Lang::PtBr, out);
+        assert!(pt.summary.starts_with("Reconheci"), "{}", pt.summary);
     }
 
     #[test]

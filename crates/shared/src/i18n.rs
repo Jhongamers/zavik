@@ -123,11 +123,26 @@ pub fn t(msg: &str) -> &str {
 /// Translates a `{}`-template, then substitutes `args` in order.
 /// Templates without placeholders just pass through `t`.
 pub fn t_fmt(msg: &str, args: &[&str]) -> String {
-    let mut out = t(msg).to_string();
+    t_fmt_in(lang(), msg, args)
+}
+
+/// [`t_fmt`] under an explicit language: for text composed at construction
+/// (diagnosis summaries), where the caller knows the target language.
+pub fn t_fmt_in(lang: Lang, msg: &str, args: &[&str]) -> String {
+    let mut out = translate(lang, msg).to_string();
     for arg in args {
         out = out.replacen("{}", arg, 1);
     }
     out
+}
+
+/// English-forced translation, ignoring the current language: prose that
+/// lands in JSON always comes out English, whatever `--lang` says
+/// (docs/design-i18n.md §4 — dogfooding finding #6: machine output never
+/// switches language; JSON prose included). Unknown keys stay identity,
+/// same honest fallback as [`t`].
+pub fn t_en(msg: &str) -> &str {
+    translate(Lang::En, msg)
 }
 
 /// `--help` body (pt-BR source). Kept as a const so the catalog key can
@@ -376,6 +391,183 @@ static EN: &[(&str, &str)] = &[
     ("Veredito: {}", "Verdict: {}"),
     ("APROVADO ✅", "APPROVED ✅"),
     ("REPROVADO ❌", "REJECTED ❌"),
+    // --- `diagnose` (plugins/diagnose.rs: rules, summaries, dynamic fixes) ---
+    // Rule causes.
+    (
+        "Uma ferramenta necessária não está instalada no PATH.",
+        "A required tool is not installed on the PATH.",
+    ),
+    (
+        "Falta o pacote de DESENVOLVIMENTO (cabeçalho/lib de link) de uma biblioteca nativa.",
+        "The DEVELOPMENT package (header/linking lib) of a native library is missing.",
+    ),
+    (
+        "Falta a toolchain de compilação C/C++ (necessária pra módulos nativos).",
+        "The C/C++ compilation toolchain is missing (needed for native modules).",
+    ),
+    (
+        "Erro de compilação Rust: o compilador apontou o arquivo/linha do problema.",
+        "Rust compilation error: the compiler pointed at the file/line of the problem.",
+    ),
+    (
+        "Módulo nativo do npm precisa de ferramentas de build (python3 + gcc + make).",
+        "An npm native module needs build tools (python3 + gcc + make).",
+    ),
+    (
+        "Um módulo Python não está instalado no ambiente atual.",
+        "A Python module is not installed in the current environment.",
+    ),
+    (
+        "Dependência Go faltando no módulo (não está no go.mod/go.sum).",
+        "Missing Go dependency in the module (not in go.mod/go.sum).",
+    ),
+    (
+        "Classe compilada com um JDK mais novo que o que está rodando.",
+        "The class was compiled with a newer JDK than the one running.",
+    ),
+    (
+        "A porta que o serviço quer usar já está ocupada por outro processo.",
+        "The port the service wants to use is already taken by another process.",
+    ),
+    (
+        "Sem permissão de escrita/execução no caminho em questão.",
+        "No write/execute permission on the path in question.",
+    ),
+    (
+        "O npm está tentando escrever em pastas globais sem permissão.",
+        "npm is trying to write to global folders without permission.",
+    ),
+    (
+        "Falha de rede/registry (offline, proxy, TLS ou DNS).",
+        "Network/registry failure (offline, proxy, TLS or DNS).",
+    ),
+    ("O processo ficou sem memória.", "The process ran out of memory."),
+    ("Disco cheio.", "Disk full."),
+    (
+        "Falta uma variável de ambiente / config esperada pelo projeto.",
+        "An environment variable / config expected by the project is missing.",
+    ),
+    (
+        "A classe principal não foi encontrada (classpath ou nome errado).",
+        "The main class was not found (classpath or wrong name).",
+    ),
+    (
+        "Panic/crash no próprio código (bug, não ambiente).",
+        "Panic/crash in the code itself (bug, not the environment).",
+    ),
+    // Rule fixes (the pure-code one, Debian/Ubuntu apt line, needs no entry).
+    (
+        "instale a ferramenta (ou rode `devforge prepare` pra montar a toolchain).",
+        "install the tool (or run `devforge prepare` to set up the toolchain).",
+    ),
+    (
+        "instale o pacote -dev/-devel correspondente e rode de novo.",
+        "install the matching -dev/-devel package and run again.",
+    ),
+    (
+        "corrija a linha citada pelo rustc; detalhes do código em `cargo explain <código>` (ex.: `cargo explain E0308`).",
+        "fix the line the rustc pointed at; code details in `cargo explain <code>` (e.g. `cargo explain E0308`).",
+    ),
+    (
+        "instale python3 e build-essential e rode `npm install` de novo.",
+        "install python3 and build-essential and run `npm install` again.",
+    ),
+    (
+        "instale o módulo (pip install <nome>) no mesmo venv.",
+        "install the module (pip install <name>) in the same venv.",
+    ),
+    (
+        "rode `go mod tidy` ou `go get <pacote>`.",
+        "run `go mod tidy` or `go get <package>`.",
+    ),
+    (
+        "alinhe as versões: compile e rode com o mesmo JDK.",
+        "align the versions: build and run with the same JDK.",
+    ),
+    (
+        "mude a porta ou encerre o processo que a usa.",
+        "change the port or kill the process using it.",
+    ),
+    (
+        "verifique dono/permissões do diretório (evite `sudo` global, sobretudo em node_modules).",
+        "check the directory owner/permissions (avoid global `sudo`, especially in node_modules).",
+    ),
+    (
+        "evite `sudo npm`; use um gerenciador de versão (nvm/fnm) ou instalação local.",
+        "avoid `sudo npm`; use a version manager (nvm/fnm) or a local install.",
+    ),
+    (
+        "verifique conexão/proxy/CA — alguns registries (ex.: crates.io) exigem User-Agent.",
+        "check connection/proxy/CA — some registries (e.g. crates.io) require a User-Agent.",
+    ),
+    (
+        "feche processos, aumente o limite ou (node) use `--max-old-space-size`.",
+        "close processes, raise the limit or (node) use `--max-old-space-size`.",
+    ),
+    (
+        "libere espaço em disco e tente de novo.",
+        "free up disk space and try again.",
+    ),
+    (
+        "defina a variável (veja `.env.example` ou o README).",
+        "set the variable (see `.env.example` or the README).",
+    ),
+    (
+        "confira o classpath e o nome fully-qualified da classe.",
+        "check the classpath and the fully-qualified class name.",
+    ),
+    (
+        "leia o backtrace; a causa está no código, não na toolchain.",
+        "read the backtrace; the cause is in the code, not the toolchain.",
+    ),
+    // Rule notes ("the literal error is just the symptom").
+    (
+        "O erro de linking/cabeçalho é só o SINTOMA — a causa real é o pacote de dev ausente.",
+        "The linking/header error is only the SYMPTOM — the real cause is the missing dev package.",
+    ),
+    (
+        "'could not compile ... due to N previous errors' é só o resumo — a causa é o primeiro `error[E...]` listado.",
+        "'could not compile ... due to N previous errors' is just the summary — the cause is the first `error[E...]` listed.",
+    ),
+    (
+        "O 'node-gyp ERR' é consequência — a causa é a toolchain de build ausente.",
+        "The 'node-gyp ERR' is a consequence — the cause is the missing build toolchain.",
+    ),
+    // Dynamic fixes (translated before the values are substituted).
+    (
+        "instale o pacote de dev da lib `{}` (Debian: lib{}-dev, Fedora: {}-devel) e rode de novo",
+        "install the dev package for the lib `{}` (Debian: lib{}-dev, Fedora: {}-devel) and run again",
+    ),
+    (
+        "pip install {} (no mesmo venv/ambiente do projeto)",
+        "pip install {} (in the project's same venv/environment)",
+    ),
+    (
+        "`{}` não está no PATH — instale ou rode `devforge prepare` pra toolchain",
+        "`{}` is not on the PATH — install it or run `devforge prepare` for the toolchain",
+    ),
+    // Summaries (composed: translate first, then fill in order).
+    (
+        "Reconheci {} padrão(ões); o mais provável: {}",
+        "Recognized {} pattern(s); the most likely: {}",
+    ),
+    (
+        "Não reconheci o padrão do erro — seguem as linhas com mais cara de erro.",
+        "I did not recognize the error's pattern — here are the lines that look most like errors.",
+    ),
+    // --- `diagnose` human labels (main.rs: print_diagnosis) ---
+    ("  nota: {}", "  note: {}"),
+    ("  conserto: {}", "  fix: {}"),
+    ("  provas:", "  evidence:"),
+    (
+        "Linhas com mais cara de erro:",
+        "Lines that look most like errors:",
+    ),
+    // --- `diagnose` input error (main.rs: read_error_input) ---
+    (
+        "cole a saída do erro, ou use --message \"...\", --input <arquivo> (ou pipe: `meu_comando 2>&1 | devforge diagnose`)",
+        "paste the error output, or use --message \"...\", --input <file> (or pipe: `my_command 2>&1 | devforge diagnose`)",
+    ),
 ];
 
 #[cfg(test)]
@@ -464,5 +656,40 @@ mod tests {
         assert_eq!(Lang::parse("pt-br"), Some(Lang::PtBr));
         assert_eq!(Lang::parse("  PT  "), Some(Lang::PtBr));
         assert_eq!(Lang::parse("fr"), None);
+    }
+
+    #[test]
+    fn t_en_forces_english_whatever_the_current_language() {
+        // The process default is pt during the migration: t() says pt, t_en()
+        // says EN — that's the JSON contract (dogfooding #6).
+        assert_eq!(t("AMBIENTE"), "AMBIENTE");
+        assert_eq!(t_en("AMBIENTE"), "ENVIRONMENT");
+        assert_eq!(
+            t_en("Veredito: SEM DADOS ⚠️  (0 pacotes — nada foi atestado)",
+            ),
+            "Verdict: NO DATA ⚠️  (0 packages — nothing was certified)"
+        );
+        // Unknown key: identity in both, never a guess.
+        assert_eq!(t_en("mensagem ainda não migrada"), "mensagem ainda não migrada");
+    }
+
+    #[test]
+    fn t_fmt_in_translates_the_requested_lang_before_filling() {
+        let en = t_fmt_in(
+            Lang::En,
+            "Reconheci {} padrão(ões); o mais provável: {}",
+            &["2", "some cause"],
+        );
+        assert_eq!(en, "Recognized 2 pattern(s); the most likely: some cause");
+        // Placeholders survive translation in order (3× {} dynamic fix).
+        let fix = t_fmt_in(
+            Lang::En,
+            "instale o pacote de dev da lib `{}` (Debian: lib{}-dev, Fedora: {}-devel) e rode de novo",
+            &["ssl", "ssl", "ssl"],
+        );
+        assert_eq!(
+            fix,
+            "install the dev package for the lib `ssl` (Debian: libssl-dev, Fedora: ssl-devel) and run again"
+        );
     }
 }

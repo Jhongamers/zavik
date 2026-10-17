@@ -349,8 +349,16 @@ fn print_bucket(label: &str, cmds: &[String]) {
 }
 
 fn run_diagnose(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
+    use devforge_shared::i18n::Lang;
     let text = read_error_input(options)?;
-    let diagnosis = devforge_plugins::diagnose(&text);
+    // JSON prose is always English (dogfooding #6); human output follows
+    // the current language. The texts are composed ONCE, in that language.
+    let target = if options.json {
+        Lang::En
+    } else {
+        devforge_shared::i18n::lang()
+    };
+    let diagnosis = devforge_plugins::diagnose_in(target, &text);
 
     if options.json {
         output::diagnose(&diagnosis);
@@ -363,23 +371,26 @@ fn run_diagnose(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Human-readable printing of a [`devforge_shared::Diagnosis`] (reused by `run`).
+/// The body texts are already in the current language (composed at
+/// construction); only the labels translate here.
 fn print_diagnosis(diagnosis: &devforge_shared::Diagnosis) {
+    use devforge_shared::i18n::{t, t_fmt};
     println!("{}", diagnosis.summary);
     for cause in &diagnosis.causes {
         println!("\n• {}", cause.cause);
         if let Some(note) = &cause.note {
-            println!("  nota: {note}");
+            println!("{}", t_fmt("  nota: {}", &[note]));
         }
-        println!("  conserto: {}", cause.fix);
+        println!("{}", t_fmt("  conserto: {}", &[&cause.fix]));
         if !cause.evidence.is_empty() {
-            println!("  provas:");
+            println!("{}", t("  provas:"));
             for line in &cause.evidence {
                 println!("    {line}");
             }
         }
     }
     if diagnosis.causes.is_empty() && !diagnosis.top_errors.is_empty() {
-        println!("\nLinhas com mais cara de erro:");
+        println!("\n{}", t("Linhas com mais cara de erro:"));
         for line in &diagnosis.top_errors {
             println!("  {line}");
         }
@@ -399,9 +410,11 @@ fn read_error_input(options: &Options) -> Result<String, Box<dyn std::error::Err
     // Only read stdin if it is NOT a terminal (otherwise it would block waiting for input).
     if std::io::stdin().is_terminal() {
         return Err(
-            "cole a saída do erro, ou use --message \"...\", --input <arquivo> \
-             (ou pipe: `meu_comando 2>&1 | devforge diagnose`)"
-                .into(),
+            devforge_shared::i18n::t(
+                "cole a saída do erro, ou use --message \"...\", --input <arquivo> \
+                 (ou pipe: `meu_comando 2>&1 | devforge diagnose`)",
+            )
+            .into(),
         );
     }
     let mut buffer = String::new();
@@ -991,18 +1004,30 @@ fn run_run(
         }
         RunState::Exited => {
             let combined = combine_output(&outcome.tail_stdout, &outcome.tail_stderr);
-            let diagnosis = diagnose(&combined);
+            // JSON prose is always English; human output follows the current
+            // language (the diagnosis is composed once, in that language).
+            let target = if options.json {
+                devforge_shared::i18n::Lang::En
+            } else {
+                devforge_shared::i18n::lang()
+            };
+            let diagnosis = devforge_plugins::diagnose_in(target, &combined);
             if options.json {
                 let causes: Vec<serde_json::Value> = diagnosis
                     .causes
                     .iter()
-                    .map(|cause| json!({"id": cause.id, "cause": cause.cause, "fix": cause.fix}))
+                    .map(|cause| {
+                        json!({"id": cause.id,
+                               "cause": devforge_shared::i18n::t_en(&cause.cause),
+                               "fix": devforge_shared::i18n::t_en(&cause.fix)})
+                    })
                     .collect();
                 println!(
                     "{}",
                     json!({"schema": 1, "command": "run", "status": "failed",
                            "exit_code": outcome.exit_code, "duration_ms": outcome.duration_ms,
-                           "summary": diagnosis.summary, "causes": causes})
+                           "summary": devforge_shared::i18n::t_en(&diagnosis.summary),
+                           "causes": causes})
                 );
             } else {
                 println!(

@@ -1,6 +1,7 @@
 # Design — i18n (pt-BR + en)
 
-Status: **fase 1 em execução (17/10)**. Decisão do fundador: antes do launch
+Status: **fase 2 em execução (17/10)** — fase 1 concluída (infra + conteúdo
+de topo). Decisão do fundador: antes do launch
 do Product Hunt o CLI precisa de `--lang` com catálogo **pt-BR + en** e
 **default `en`**. Enquanto a migração não fecha, o default continua `pt-BR`
 (status quo — nenhuma mensagem muda de idioma sem o usuário pedir).
@@ -63,14 +64,14 @@ separados).
 
 ## 4. Fases (cada fase = commit com testes)
 
-- **Fase 1 (atual)**: infra (`Lang`, `t`, `t_fmt`, extract, resolve), e a
+- **Fase 1 (concluída)**: infra (`Lang`, `t`, `t_fmt`, extract, resolve), e a
   migração do conteúdo "de topo": `section()` (17 cabeçalhos — a função
   inteira passa por `t`, os call sites não mudam), `banner`, saída humana
   de `env`, prompts de `permission`, títulos de etapa do `up`.
   Testes: paridade/unicidade do catálogo, ordem de resolução, integração
   (`--lang en` troca cabeçalho, default segue pt-BR, env var funciona,
   `--lang` inválido barra, JSON não muda).
-- **Fase 2**: corpos dos comandos (`audit`, `run`, `prepare`, `context`,
+- **Fase 2 (em curso)**: corpos dos comandos (`audit`, `run`, `prepare`, `context`,
   `diagnose`, `analyze`, `license`, `data`), help completo, strings de
   erro de parse, `diagnose` em plugins, hints de toolchain.
 - **Fase 3 (pré-PH, obrigatória)**: migração completa verificada
@@ -94,7 +95,20 @@ que é gate de lançamento.
   forçado** via `t_en()` — tradução direta do catálogo, ignorando o
   `--lang` (contrato "JSON sempre inglês": chaves/enums já eram EN; a
   prose que máquina lê também deve ser). Saída humana segue o idioma
-  corrente. Implementar junto da migração do `diagnose` (fase 2).
+  corrente. **Feito no `diagnose` (17/10)** — ver próximo item.
+- **`diagnose` migrado (17/10, fechando o maior item da fase 2)**:
+  `diagnose_in(lang, …)` compõe causa/fix/note/summary **no idioma-alvo na
+  construção** — templates traduzem ANTES do `format` (`t_fmt_in`, fixes
+  dinâmicos com `{}` posicionais), porque um summary já composto nunca mais
+  casaria com a chave. Duas travas independentes no caminho do JSON: a
+  construção recebe `Lang::En` (garante o summary composto) **e** os
+  emitters aplicam `t_em()` (garante textos estáticos de qualquer caminho).
+  Humano = idioma corrente + rótulos (`nota/conserto/provas`) via `t()`.
+  Chaves novas: 46 (17 causas, 16 fixes, 3 notes, 3 templates dinâmicos, 2
+  summaries, 4 rótulos, 1 erro de input). `evidence`/`top_errors`/ids são
+  factos brutos — nunca traduzidos. Testes: unitário EN no plugins,
+  `t_en`/`t_fmt_in` no shared, integração `--lang en` + "JSON idêntico sob
+  qualquer idioma".
 
 ## 5. Fora de escopo (por ora)
 

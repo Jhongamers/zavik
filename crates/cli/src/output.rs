@@ -10,6 +10,7 @@
 
 use devforge_core::provision::PreparePlan;
 use devforge_core::toolchain::{MissingTool, ToolStatus};
+use devforge_shared::i18n::t_en;
 use devforge_shared::{
     AnalysisReport, AuditReport, Briefing, Context, Diagnosis, ProjectStack, Severity, TrustReport,
 };
@@ -121,12 +122,15 @@ pub fn diagnose(diagnosis: &Diagnosis) {
     emit(&json!({
         "schema": 1,
         "command": "diagnose",
-        "summary": diagnosis.summary,
+        // Prose inside JSON is always English (t_en) — independent of the
+        // language the diagnosis was built with (docs/design-i18n.md).
+        // `id` and `evidence`/`top_errors` are machine facts: never touched.
+        "summary": t_en(&diagnosis.summary),
         "causes": diagnosis.causes.iter().map(|c| json!({
             "id": c.id,
-            "cause": c.cause,
-            "fix": c.fix,
-            "note": c.note,
+            "cause": t_en(&c.cause),
+            "fix": t_en(&c.fix),
+            "note": c.note.as_deref().map(t_en),
             "evidence": c.evidence,
         })).collect::<Vec<_>>(),
         "top_errors": diagnosis.top_errors,

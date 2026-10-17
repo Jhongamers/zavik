@@ -20,7 +20,7 @@ mod runner;
 pub use analyzer::{npm_audit_signals, DependencyAnalyzer, NpmAuditSignal};
 pub use audit::{audit_packages, classify_hook, HookAnalysis, HookVerdict};
 pub use briefing::extract_briefing;
-pub use diagnose::diagnose;
+pub use diagnose::{diagnose, diagnose_in};
 pub use detector::StackDetector;
 pub use filesystem::LocalFileSystem;
 pub use process::LocalCommandRunner;
