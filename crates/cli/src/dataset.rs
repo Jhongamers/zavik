@@ -102,28 +102,49 @@ pub enum DatasetError {
     Io(String),
 }
 
+impl DatasetError {
+    /// Message in the target language: JSON prose is always English
+    /// (docs/design-i18n.md); human output goes through `Display`, which
+    /// renders in the current language.
+    pub(crate) fn message_in(&self, lang: devforge_shared::i18n::Lang) -> String {
+        use devforge_shared::i18n::{t_fmt_in, translate};
+        match self {
+            DatasetError::PublicKeyMissing => translate(
+                lang,
+                "chave pública do dataset não configurada nesta build",
+            )
+            .to_string(),
+            DatasetError::Envelope => {
+                translate(lang, "formato do dataset inválido (envelope malformado)").to_string()
+            }
+            DatasetError::Signature => translate(
+                lang,
+                "assinatura do dataset inválida — arquivo adulterado ou de chave desconhecida; recusado",
+            )
+            .to_string(),
+            DatasetError::Schema(found) => t_fmt_in(
+                lang,
+                "schema do dataset não suportado: {} (este build entende {})",
+                &[&found.to_string(), &DATASET_SCHEMA.to_string()],
+            ),
+            DatasetError::Payload => {
+                translate(lang, "conteúdo do dataset inválido (JSON ou campos)").to_string()
+            }
+            DatasetError::TooLarge => t_fmt_in(
+                lang,
+                "dataset acima do limite de {} bytes — recusado",
+                &[&MAX_DATASET_BYTES.to_string()],
+            ),
+            DatasetError::Io(error) => t_fmt_in(lang, "erro de arquivo: {}", &[error]),
+        }
+    }
+}
+
 impl std::fmt::Display for DatasetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DatasetError::PublicKeyMissing => {
-                write!(f, "chave pública do dataset não configurada nesta build")
-            }
-            DatasetError::Envelope => write!(f, "formato do dataset inválido (envelope malformado)"),
-            DatasetError::Signature => write!(
-                f,
-                "assinatura do dataset inválida — arquivo adulterado ou de chave desconhecida; recusado"
-            ),
-            DatasetError::Schema(found) => write!(
-                f,
-                "schema do dataset não suportado: {found} (este build entende {DATASET_SCHEMA})"
-            ),
-            DatasetError::Payload => write!(f, "conteúdo do dataset inválido (JSON ou campos)"),
-            DatasetError::TooLarge => write!(
-                f,
-                "dataset acima do limite de {MAX_DATASET_BYTES} bytes — recusado"
-            ),
-            DatasetError::Io(error) => write!(f, "erro de arquivo: {error}"),
-        }
+        // Human path: renders in the CURRENT language; JSON sites call
+        // `message_in(Lang::En)` instead.
+        f.write_str(&self.message_in(devforge_shared::i18n::lang()))
     }
 }
 

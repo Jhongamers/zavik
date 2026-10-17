@@ -102,13 +102,38 @@ que é gate de lançamento.
   dinâmicos com `{}` posicionais), porque um summary já composto nunca mais
   casaria com a chave. Duas travas independentes no caminho do JSON: a
   construção recebe `Lang::En` (garante o summary composto) **e** os
-  emitters aplicam `t_em()` (garante textos estáticos de qualquer caminho).
+  emitters aplicam `t_en()` (garante textos estáticos de qualquer caminho).
   Humano = idioma corrente + rótulos (`nota/conserto/provas`) via `t()`.
   Chaves novas: 46 (17 causas, 16 fixes, 3 notes, 3 templates dinâmicos, 2
   summaries, 4 rótulos, 1 erro de input). `evidence`/`top_errors`/ids são
   factos brutos — nunca traduzidos. Testes: unitário EN no plugins,
   `t_en`/`t_fmt_in` no shared, integração `--lang en` + "JSON idêntico sob
   qualquer idioma".
+- **`run` migrado (17/10, lote `086a619`)**: `run_run` calcula o idioma uma
+  vez (`json ⇒ Lang::En`); caminhos humanos usam `translate`/`t_fmt_in`;
+  strings compartilhadas entre humano e campo `error` do JSON são compostas
+  no idioma-alvo (logo o `error` do JSON sai EN); helpers 100% humanos
+  (`pick_start_candidate`, `readiness_note`) usam `t`/`t_fmt`; specs de
+  formato são compostas FORA do template. Teste de integração
+  `run_output_follows_lang_flag`.
+- **`data` + `license` migrados + SARIF corrigido para EN (17/10, lote
+  atual)**: todo o corpo humano de `run_data`/`data_status`/`data_update`/
+  `fetch_dataset`/`run_license`; campo JSON `hint` via `t_en`. Padrão novo
+  para erros compostos: `DatasetError`/`LicenseError` ganharam
+  `message_in(lang)` — os emitters JSON chamam `message_in(Lang::En)` e o
+  `Display` delega com o idioma corrente (humano); assim `--lang en` não
+  deixa resíduo pt nem no conteúdo dos erros. **O SARIF estava em pt
+  (violação pré-existente do contrato "SARIF sempre EN") e foi corrigido**:
+  a mensagem composta usa `t_fmt_in(Lang::En, …)` e `factor_label` passou a
+  envolver `t_en` (rótulos usados só no SARIF). Chaves novas: ~64. Testes:
+  `data_and_license_follow_lang_flag` (status EN, JSON `hint`/`error` EN sob
+  default pt).
+- **Pendência registrada (fase 3, autoria)**: as strings de `evidence` do
+  audit são escritas em pt (`plugins/audit.rs`: "downloads/semana=…",
+  "versão não fixada…") mas `evidence` é fato de máquina — nunca traduzido
+  em runtime (§1). Como o contrato é "JSON/SARIF sempre EN", a correção é
+  reescrever o autoral em inglês antes do launch (mudança de conteúdo, não
+  de runtime); wrappers humanos seguem pelo catálogo.
 
 ## 5. Fora de escopo (por ora)
 

@@ -468,7 +468,13 @@ fn run_audit(
     let installed = match dataset::load_installed() {
         Ok(installed) => installed,
         Err(error) => {
-            eprintln!("(dataset instalado INVÁLIDO — ignorado: {error})");
+            eprintln!(
+                "{}",
+                devforge_shared::i18n::t_fmt(
+                    "(dataset instalado INVÁLIDO — ignorado: {})",
+                    &[&error.to_string()],
+                )
+            );
             None
         }
     };
@@ -1283,6 +1289,7 @@ fn pick_start_candidate(candidates: &[RunCandidate]) -> Option<RunPlan> {
 /// only network command and the only one gated by a valid license.
 /// Refusals print their JSON line on stdout and exit 1 (design §4.2).
 fn run_data(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    use devforge_shared::i18n::{t, t_fmt};
     let mut as_json = false;
     let mut url: Option<String> = None;
     let mut positional: Vec<&String> = Vec::new();
@@ -1295,13 +1302,16 @@ fn run_data(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
             index += 1;
             let value = args
                 .get(index)
-                .ok_or("--url exige um valor (<https://...> ou file://<caminho>)")?;
+                .ok_or(t("--url exige um valor (<https://...> ou file://<caminho>)"))?;
             url = Some(value.clone());
         } else if arg.starts_with("--") {
-            return Err(format!(
-                "opção desconhecida: {arg} (uso: devforge data status|update [--json] [--url <url>])"
-            )
-            .into());
+            return Err(
+                t_fmt(
+                    "opção desconhecida: {} (uso: devforge data status|update [--json] [--url <url>])",
+                    &[arg],
+                )
+                .into(),
+            );
         } else {
             positional.push(&args[index]);
         }
@@ -1311,13 +1321,14 @@ fn run_data(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     match positional.first().map(|s| s.as_str()).unwrap_or("status") {
         "status" => data_status(as_json),
         "update" => data_update(url, as_json),
-        other => Err(format!("subcomando desconhecido: {other} (use: status | update)").into()),
+        other => Err(t_fmt("subcomando desconhecido: {} (use: status | update)", &[other]).into()),
     }
 }
 
 /// `data status` — local, free, offline. Distinguishes absent / invalid /
 /// installed (an installed-but-invalid dataset is never silently ignored).
 fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    use devforge_shared::i18n::{t, t_fmt, Lang};
     let file = dataset::dataset_file();
     match dataset::load_installed() {
         Ok(Some(ds)) => {
@@ -1335,21 +1346,36 @@ fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
                            "bad_names": ds.bad_names.len()})
                 );
             } else {
-                println!("dataset instalado ✅");
-                println!("   versão:  {} (gerado em {})", ds.version, ds.generated);
+                println!("{}", t("dataset instalado ✅"));
                 println!(
-                    "   idade:   {age} dia(s) — {} advisories na janela + {} na kill list",
-                    ds.advisories.len(),
-                    ds.bad_names.len()
+                    "{}",
+                    t_fmt(
+                        "   versão:  {} (gerado em {})",
+                        &[&ds.version.to_string(), &ds.generated.to_string()],
+                    )
+                );
+                println!(
+                    "{}",
+                    t_fmt(
+                        "   idade:   {} dia(s) — {} advisories na janela + {} na kill list",
+                        &[
+                            &age.to_string(),
+                            &ds.advisories.len().to_string(),
+                            &ds.bad_names.len().to_string(),
+                        ],
+                    )
                 );
                 println!("   path:    {}", file.display());
                 if stale {
                     println!(
-                        "\n⚠ atrasado (>{} dias) — rode: devforge data update",
-                        dataset::STALE_AFTER_DAYS
+                        "\n{}",
+                        t_fmt(
+                            "⚠ atrasado (>{} dias) — rode: devforge data update",
+                            &[&dataset::STALE_AFTER_DAYS.to_string()],
+                        )
                     );
                 } else {
-                    println!("\n(fresco)");
+                    println!("{}", t("\n(fresco)"));
                 }
             }
             Ok(())
@@ -1362,12 +1388,26 @@ fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
                            "installed": false,
                            "file": file.display().to_string(),
                            "tier": "free",
-                           "hint": "audit segue offline com o motor embutido; dados frescos são Pro (devforge data update)"})
+                           "hint": devforge_shared::i18n::t_en(
+                               "audit segue offline com o motor embutido; dados frescos são Pro (devforge data update)"
+                           )})
                 );
             } else {
-                println!("nenhum dataset instalado ({})", file.display());
-                println!("   grátis: o audit usa o motor offline — nada muda no tier gratuito.");
-                println!("   Pro:    devforge data update (dados de risco frescos, exige licença).");
+                println!(
+                    "{}",
+                    t_fmt(
+                        "nenhum dataset instalado ({})",
+                        &[&file.display().to_string()]
+                    )
+                );
+                println!(
+                    "{}",
+                    t("   grátis: o audit usa o motor offline — nada muda no tier gratuito.")
+                );
+                println!(
+                    "{}",
+                    t("   Pro:    devforge data update (dados de risco frescos, exige licença).")
+                );
             }
             Ok(())
         }
@@ -1378,11 +1418,17 @@ fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
                     json!({"schema": 1, "command": "data", "sub": "status",
                            "installed": true, "valid": false,
                            "file": file.display().to_string(),
-                           "error": error.to_string()})
+                           "error": error.message_in(Lang::En)})
                 );
             } else {
-                println!("dataset instalado, mas INVÁLIDO: {error}");
-                println!("   nada é usado sem assinatura válida — rode devforge data update.");
+                println!(
+                    "{}",
+                    t_fmt("dataset instalado, mas INVÁLIDO: {}", &[&error.to_string()])
+                );
+                println!(
+                    "{}",
+                    t("   nada é usado sem assinatura válida — rode devforge data update.")
+                );
             }
             Ok(())
         }
@@ -1395,11 +1441,22 @@ fn data_update(
     url: Option<String>,
     as_json: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    use devforge_shared::i18n::{t, t_fmt, translate, Lang};
+    // Composed strings can land in JSON (`error`): build them in the target
+    // language — JSON prose is always English (docs/design-i18n.md).
+    let lang = if as_json {
+        Lang::En
+    } else {
+        devforge_shared::i18n::lang()
+    };
     let license_problem: Option<(&'static str, String)> = match license::load_installed() {
-        None => Some(("no_license", "nenhuma licença instalada".to_string())),
+        None => Some((
+            "no_license",
+            translate(lang, "nenhuma licença instalada").to_string(),
+        )),
         Some(token) => license::verify_token(&token)
             .err()
-            .map(|error| ("license_invalid", error.to_string())),
+            .map(|error| ("license_invalid", error.message_in(lang))),
     };
     if let Some((status, error)) = license_problem {
         if as_json {
@@ -1409,10 +1466,19 @@ fn data_update(
                        "status": status, "error": error})
             );
         } else {
-            println!("⛔ Recurso Pro (dataset de risco fresco): {error}.");
-            println!("   Instale sua licença:  devforge license install <token>");
-            println!("   (confira:             devforge license status)");
-            println!("   Sem licença o audit segue grátis e offline — o tier gratuito não muda.");
+            println!(
+                "{}",
+                t_fmt("⛔ Recurso Pro (dataset de risco fresco): {}.", &[&error])
+            );
+            println!(
+                "{}",
+                t("   Instale sua licença:  devforge license install <token>")
+            );
+            println!("{}", t("   (confira:             devforge license status)"));
+            println!(
+                "{}",
+                t("   Sem licença o audit segue grátis e offline — o tier gratuito não muda.")
+            );
         }
         std::process::exit(1);
     }
@@ -1429,14 +1495,14 @@ fn data_update(
         }
         None => {
             return Err(
-                "URL do dataset não configurada nesta build (use --url <url> ou env DF_DATASET_URL)"
+                t("URL do dataset não configurada nesta build (use --url <url> ou env DF_DATASET_URL)")
                     .into(),
             )
         }
     };
 
     if !as_json {
-        println!("baixando dataset de {target} ...");
+        println!("{}", t_fmt("baixando dataset de {} ...", &[&target]));
     }
     let bytes = fetch_dataset(&target, dataset::MAX_DATASET_BYTES)?;
 
@@ -1453,15 +1519,29 @@ fn data_update(
                            "file": dataset::dataset_file().display().to_string()})
                 );
             } else {
-                println!("dataset instalado ✅");
-                println!("   versão:  {} (gerado em {})", ds.version, ds.generated);
+                println!("{}", t("dataset instalado ✅"));
                 println!(
-                    "   dados:   {} advisories na janela + {} nomes na kill list",
-                    ds.advisories.len(),
-                    ds.bad_names.len()
+                    "{}",
+                    t_fmt(
+                        "   versão:  {} (gerado em {})",
+                        &[&ds.version.to_string(), &ds.generated.to_string()],
+                    )
+                );
+                println!(
+                    "{}",
+                    t_fmt(
+                        "   dados:   {} advisories na janela + {} nomes na kill list",
+                        &[
+                            &ds.advisories.len().to_string(),
+                            &ds.bad_names.len().to_string(),
+                        ],
+                    )
                 );
                 println!("   path:    {}", dataset::dataset_file().display());
-                println!("\nO audit desta máquina já usa os dados frescos (offline até o próximo update).");
+                println!(
+                    "{}",
+                    t("\nO audit desta máquina já usa os dados frescos (offline até o próximo update).")
+                );
             }
             Ok(())
         }
@@ -1470,11 +1550,17 @@ fn data_update(
                 println!(
                     "{}",
                     json!({"schema": 1, "command": "data", "sub": "update",
-                           "status": "refused", "error": error.to_string()})
+                           "status": "refused", "error": error.message_in(lang)})
                 );
             } else {
-                println!("❌ dataset recusado: {error}");
-                println!("   (nada foi instalado — o dataset anterior, se houver, permanece)");
+                println!(
+                    "{}",
+                    t_fmt("❌ dataset recusado: {}", &[&error.to_string()])
+                );
+                println!(
+                    "{}",
+                    t("   (nada foi instalado — o dataset anterior, se houver, permanece)")
+                );
             }
             std::process::exit(1);
         }
@@ -1484,31 +1570,40 @@ fn data_update(
 /// Fetches the dataset bytes: `file://`/local for tests and air-gapped
 /// mirrors, HTTPS for the Release. Size-capped (`MAX + 1` to detect overflow).
 fn fetch_dataset(target: &str, max_bytes: usize) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    use devforge_shared::i18n::t_fmt;
     use std::io::Read;
     if let Some(path) = target.strip_prefix("file://") {
-        return std::fs::read(path)
-            .map_err(|error| format!("não li o dataset local {path}: {error}").into());
+        return std::fs::read(path).map_err(|error| {
+            t_fmt("não li o dataset local {}: {}", &[path, &error.to_string()]).into()
+        });
     }
     if !target.starts_with("https://") && !target.starts_with("http://") {
-        return Err(format!("origem não suportada (use https:// ou file://): {target}").into());
+        return Err(t_fmt(
+            "origem não suportada (use https:// ou file://): {}",
+            &[target],
+        )
+        .into());
     }
     let response = ureq::get(target)
         .timeout(std::time::Duration::from_secs(60))
         .call()
-        .map_err(|error| format!("falha ao baixar de {target}: {error}"))?;
+        .map_err(|error| t_fmt("falha ao baixar de {}: {}", &[target, &error.to_string()]))?;
     let mut buffer = Vec::new();
     response
         .into_reader()
         .take(max_bytes as u64 + 1)
         .read_to_end(&mut buffer)
-        .map_err(|error| format!("falha ao ler a resposta de {target}: {error}"))?;
+        .map_err(|error| t_fmt("falha ao ler a resposta de {}: {}", &[target, &error.to_string()]))?;
     if buffer.len() > max_bytes {
-        return Err(format!("resposta acima de {max_bytes} bytes — recusada").into());
+        return Err(
+            t_fmt("resposta acima de {} bytes — recusada", &[&max_bytes.to_string()]).into(),
+        );
     }
     Ok(buffer)
 }
 
 fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    use devforge_shared::i18n::{t, t_fmt, Lang};
     let as_json = args.iter().any(|a| a == "--json");
     let positional: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
     let sub = positional.first().map(|s| s.as_str()).unwrap_or("status");
@@ -1524,7 +1619,10 @@ fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
                             json!({"schema": 1, "installed": false, "file": file.display().to_string()})
                         );
                     } else {
-                        println!("nenhuma licença instalada ({})", file.display());
+                        println!(
+                            "{}",
+                            t_fmt("nenhuma licença instalada ({})", &[&file.display().to_string()])
+                        );
                     }
                 }
                 Some(token) => match license::verify_token(&token) {
@@ -1537,11 +1635,11 @@ fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
                                        "issued": p.issued, "expires": p.expires})
                             );
                         } else {
-                            println!("licença VÁLIDA");
-                            println!("   plano:    {}", p.plan);
-                            println!("   titular:  {}", p.holder);
-                            println!("   emitida:  {}", p.issued);
-                            println!("   expira:   {}", p.expires);
+                            println!("{}", t("licença VÁLIDA"));
+                            println!("{}", t_fmt("   plano:    {}", &[&p.plan]));
+                            println!("{}", t_fmt("   titular:  {}", &[&p.holder]));
+                            println!("{}", t_fmt("   emitida:  {}", &[&p.issued]));
+                            println!("{}", t_fmt("   expira:   {}", &[&p.expires]));
                         }
                     }
                     Err(error) => {
@@ -1549,10 +1647,13 @@ fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
                             println!(
                                 "{}",
                                 json!({"schema": 1, "installed": true, "valid": false,
-                                       "error": error.to_string()})
+                                       "error": error.message_in(Lang::En)})
                             );
                         } else {
-                            println!("licença instalada, mas INVÁLIDA: {error}");
+                            println!(
+                                "{}",
+                                t_fmt("licença instalada, mas INVÁLIDA: {}", &[&error.to_string()])
+                            );
                         }
                     }
                 },
@@ -1562,7 +1663,7 @@ fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         "install" => {
             let arg = positional
                 .get(1)
-                .ok_or("uso: devforge license install <chave|@arquivo>")?;
+                .ok_or(t("uso: devforge license install <chave|@arquivo>"))?;
             let token = if let Some(path) = arg.strip_prefix('@') {
                 std::fs::read_to_string(path)?
             } else {
@@ -1572,7 +1673,7 @@ fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
 
             // Verify BEFORE writing — junk never enters the vault.
             let payload = license::verify_token(token)
-                .map_err(|error| format!("licença rejeitada: {error}"))?;
+                .map_err(|error| t_fmt("licença rejeitada: {}", &[&error.to_string()]))?;
             let path = license::install(token)?;
             if as_json {
                 println!(
@@ -1581,8 +1682,13 @@ fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
                            "plan": payload.plan, "holder": payload.holder, "expires": payload.expires})
                 );
             } else {
-                println!("   ✓ licença instalada: {} (plano {}, expira {})",
-                         path.display(), payload.plan, payload.expires);
+                println!(
+                    "{}",
+                    t_fmt(
+                        "   ✓ licença instalada: {} (plano {}, expira {})",
+                        &[&path.display().to_string(), &payload.plan, &payload.expires,],
+                    )
+                );
             }
         }
 
@@ -1591,13 +1697,17 @@ fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
             if as_json {
                 println!("{}", json!({"schema": 1, "removed": removed}));
             } else if removed {
-                println!("   ✓ licença removida.");
+                println!("{}", t("   ✓ licença removida."));
             } else {
-                println!("   (não havia licença instalada)");
+                println!("{}", t("   (não havia licença instalada)"));
             }
         }
 
-        other => return Err(format!("subcomando desconhecido: {other} (status|install|remove)").into()),
+        other => {
+            return Err(
+                t_fmt("subcomando desconhecido: {} (status|install|remove)", &[other]).into(),
+            )
+        }
     }
 
     Ok(())
@@ -1656,18 +1766,22 @@ fn build_sarif(
                 location["physicalLocation"]["region"] = json!({ "startLine": line });
             }
 
-            let message = format!(
+            // SARIF is machine output: always English (docs/design-i18n.md).
+            let message = devforge_shared::i18n::t_fmt_in(
+                devforge_shared::i18n::Lang::En,
                 "{} — score {} (confiança {}). Fatores: {}. {}",
-                finding.package,
-                finding.score,
-                finding.confidence.as_str(),
-                finding
-                    .factors
-                    .iter()
-                    .map(|f| f.id())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-                finding.evidence.join(" | ")
+                &[
+                    &finding.package,
+                    &finding.score.to_string(),
+                    finding.confidence.as_str(),
+                    &finding
+                        .factors
+                        .iter()
+                        .map(|f| f.id())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    &finding.evidence.join(" | "),
+                ],
             );
 
             json!({
@@ -1701,18 +1815,21 @@ fn sarif_level(severity: AuditSeverity) -> &'static str {
     }
 }
 
+/// SARIF short descriptions: machine output → always English
+/// (docs/design-i18n.md). Never used by human output.
 fn factor_label(factor: &RiskFactor) -> &'static str {
+    use devforge_shared::i18n::t_en;
     match factor {
-        RiskFactor::InstallScript => "Script de instalação (executa código no install)",
-        RiskFactor::NetworkAccess => "Acesso à rede no install",
-        RiskFactor::ShellAccess => "Acesso à shell no install",
-        RiskFactor::FilesystemAccess => "Escrita em filesystem sensível no install",
-        RiskFactor::EnvAccess => "Leitura de variáveis de ambiente no install",
-        RiskFactor::Obfuscation => "Código ofuscado no install",
-        RiskFactor::NonRegistry => "Dependência fora do registro (git/path/file)",
-        RiskFactor::LowDownloads => "Pacote com baixa exposição (downloads)",
-        RiskFactor::Unpinned => "Versão não fixada (range/coringa)",
-        RiskFactor::NoIntegrity => "Sem hash de integridade",
+        RiskFactor::InstallScript => t_en("Script de instalação (executa código no install)"),
+        RiskFactor::NetworkAccess => t_en("Acesso à rede no install"),
+        RiskFactor::ShellAccess => t_en("Acesso à shell no install"),
+        RiskFactor::FilesystemAccess => t_en("Escrita em filesystem sensível no install"),
+        RiskFactor::EnvAccess => t_en("Leitura de variáveis de ambiente no install"),
+        RiskFactor::Obfuscation => t_en("Código ofuscado no install"),
+        RiskFactor::NonRegistry => t_en("Dependência fora do registro (git/path/file)"),
+        RiskFactor::LowDownloads => t_en("Pacote com baixa exposição (downloads)"),
+        RiskFactor::Unpinned => t_en("Versão não fixada (range/coringa)"),
+        RiskFactor::NoIntegrity => t_en("Sem hash de integridade"),
     }
 }
 

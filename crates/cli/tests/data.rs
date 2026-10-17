@@ -88,7 +88,14 @@ fn status_with_corrupt_dataset_reports_invalid_never_silently() {
     let body = single_json(&output.stdout);
     assert_eq!(body["installed"], true, "o arquivo existe...");
     assert_eq!(body["valid"], false, "...mas não é usável");
-    assert!(body["error"].as_str().unwrap().contains("inválido"), "{body}");
+    // JSON prose is ALWAYS English, even under the default pt language.
+    assert!(
+        body["error"]
+            .as_str()
+            .unwrap()
+            .contains("invalid dataset format"),
+        "{body}"
+    );
 }
 
 // --- data update: the license gate (first, before any network) ------------
@@ -104,7 +111,14 @@ fn update_without_license_denies_with_json_line_and_exit_1() {
     assert_eq!(output.status.code(), Some(1), "sem licença = exit 1");
     let body = single_json(&output.stdout);
     assert_eq!(body["status"], "no_license");
-    assert!(body["error"].as_str().unwrap().contains("licença"), "{body}");
+    // JSON prose is ALWAYS English, even under the default pt language.
+    assert!(
+        body["error"]
+            .as_str()
+            .unwrap()
+            .contains("no license installed"),
+        "{body}"
+    );
 }
 
 #[test]

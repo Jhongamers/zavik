@@ -691,6 +691,211 @@ static EN: &[(&str, &str)] = &[
         "\n(seção informativa: não altera o score nem o --fail-on do audit)",
         "\n(informational section: doesn't change the score or the audit's --fail-on)",
     ),
+    // --- `data` command (main.rs: run_data/data_status/data_update/fetch_dataset) ---
+    (
+        "--url exige um valor (<https://...> ou file://<caminho>)",
+        "--url requires a value (<https://...> or file://<caminho>)",
+    ),
+    (
+        "opção desconhecida: {} (uso: devforge data status|update [--json] [--url <url>])",
+        "unknown option: {} (usage: devforge data status|update [--json] [--url <url>])",
+    ),
+    (
+        "subcomando desconhecido: {} (use: status | update)",
+        "unknown subcommand: {} (use: status | update)",
+    ),
+    ("dataset instalado ✅", "dataset installed ✅"),
+    (
+        "   versão:  {} (gerado em {})",
+        "   version:  {} (generated on {})",
+    ),
+    (
+        "   idade:   {} dia(s) — {} advisories na janela + {} na kill list",
+        "   age:   {} day(s) — {} advisories in the window + {} on the kill list",
+    ),
+    ("\n(fresco)", "\n(fresh)"),
+    (
+        "audit segue offline com o motor embutido; dados frescos são Pro (devforge data update)",
+        "audit keeps running offline with the built-in engine; fresh data is Pro (devforge data update)",
+    ),
+    (
+        "nenhum dataset instalado ({})",
+        "no dataset installed ({})",
+    ),
+    (
+        "   grátis: o audit usa o motor offline — nada muda no tier gratuito.",
+        "   free: audit uses the offline engine — nothing changes in the free tier.",
+    ),
+    (
+        "   Pro:    devforge data update (dados de risco frescos, exige licença).",
+        "   Pro:    devforge data update (fresh risk data, requires a license).",
+    ),
+    (
+        "dataset instalado, mas INVÁLIDO: {}",
+        "dataset installed, but INVALID: {}",
+    ),
+    (
+        "   nada é usado sem assinatura válida — rode devforge data update.",
+        "   nothing is used without a valid signature — run devforge data update.",
+    ),
+    (
+        "(dataset instalado INVÁLIDO — ignorado: {})",
+        "(dataset installed INVALID — ignored: {})",
+    ),
+    (
+        "nenhuma licença instalada",
+        "no license installed",
+    ),
+    (
+        "⛔ Recurso Pro (dataset de risco fresco): {}.",
+        "⛔ Pro feature (fresh risk dataset): {}.",
+    ),
+    (
+        "   Instale sua licença:  devforge license install <token>",
+        "   Install your license:  devforge license install <token>",
+    ),
+    (
+        "   (confira:             devforge license status)",
+        "   (check:               devforge license status)",
+    ),
+    (
+        "   Sem licença o audit segue grátis e offline — o tier gratuito não muda.",
+        "   Without a license audit stays free and offline — the free tier doesn't change.",
+    ),
+    (
+        "URL do dataset não configurada nesta build (use --url <url> ou env DF_DATASET_URL)",
+        "dataset URL not configured in this build (use --url <url> or env DF_DATASET_URL)",
+    ),
+    ("baixando dataset de {} ...", "downloading dataset from {} ..."),
+    (
+        "   dados:   {} advisories na janela + {} nomes na kill list",
+        "   data:   {} advisories in the window + {} names on the kill list",
+    ),
+    (
+        "\nO audit desta máquina já usa os dados frescos (offline até o próximo update).",
+        "\nThis machine's audit already uses the fresh data (offline until the next update).",
+    ),
+    ("❌ dataset recusado: {}", "❌ dataset refused: {}"),
+    (
+        "   (nada foi instalado — o dataset anterior, se houver, permanece)",
+        "   (nothing was installed — the previous dataset, if any, remains)",
+    ),
+    (
+        "não li o dataset local {}: {}",
+        "could not read the local dataset {}: {}",
+    ),
+    (
+        "origem não suportada (use https:// ou file://): {}",
+        "unsupported origin (use https:// or file://): {}",
+    ),
+    ("falha ao baixar de {}: {}", "failed to download from {}: {}"),
+    (
+        "falha ao ler a resposta de {}: {}",
+        "failed to read the response from {}: {}",
+    ),
+    (
+        "resposta acima de {} bytes — recusada",
+        "response above {} bytes — refused",
+    ),
+    // --- `license` command (main.rs: run_license + license.rs Display) ---
+    (
+        "nenhuma licença instalada ({})",
+        "no license installed ({})",
+    ),
+    ("licença VÁLIDA", "license VALID"),
+    ("   plano:    {}", "   plan:    {}"),
+    ("   titular:  {}", "   holder:  {}"),
+    ("   emitida:  {}", "   issued:  {}"),
+    ("   expira:   {}", "   expires:  {}"),
+    (
+        "licença instalada, mas INVÁLIDA: {}",
+        "license installed, but INVALID: {}",
+    ),
+    (
+        "uso: devforge license install <chave|@arquivo>",
+        "usage: devforge license install <key|@file>",
+    ),
+    ("licença rejeitada: {}", "license rejected: {}"),
+    (
+        "   ✓ licença instalada: {} (plano {}, expira {})",
+        "   ✓ license installed: {} (plan {}, expires {})",
+    ),
+    ("   ✓ licença removida.", "   ✓ license removed."),
+    (
+        "   (não havia licença instalada)",
+        "   (no license was installed)",
+    ),
+    (
+        "subcomando desconhecido: {} (status|install|remove)",
+        "unknown subcommand: {} (status|install|remove)",
+    ),
+    (
+        "formato inválido (esperado DF1.<payload>.<assinatura>)",
+        "invalid format (expected DF1.<payload>.<signature>)",
+    ),
+    ("base64 inválido", "invalid base64"),
+    ("payload não é JSON válido", "payload is not valid JSON"),
+    ("assinatura não confere", "signature doesn't match"),
+    ("licença vencida em {}", "license expired on {}"),
+    // --- SARIF is machine output: always English (docs/design-i18n.md) ---
+    (
+        "{} — score {} (confiança {}). Fatores: {}. {}",
+        "{} — score {} (confidence {}). Factors: {}. {}",
+    ),
+    (
+        "Script de instalação (executa código no install)",
+        "Install script (runs code on install)",
+    ),
+    ("Acesso à rede no install", "Network access on install"),
+    ("Acesso à shell no install", "Shell access on install"),
+    (
+        "Escrita em filesystem sensível no install",
+        "Sensitive filesystem write on install",
+    ),
+    (
+        "Leitura de variáveis de ambiente no install",
+        "Environment variable read on install",
+    ),
+    ("Código ofuscado no install", "Obfuscated code on install"),
+    (
+        "Dependência fora do registro (git/path/file)",
+        "Dependency outside the registry (git/path/file)",
+    ),
+    (
+        "Pacote com baixa exposição (downloads)",
+        "Package with low exposure (downloads)",
+    ),
+    (
+        "Versão não fixada (range/coringa)",
+        "Unpinned version (range/wildcard)",
+    ),
+    ("Sem hash de integridade", "No integrity hash"),
+    // --- `DatasetError` (dataset.rs Display → `message_in`) ---
+    (
+        "chave pública do dataset não configurada nesta build",
+        "dataset public key not configured in this build",
+    ),
+    (
+        "formato do dataset inválido (envelope malformado)",
+        "invalid dataset format (malformed envelope)",
+    ),
+    (
+        "assinatura do dataset inválida — arquivo adulterado ou de chave desconhecida; recusado",
+        "invalid dataset signature — tampered file or unknown key; refused",
+    ),
+    (
+        "schema do dataset não suportado: {} (este build entende {})",
+        "unsupported dataset schema: {} (this build understands {})",
+    ),
+    (
+        "conteúdo do dataset inválido (JSON ou campos)",
+        "invalid dataset content (JSON or fields)",
+    ),
+    (
+        "dataset acima do limite de {} bytes — recusado",
+        "dataset above the limit of {} bytes — refused",
+    ),
+    ("erro de arquivo: {}", "file error: {}"),
 ];
 
 #[cfg(test)]

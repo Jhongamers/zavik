@@ -47,15 +47,31 @@ pub enum LicenseError {
     Expired(String),
 }
 
+impl LicenseError {
+    /// Message in the target language: JSON prose is always English
+    /// (docs/design-i18n.md); human output goes through `Display`, which
+    /// renders in the current language.
+    pub(crate) fn message_in(&self, lang: devforge_shared::i18n::Lang) -> String {
+        use devforge_shared::i18n::{t_fmt_in, translate};
+        match self {
+            LicenseError::Format => translate(
+                lang,
+                "formato inválido (esperado DF1.<payload>.<assinatura>)",
+            )
+            .to_string(),
+            LicenseError::Encoding => translate(lang, "base64 inválido").to_string(),
+            LicenseError::Json => translate(lang, "payload não é JSON válido").to_string(),
+            LicenseError::Signature => translate(lang, "assinatura não confere").to_string(),
+            LicenseError::Expired(date) => t_fmt_in(lang, "licença vencida em {}", &[date]),
+        }
+    }
+}
+
 impl std::fmt::Display for LicenseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LicenseError::Format => write!(f, "formato inválido (esperado DF1.<payload>.<assinatura>)"),
-            LicenseError::Encoding => write!(f, "base64 inválido"),
-            LicenseError::Json => write!(f, "payload não é JSON válido"),
-            LicenseError::Signature => write!(f, "assinatura não confere"),
-            LicenseError::Expired(date) => write!(f, "licença vencida em {date}"),
-        }
+        // Human path: renders in the CURRENT language; JSON sites call
+        // `message_in(Lang::En)` instead.
+        f.write_str(&self.message_in(devforge_shared::i18n::lang()))
     }
 }
 

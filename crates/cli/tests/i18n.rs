@@ -356,3 +356,54 @@ fn run_output_follows_lang_flag() {
         "sem pt no plano: {stdout}"
     );
 }
+
+#[test]
+fn data_and_license_follow_lang_flag() {
+    // Isolated config → deterministic "absent" paths for dataset and license.
+    let config = TempDir::new().unwrap();
+
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .env("XDG_CONFIG_HOME", config.path())
+        .args(["data", "status", "--lang", "en"])
+        .output()
+        .unwrap();
+    assert!(en.status.success());
+    let stdout = stdout_of(&en);
+    assert!(
+        stdout.contains("no dataset installed"),
+        "data status em EN: {stdout}"
+    );
+    assert!(
+        stdout.contains("free: audit uses the offline engine") && !stdout.contains("grátis"),
+        "sem pt no --lang en: {stdout}"
+    );
+
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .env("XDG_CONFIG_HOME", config.path())
+        .args(["license", "status", "--lang", "en"])
+        .output()
+        .unwrap();
+    let stdout = stdout_of(&en);
+    assert!(
+        stdout.contains("no license installed"),
+        "license status em EN: {stdout}"
+    );
+    assert!(!stdout.contains("nenhuma licença"), "sem pt: {stdout}");
+
+    // JSON prose stays English under the default pt language (hint field).
+    let out = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .env("XDG_CONFIG_HOME", config.path())
+        .args(["data", "status", "--json"])
+        .output()
+        .unwrap();
+    let json: serde_json::Value =
+        serde_json::from_str(stdout_of(&out).trim()).expect("data status json");
+    let hint = json["hint"].as_str().unwrap_or("no hint");
+    assert!(
+        hint.contains("offline with the built-in engine") && !hint.contains("motor embutido"),
+        "hint EN em JSON sob --lang pt: {hint}"
+    );
+}

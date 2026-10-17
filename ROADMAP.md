@@ -267,8 +267,10 @@ swift-argument-parser, googletest). Achados:
       + `help` completo migrados (consts `HELP_PT`/`HELP_EN` — a chave é o
       texto emitido, sem drift), decisão registrada de prose de JSON em EN
       forçado via `t_en` (achado do dogfooding, `docs/dogfooding.md`);
-      faltam corpos de `run`/`prepare`/`context`/`diagnose`/`analyze`/
-      `license`/`data`, strings de erro e `diagnose` em plugins. Fase 3
+      ✅ `diagnose` (17/10, incl. plugins), ✅ `run` (17/10) e ✅
+      `data`/`license` + SARIF p/ EN (17/10, `message_in(lang)` pros erros
+      compostos); faltam `prepare`/`up`/`analyze`/`context`, detect/env,
+      hints de toolchain e a reautoria do `evidence` em EN. Fase 3
       (gate de lançamento): migração completa verificada +
       **flip do default `en`** + testes atualizados. Catálogo hand-rolled
       (`pt-BR` + `en`, zero dependência — mantém offline-first), idioma
