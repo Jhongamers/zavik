@@ -79,7 +79,11 @@ fn build_runbook(root: &Path, stack: &ProjectStack, rb: &mut Runbook) {
             push(&mut rb.setup, "dart pub get");
             push(&mut rb.build, "dart compile exe .");
             push(&mut rb.test, "dart test");
-            push(&mut rb.run, "dart run");
+            // NOVO-3 (corpus, dart-lang/args): `dart run` needs bin/*.dart —
+            // a lib-only package has nothing to run (runner agrees).
+            if crate::runner::has_dart_bin(root) {
+                push(&mut rb.run, "dart run");
+            }
         }
         Language::Elixir => {
             push(&mut rb.setup, "mix deps.get");
@@ -91,7 +95,12 @@ fn build_runbook(root: &Path, stack: &ProjectStack, rb: &mut Runbook) {
             push(&mut rb.setup, "swift package resolve");
             push(&mut rb.build, "swift build");
             push(&mut rb.test, "swift test");
-            push(&mut rb.run, "swift run");
+            // NOVO-4 (corpus, swift-argument-parser): library-only packages
+            // can't `swift run`; exactly one executable can; several need
+            // `run` to ask (Go/Rust precedent: runbook stays silent).
+            if crate::runner::swift_executable_names(&root.join("Package.swift")).len() == 1 {
+                push(&mut rb.run, "swift run");
+            }
         }
         Language::C | Language::Cpp => {
             push(&mut rb.setup, "cmake -B build");
@@ -468,5 +477,69 @@ mod tests {
             .runbook
             .run
             .contains(&"go run ./cmd/api".to_string()));
+    }
+
+    #[test]
+    fn briefing_dart_and_swift_run_follow_real_executables() {
+        // NOVO-3/NOVO-4 (corpus Fase B): dart needs bin/*.dart (args has
+        // none → silent); swift needs exactly one executable product —
+        // swift-argument-parser ships 9, plain `swift run` would fail.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("pubspec.yaml"), "name: sample\n").unwrap();
+        let dart_stack = || {
+            ProjectStack::new(
+                Language::Dart,
+                dir.path().join("pubspec.yaml"),
+                Some("pub".into()),
+            )
+        };
+
+        let briefing = extract_briefing(dir.path(), &[dart_stack()]);
+        assert!(
+            briefing.runbook.run.is_empty(),
+            "dart sem bin não promete dart run: {:?}",
+            briefing.runbook.run
+        );
+        std::fs::create_dir_all(dir.path().join("bin")).unwrap();
+        std::fs::write(dir.path().join("bin/sample.dart"), "void main(){}").unwrap();
+        let briefing = extract_briefing(dir.path(), &[dart_stack()]);
+        assert!(briefing.runbook.run.contains(&"dart run".to_string()));
+
+        let swift_stack = || {
+            ProjectStack::new(
+                Language::Swift,
+                dir.path().join("Package.swift"),
+                Some("swift".into()),
+            )
+        };
+        std::fs::write(
+            dir.path().join("Package.swift"),
+            "targets: [.target(name: \"Lib\")]",
+        )
+        .unwrap();
+        let briefing = extract_briefing(dir.path(), &[swift_stack()]);
+        assert!(
+            briefing.runbook.run.is_empty(),
+            "swift lib não promete swift run: {:?}",
+            briefing.runbook.run
+        );
+        std::fs::write(
+            dir.path().join("Package.swift"),
+            ".executableTarget(name: \"cli\")",
+        )
+        .unwrap();
+        let briefing = extract_briefing(dir.path(), &[swift_stack()]);
+        assert!(briefing.runbook.run.contains(&"swift run".to_string()));
+        std::fs::write(
+            dir.path().join("Package.swift"),
+            ".executableTarget(name: \"a\") .executable(name: \"b\")",
+        )
+        .unwrap();
+        let briefing = extract_briefing(dir.path(), &[swift_stack()]);
+        assert!(
+            briefing.runbook.run.is_empty(),
+            "swift com vários → o run pergunta: {:?}",
+            briefing.runbook.run
+        );
     }
 }

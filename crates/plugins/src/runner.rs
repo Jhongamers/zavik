@@ -226,7 +226,28 @@ pub fn resolve_run(root: &Path) -> RunResolution {
     }
 
     // Swift Package
+    // Swift: Package.swift with executables — a library-only package has
+    // nothing to run, and several executables need a product choice
+    // (NOVO-4, corpus: swift-argument-parser ships 9 → plain `swift run`
+    // fails). Mirrors the Rust bin handling.
     if root.join("Package.swift").exists() {
+        let executables = swift_executable_names(&root.join("Package.swift"));
+        if executables.len() > 1 {
+            let candidates = executables
+                .iter()
+                .map(|name| {
+                    candidate(
+                        "swift",
+                        &["run", name],
+                        &format!("executável '{name}'"),
+                    )
+                })
+                .collect();
+            return RunResolution::Ambiguous(candidates);
+        }
+        if executables.is_empty() {
+            return RunResolution::NotFound;
+        }
         return plan("swift", &["run"], "Package.swift");
     }
 
@@ -252,14 +273,9 @@ pub fn resolve_run(root: &Path) -> RunResolution {
         }
     }
 
-    // Dart: bin/*.dart
-    if let Ok(bin_dir) = std::fs::read_dir(root.join("bin")) {
-        let has_dart = bin_dir
-            .flatten()
-            .any(|e| e.file_name().to_string_lossy().ends_with(".dart"));
-        if has_dart {
-            return plan("dart", &["run"], "bin/*.dart");
-        }
+    // Dart: bin/*.dart (shared gate with the briefing runbook — NOVO-3)
+    if has_dart_bin(root) {
+        return plan("dart", &["run"], "bin/*.dart");
     }
 
     RunResolution::NotFound
@@ -377,6 +393,35 @@ pub(crate) fn cargo_bin_names(root: &Path) -> Vec<String> {
 }
 
 /// Packages under `cmd/*/main.go`.
+/// Whether a Dart package exposes `bin/*.dart` (the only thing `dart run`
+/// can execute) — shared with the briefing runbook (NOVO-3).
+pub(crate) fn has_dart_bin(root: &Path) -> bool {
+    let Ok(bin_dir) = std::fs::read_dir(root.join("bin")) else {
+        return false;
+    };
+    bin_dir
+        .flatten()
+        .any(|entry| entry.file_name().to_string_lossy().ends_with(".dart"))
+}
+
+/// Executable product names declared in a `Package.swift`
+/// (`.executableTarget(name: "…")` / `.executable(name: "…")`; the DSL is
+/// free-form so `name` may sit on the following line — `\s*` covers it).
+pub(crate) fn swift_executable_names(package: &Path) -> Vec<String> {
+    let Ok(text) = std::fs::read_to_string(package) else {
+        return Vec::new();
+    };
+    let re = regex::Regex::new(r#"\.executable(?:Target)?\s*\(\s*name:\s*"([^"]+)""#)
+        .expect("static regex");
+    let mut names: Vec<String> = re
+        .captures_iter(&text)
+        .map(|cap| cap[1].to_string())
+        .collect();
+    names.sort();
+    names.dedup();
+    names
+}
+
 pub(crate) fn go_cmd_packages(root: &Path) -> Vec<String> {
     let mut packages = Vec::new();
     if let Ok(entries) = std::fs::read_dir(root.join("cmd")) {
@@ -921,6 +966,51 @@ mod tests {
         )
         .unwrap();
         assert_eq!(ready(resolve_run(dir.path())).command, "cargo");
+    }
+
+    #[test]
+    fn swift_lib_only_is_not_found() {
+        // NOVO-4: a library-only Package.swift has nothing to run.
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("Package.swift"),
+            "// swift-tools-version:5.9\nlet package = Package(name: \"x\", targets: [.target(name: \"Lib\")])\n",
+        )
+        .unwrap();
+        assert_eq!(resolve_run(dir.path()), RunResolution::NotFound);
+    }
+
+    #[test]
+    fn swift_single_executable_runs() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("Package.swift"),
+            ".executableTarget(name: \"cli\", dependencies: [])",
+        )
+        .unwrap();
+        let plan = ready(resolve_run(dir.path()));
+        assert_eq!(plan.command, "swift");
+        assert_eq!(plan.args, vec!["run"]);
+    }
+
+    #[test]
+    fn swift_several_executables_ask() {
+        // Real shape of swift-argument-parser: `name:` on the line after
+        // the marker — plain `swift run` would fail with several products.
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("Package.swift"),
+            ".executableTarget(\n    name: \"generate-manual\"\n)\n.executable(name: \"other\", dependencies: [])\n",
+        )
+        .unwrap();
+        match resolve_run(dir.path()) {
+            RunResolution::Ambiguous(candidates) => {
+                assert_eq!(candidates.len(), 2);
+                assert_eq!(candidates[0].command, "swift");
+                assert_eq!(candidates[0].args, vec!["run", "generate-manual"]);
+            }
+            other => panic!("esperava Ambiguous, veio {other:?}"),
+        }
     }
 
     #[test]

@@ -81,6 +81,20 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
     `go run ./cmd/<único>` com um único pacote cmd; zero/vários → silêncio
     (o `run` pergunta). Teste ×1. Candidatos da mesma classe, ainda sem
     prova real: runbook C#/Dart/Swift/Elixir (JS e Python já condicionais).
+11. **Runbook Dart prometia `dart run` sem `bin/*.dart` e swift pedia
+    `swift run` em qualquer `Package.swift` (NOVO-3 e NOVO-4)**: args
+    (real, lib pura) e swift-argument-parser (real, **9 executáveis** —
+    `swift run` puro falharia pedindo o produto) confirmaram os dois.
+    **Corrigidos**: runbook Dart condicional a `bin/*.dart` (gate
+    compartilhado com o runner); runner Swift conta produtos
+    `.executableTarget/.executable(name: …)` — zero → NotFound, um →
+    `swift run`, vários → Ambiguous numerado (mostrou os9 reais); runbook
+    Swift só promete com exatamente um. Testes: runner ×3, briefing ×1.
+    Item 10 resolvido na prática: JS/Python/Dart/Go/Swift/Rust já são
+    condicionais; **C# e Elixir seguem como candidatos sem prova real**
+    (newtonsoft: raiz sem `.sln`/`.csproj` → stacks0 = comportamento
+    documentado `--all`, não FP; observação registrada: o aviso de
+    "nenhuma stack" poderia sugerir `--all`).
 
 ### Comportamentos verificados OK (sem achado)
 
