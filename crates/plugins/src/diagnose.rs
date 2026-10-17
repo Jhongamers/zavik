@@ -62,6 +62,20 @@ const RULES: &[Rule] = &[
         priority: 25,
     },
     Rule {
+        // Dogfoeding (docs/dogfooding.md): the most common Rust compile
+        // error used to fall into the generic fallback. Priority sits BELOW
+        // the toolchain rules: a missing linker also prints "could not
+        // compile", and THAT is the root cause in that case.
+        id: "rustc-error",
+        patterns: &["error[e0", "error: could not compile"],
+        cause: "Erro de compilação Rust: o compilador apontou o arquivo/linha do problema.",
+        fix: "corrija a linha citada pelo rustc; detalhes do código em `cargo explain <código>` (ex.: `cargo explain E0308`).",
+        note: Some(
+            "'could not compile ... due to N previous errors' é só o resumo — a causa é o primeiro `error[E...]` listado.",
+        ),
+        priority: 21,
+    },
+    Rule {
         id: "node-gyp",
         patterns: &["gyp err", "no xcode or clt", "gyp: no xcode"],
         cause: "Módulo nativo do npm precisa de ferramentas de build (python3 + gcc + make).",
@@ -363,6 +377,31 @@ mod tests {
         let d = diagnose("Traceback: ModuleNotFoundError: No module named 'requests'");
         assert_eq!(d.causes[0].id, "python-module");
         assert!(d.causes[0].fix.contains("pip install requests"));
+    }
+
+    #[test]
+    fn rustc_compile_error_is_recognized_not_fallback() {
+        let d = diagnose(
+            "error[E0308]: mismatched types\n --> src/main.rs:2:18\n\nerror: could not compile `badcrate` (bin `badcrate`) due to 1 previous error",
+        );
+        assert!(!d.causes.is_empty(), "E0308 deve ser reconhecido");
+        assert_eq!(d.causes[0].id, "rustc-error");
+        assert!(d.causes[0].fix.contains("cargo explain"), "fix: {}", d.causes[0].fix);
+        assert!(
+            !d.summary.contains("Não reconheci"),
+            "não cai no fallback: {}",
+            d.summary
+        );
+    }
+
+    #[test]
+    fn missing_linker_still_outranks_the_generic_rustc_rule() {
+        // "could not compile" appears too — but the missing toolchain is
+        // the ROOT cause and must stay on top.
+        let d = diagnose(
+            "error: linking with `cc` failed\nerror: linker `cc` not found\nerror: could not compile `x` due to 1 previous error",
+        );
+        assert_eq!(d.causes[0].id, "missing-compiler");
     }
 
     #[test]

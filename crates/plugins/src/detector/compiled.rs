@@ -9,9 +9,7 @@ use std::path::{Path, PathBuf};
 /// Runs all detectors in this module.
 pub(crate) fn detect_all(root: &Path) -> Result<Vec<ProjectStack>, Error> {
     let mut stacks = Vec::new();
-    if let Some(stack) = detect_rust(root)? {
-        stacks.push(stack);
-    }
+    stacks.extend(detect_rust(root)?);
     if let Some(stack) = detect_go(root)? {
         stacks.push(stack);
     }
@@ -45,16 +43,68 @@ const RUST_FRAMEWORKS: &[(&str, &[&str])] = &[
     ("Dioxus", &["dioxus"]),
 ];
 
-fn detect_rust(root: &Path) -> Result<Option<ProjectStack>, Error> {
+/// Detects the Rust stack(s) rooted at `root`.
+///
+/// A **virtual workspace root** (no `[package]`, has `[workspace].members`)
+/// expands into one stack per member — discovered by dogfooding this repo:
+/// pointing `devforge` at the workspace root saw "0 dependencies" and the
+/// `audit` approved nothing (docs/dogfooding.md). Member dependencies
+/// declared with `workspace = true` resolve their version from the nearest
+/// `[workspace.dependencies]` (manifest's own file first, then ancestors).
+fn detect_rust(root: &Path) -> Result<Vec<ProjectStack>, Error> {
     let Some(manifest) = find_file(root, "Cargo.toml") else {
-        return Ok(None);
+        return Ok(Vec::new());
     };
-
     let text = read(&manifest)?;
     let value: toml::Value = text
         .parse()
         .map_err(|e| Error::SerializationError(format!("Cargo.toml: {e}")))?;
 
+    if value.get("package").is_none() {
+        let members = value
+            .get("workspace")
+            .and_then(|w| w.get("members"))
+            .and_then(|m| m.as_array());
+        if let Some(members) = members {
+            let exclude = workspace_list(&value, "exclude");
+            let mut stacks = Vec::new();
+            for dir in expand_members(root, members, &exclude) {
+                if let Some(stack) = rust_stack_for(&dir)? {
+                    stacks.push(stack);
+                }
+            }
+            if !stacks.is_empty() {
+                return Ok(stacks);
+            }
+            // Virtual root with no resolvable member: keep the honest bare
+            // stack (audit reports "0 packages" rather than inventing).
+        }
+    }
+
+    let inherited = workspace_dependencies(&manifest, &value);
+    Ok(vec![rust_stack_from(manifest, value, &inherited)])
+}
+
+/// One stack for the `Cargo.toml` inside `dir` (member of a workspace).
+fn rust_stack_for(dir: &Path) -> Result<Option<ProjectStack>, Error> {
+    let manifest = dir.join("Cargo.toml");
+    if !manifest.is_file() {
+        return Ok(None);
+    }
+    let text = read(&manifest)?;
+    let value: toml::Value = text
+        .parse()
+        .map_err(|e| Error::SerializationError(format!("Cargo.toml: {e}")))?;
+    let inherited = workspace_dependencies(&manifest, &value);
+    Ok(Some(rust_stack_from(manifest, value, &inherited)))
+}
+
+/// Builds the stack from an already-parsed manifest.
+fn rust_stack_from(
+    manifest: std::path::PathBuf,
+    value: toml::Value,
+    inherited: &toml::map::Map<String, toml::Value>,
+) -> ProjectStack {
     let mut deps = Vec::new();
     for (table, kind) in [
         ("dependencies", DependencyKind::Runtime),
@@ -63,7 +113,11 @@ fn detect_rust(root: &Path) -> Result<Option<ProjectStack>, Error> {
     ] {
         if let Some(entries) = value.get(table).and_then(|v| v.as_table()) {
             for (name, spec) in entries {
-                deps.push(Dependency::new(name.clone(), toml_version(spec), kind));
+                deps.push(Dependency::new(
+                    name.clone(),
+                    toml_version(name, spec, inherited),
+                    kind,
+                ));
             }
         }
     }
@@ -74,20 +128,135 @@ fn detect_rust(root: &Path) -> Result<Option<ProjectStack>, Error> {
         .and_then(|p| p.get("name"))
         .and_then(|v| v.as_str())
         .map(str::to_string);
-    Ok(Some(
-        ProjectStack::new(Language::Rust, manifest, Some("cargo".to_string()))
-            .with_name(name)
-            .with_frameworks(frameworks)
-            .with_dependencies(deps),
-    ))
+    ProjectStack::new(Language::Rust, manifest, Some("cargo".to_string()))
+        .with_name(name)
+        .with_frameworks(frameworks)
+        .with_dependencies(deps)
 }
 
 /// Extracts the version from a Cargo.toml dependency entry.
-/// Accepts both `serde = "1"` and `serde = { version = "1", ... }`.
-fn toml_version(spec: &toml::Value) -> Option<String> {
+/// Accepts `serde = "1"`, `serde = { version = "1", ... }` and
+/// `serde = { workspace = true }` (version from `[workspace.dependencies]`).
+fn toml_version(
+    name: &str,
+    spec: &toml::Value,
+    inherited: &toml::map::Map<String, toml::Value>,
+) -> Option<String> {
+    if let Some(version) = plain_version(spec) {
+        return Some(version);
+    }
+    if spec.get("workspace").and_then(|v| v.as_bool()) == Some(true) {
+        return inherited.get(name).and_then(plain_version);
+    }
+    None
+}
+
+/// Version of a plain spec: `"1"` or `{ version = "1" }`.
+fn plain_version(spec: &toml::Value) -> Option<String> {
     spec.as_str()
         .map(str::to_string)
         .or_else(|| spec.get("version").and_then(|v| v.as_str()).map(str::to_string))
+}
+
+/// `[workspace.dependencies]` of the workspace this manifest belongs to:
+/// the manifest's own file first (a package can BE its workspace root),
+/// then the nearest ancestor `Cargo.toml` that declares one.
+fn workspace_dependencies(
+    manifest: &Path,
+    value: &toml::Value,
+) -> toml::map::Map<String, toml::Value> {
+    if let Some(table) = workspace_dep_table(value) {
+        return table;
+    }
+    let mut dir = manifest.parent();
+    while let Some(current) = dir {
+        let candidate = current.join("Cargo.toml");
+        if candidate.is_file() && candidate != manifest {
+            if let Ok(text) = std::fs::read_to_string(&candidate) {
+                if let Ok(parsed) = text.parse::<toml::Value>() {
+                    if let Some(table) = workspace_dep_table(&parsed) {
+                        return table;
+                    }
+                }
+            }
+        }
+        dir = current.parent();
+    }
+    toml::map::Map::new()
+}
+
+fn workspace_dep_table(value: &toml::Value) -> Option<toml::map::Map<String, toml::Value>> {
+    value
+        .get("workspace")?
+        .get("dependencies")?
+        .as_table()
+        .cloned()
+}
+
+/// String list under `[workspace]` (e.g. `exclude`).
+fn workspace_list(value: &toml::Value, key: &str) -> Vec<String> {
+    value
+        .get("workspace")
+        .and_then(|w| w.get(key))
+        .and_then(|v| v.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Expands `[workspace].members` patterns (literal segments and `*`
+/// wildcards) into member directories holding a `Cargo.toml`, honoring
+/// `exclude`, sorted + deduped for deterministic output.
+fn expand_members(root: &Path, members: &[toml::Value], exclude: &[String]) -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    for pattern in members.iter().filter_map(|v| v.as_str()) {
+        let segments: Vec<&str> = pattern.split('/').filter(|s| !s.is_empty()).collect();
+        let mut matched = Vec::new();
+        expand_segments(root, &segments, &mut matched);
+        for dir in matched {
+            let relative = dir
+                .strip_prefix(root)
+                .unwrap_or(&dir)
+                .to_string_lossy()
+                .replace('\\', "/");
+            if exclude.iter().any(|e| e.trim_end_matches('/') == relative) {
+                continue;
+            }
+            if dir.join("Cargo.toml").is_file() {
+                dirs.push(dir);
+            }
+        }
+    }
+    dirs.sort();
+    dirs.dedup();
+    dirs
+}
+
+fn expand_segments(base: &Path, segments: &[&str], out: &mut Vec<PathBuf>) {
+    let Some((segment, rest)) = segments.split_first() else {
+        out.push(base.to_path_buf());
+        return;
+    };
+    if *segment == "*" {
+        let Ok(entries) = std::fs::read_dir(base) else {
+            return;
+        };
+        let mut dirs: Vec<PathBuf> = entries
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| path.is_dir())
+            .collect();
+        dirs.sort();
+        for dir in dirs {
+            expand_segments(&dir, rest, out);
+        }
+    } else {
+        expand_segments(&base.join(segment), rest, out);
+    }
 }
 
 // --- Go --------------------------------------------------------------------

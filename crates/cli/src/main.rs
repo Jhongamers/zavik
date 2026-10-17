@@ -611,51 +611,85 @@ fn load_suppressions(path: Option<&Path>) -> Result<Vec<Suppression>, Box<dyn st
 }
 
 fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::DatasetReport>) {
+    use devforge_shared::i18n::{t, t_fmt};
+
     section("AUDITORIA DE SUPPLY-CHAIN");
-    println!("Pacotes auditados: {}", report.packages_audited);
-    println!("Score (pior pacote): {}/100", report.score);
+    let packages = report.packages_audited.to_string();
+    println!("{}", t_fmt("Pacotes auditados: {}", &[&packages]));
+    if report.packages_audited == 0 {
+        // Anti-false-positive: approving ZERO packages certifies nothing.
+        println!("\n{}", t("⚠ 0 pacotes auditados — não há o que atestar aqui"));
+        println!(
+            "{}",
+            t("   (manifesto sem dependências declaradas — ex.: projeto novo, ou aponte")
+        );
+        println!(
+            "{}",
+            t("    o DevForge num crate/membro específico). O veredito NÃO atesta nada.")
+        );
+    }
+    let score = report.score.to_string();
+    println!("{}", t_fmt("Score (pior pacote): {}/100", &[&score]));
     if !online {
-        println!("(offline: hooks/downloads de registry não consultados — use --online)");
+        println!(
+            "{}",
+            t("(offline: hooks/downloads de registry não consultados — use --online)")
+        );
     }
 
     if report.findings.is_empty() {
-        println!("\nNenhuma achação acima do limiar. ✅");
+        println!("\n{}", t("Nenhuma achação acima do limiar. ✅"));
     }
     for finding in &report.findings {
+        let severity = finding.severity.as_str().to_uppercase();
+        let finding_score = finding.score.to_string();
         println!(
-            "\n• {} — {}  (score {}, confiança {})",
-            finding.package,
-            finding.severity.as_str().to_uppercase(),
-            finding.score,
-            finding.confidence.as_str()
+            "\n{}",
+            t_fmt(
+                "• {} — {}  (score {}, confiança {})",
+                &[
+                    &finding.package,
+                    &severity,
+                    &finding_score,
+                    finding.confidence.as_str(),
+                ],
+            )
         );
-        println!(
-            "  fatores: {}",
-            finding
-                .factors
-                .iter()
-                .map(|f| f.id())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
+        let factors = finding
+            .factors
+            .iter()
+            .map(|f| f.id())
+            .collect::<Vec<_>>()
+            .join(", ");
+        println!("  {}", t_fmt("fatores: {}", &[&factors]));
         for evidence in &finding.evidence {
             println!("    · {evidence}");
         }
     }
 
     if !report.suppressed.is_empty() {
-        println!("\nSupressões ativas: {}", report.suppressed.len());
+        let active = report.suppressed.len().to_string();
+        println!("\n{}", t_fmt("Supressões ativas: {}", &[&active]));
         for s in &report.suppressed {
-            println!("  - {} ({}) expira {}", s.package, s.factor.id(), s.expires);
+            let expires = s.expires.as_str();
+            println!(
+                "{}",
+                t_fmt("  - {} ({}) expira {}", &[s.package.as_str(), s.factor.id(), expires])
+            );
         }
     }
     if !report.expired_suppressions.is_empty() {
+        let expired = report.expired_suppressions.len().to_string();
         println!(
-            "\n⚠ Supressões EXPIRADAS (re-triagem necessária): {}",
-            report.expired_suppressions.len()
+            "\n{}",
+            t_fmt("⚠ Supressões EXPIRADAS (re-triagem necessária): {}", &[&expired])
         );
         for s in &report.expired_suppressions {
-            println!("  - {} ({}) expirou {}", s.package, s.factor.id(), s.expires);
+            let expires = s.expires.as_str();
+            println!(
+                "{}",
+                t_fmt("  - {} ({}) expirou {}", &[s.package.as_str(), s.factor.id(), expires])
+            );
         }
     }
 
@@ -663,10 +697,19 @@ fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::Dat
         print_dataset_section(dataset);
     }
 
-    println!(
-        "\nVeredito: {}",
-        if report.passed { "APROVADO ✅" } else { "REPROVADO ❌" }
-    );
+    if report.packages_audited == 0 {
+        println!(
+            "\n{}",
+            t("Veredito: SEM DADOS ⚠️  (0 pacotes — nada foi atestado)")
+        );
+    } else {
+        let verdict = if report.passed {
+            t("APROVADO ✅")
+        } else {
+            t("REPROVADO ❌")
+        };
+        println!("\n{}", t_fmt("Veredito: {}", &[verdict]));
+    }
 }
 
 /// Pro section of `audit`: findings from the signed local dataset. Advisory

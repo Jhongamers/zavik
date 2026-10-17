@@ -63,8 +63,11 @@ impl ProjectDetector for StackDetector {
             }
         }
 
-        // Deterministic output (useful for tests and for the user).
+        // Deterministic output (useful for tests and for the user), with
+        // dedup by manifest: a virtual workspace root expands its members
+        // AND the recursive discovery may reach the same manifest again.
         stacks.sort_by(|a, b| a.manifest.cmp(&b.manifest));
+        stacks.dedup_by(|a, b| a.manifest == b.manifest);
         Ok(stacks)
     }
 }
@@ -295,6 +298,99 @@ serde = "1"
         assert_eq!(stacks[0].language, Language::Rust);
         assert!(stacks[0].frameworks.contains(&"Tauri".to_string()));
         assert_eq!(stacks[0].dependencies.len(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn virtual_workspace_root_expands_members_with_inherited_versions(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[workspace]
+members = ["crates/*"]
+
+[workspace.dependencies]
+serde = "1.7.99"
+"#,
+        )?;
+        std::fs::create_dir_all(dir.path().join("crates/app"))?;
+        std::fs::create_dir_all(dir.path().join("crates/lib"))?;
+        std::fs::write(
+            dir.path().join("crates/app/Cargo.toml"),
+            r#"
+[package]
+name = "app"
+version = "0.1.0"
+
+[dependencies]
+serde = { workspace = true }
+"#,
+        )?;
+        std::fs::write(
+            dir.path().join("crates/lib/Cargo.toml"),
+            r#"
+[package]
+name = "lib"
+version = "0.1.0"
+
+[dependencies]
+libc = "0.2"
+"#,
+        )?;
+
+        let stacks = StackDetector::default().detect(&context(dir.path()))?;
+        assert_eq!(
+            stacks.len(),
+            2,
+            "raiz virtual vira um stack por membro: {stacks:?}"
+        );
+        // Deterministic order: sorted by manifest (app < lib).
+        let app = &stacks[0];
+        assert!(app.manifest.ends_with("crates/app/Cargo.toml"));
+        assert_eq!(app.name.as_deref(), Some("app"));
+        let serde = app
+            .dependencies
+            .iter()
+            .find(|d| d.name == "serde")
+            .expect("serde listado");
+        assert_eq!(
+            serde.version.as_deref(),
+            Some("1.7.99"),
+            "workspace = true resolve no [workspace.dependencies]"
+        );
+        assert!(stacks[1].manifest.ends_with("crates/lib/Cargo.toml"));
+        Ok(())
+    }
+
+    #[test]
+    fn workspace_true_without_a_root_stays_none_never_invented(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[package]
+name = "solo"
+version = "0.1.0"
+
+[dependencies]
+serde = { workspace = true }
+"#,
+        )?;
+
+        let stacks = StackDetector::default().detect(&context(dir.path()))?;
+        assert_eq!(stacks.len(), 1);
+        let serde = stacks[0]
+            .dependencies
+            .iter()
+            .find(|d| d.name == "serde")
+            .unwrap();
+        assert_eq!(
+            serde.version, None,
+            "sem workspace raiz = None honesto, nunca uma versão inventada"
+        );
         Ok(())
     }
 

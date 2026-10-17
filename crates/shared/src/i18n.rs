@@ -221,6 +221,48 @@ static EN: &[(&str, &str)] = &[
         "devforge run (resolve o start; execução crítica, humano confirma)",
         "devforge run (resolves start; critical execution, human confirms)",
     ),
+    // --- `audit` human output (main.rs: print_audit) ---
+    ("Pacotes auditados: {}", "Packages audited: {}"),
+    (
+        "⚠ 0 pacotes auditados — não há o que atestar aqui",
+        "⚠ 0 packages audited — there is nothing to certify here",
+    ),
+    (
+        "   (manifesto sem dependências declaradas — ex.: projeto novo, ou aponte",
+        "   (manifest without declared dependencies — e.g. a new project, or point",
+    ),
+    (
+        "    o DevForge num crate/membro específico). O veredito NÃO atesta nada.",
+        "    DevForge at a specific crate/member). The verdict certifies NOTHING.",
+    ),
+    ("Score (pior pacote): {}/100", "Score (worst package): {}/100"),
+    (
+        "(offline: hooks/downloads de registry não consultados — use --online)",
+        "(offline: registry hooks/downloads not queried — use --online)",
+    ),
+    (
+        "Nenhuma achação acima do limiar. ✅",
+        "No findings above the threshold. ✅",
+    ),
+    (
+        "• {} — {}  (score {}, confiança {})",
+        "• {} — {}  (score {}, confidence {})",
+    ),
+    ("fatores: {}", "factors: {}"),
+    ("Supressões ativas: {}", "Active suppressions: {}"),
+    ("  - {} ({}) expira {}", "  - {} ({}) expires {}"),
+    (
+        "⚠ Supressões EXPIRADAS (re-triagem necessária): {}",
+        "⚠ EXPIRED suppressions (re-triage needed): {}",
+    ),
+    ("  - {} ({}) expirou {}", "  - {} ({}) expired {}"),
+    (
+        "Veredito: SEM DADOS ⚠️  (0 pacotes — nada foi atestado)",
+        "Verdict: NO DATA ⚠️  (0 packages — nothing was certified)",
+    ),
+    ("Veredito: {}", "Verdict: {}"),
+    ("APROVADO ✅", "APPROVED ✅"),
+    ("REPROVADO ❌", "REJECTED ❌"),
 ];
 
 #[cfg(test)]
