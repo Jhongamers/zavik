@@ -377,7 +377,7 @@ pub(crate) fn cargo_bin_names(root: &Path) -> Vec<String> {
 }
 
 /// Packages under `cmd/*/main.go`.
-fn go_cmd_packages(root: &Path) -> Vec<String> {
+pub(crate) fn go_cmd_packages(root: &Path) -> Vec<String> {
     let mut packages = Vec::new();
     if let Ok(entries) = std::fs::read_dir(root.join("cmd")) {
         for entry in entries.flatten() {

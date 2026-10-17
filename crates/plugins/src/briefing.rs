@@ -47,7 +47,17 @@ fn build_runbook(root: &Path, stack: &ProjectStack, rb: &mut Runbook) {
             push(&mut rb.setup, "go mod download");
             push(&mut rb.build, "go build ./...");
             push(&mut rb.test, "go test ./...");
-            push(&mut rb.run, "go run .");
+            // NOVO-2 (corpus Fase B, real project cobra): `go run .` only
+            // when a main.go exists at the root; otherwise the runnable
+            // unit is the single cmd/ package (several → `run` asks).
+            if root.join("main.go").exists() {
+                push(&mut rb.run, "go run .");
+            } else {
+                let cmds = crate::runner::go_cmd_packages(root);
+                if cmds.len() == 1 {
+                    push(&mut rb.run, format!("go run ./cmd/{}", cmds[0]));
+                }
+            }
         }
         Language::Python => python_runbook(root, stack, rb),
         Language::Java | Language::Kotlin => jvm_runbook(stack, rb),
@@ -422,5 +432,41 @@ mod tests {
         );
         let briefing = extract_briefing(dir.path(), &[bin_stack]);
         assert!(briefing.runbook.run.contains(&"cargo run".to_string()));
+    }
+
+    #[test]
+    fn briefing_go_runbook_only_promises_go_run_with_a_main() {
+        // NOVO-2 (corpus Fase B, real project cobra): lib-only go.mod → no
+        // run entry; main.go at the root → "go run ."; single cmd/ → that
+        // path is the runnable one.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("go.mod"), "module example.com/x\n").unwrap();
+        let go_stack = || {
+            ProjectStack::new(
+                Language::Go,
+                dir.path().join("go.mod"),
+                Some("go modules".to_string()),
+            )
+        };
+
+        let briefing = extract_briefing(dir.path(), &[go_stack()]);
+        assert!(
+            briefing.runbook.run.is_empty(),
+            "lib Go não promete go run: {:?}",
+            briefing.runbook.run
+        );
+
+        std::fs::write(dir.path().join("main.go"), "package main").unwrap();
+        let briefing = extract_briefing(dir.path(), &[go_stack()]);
+        assert!(briefing.runbook.run.contains(&"go run .".to_string()));
+
+        std::fs::remove_file(dir.path().join("main.go")).unwrap();
+        std::fs::create_dir_all(dir.path().join("cmd/api")).unwrap();
+        std::fs::write(dir.path().join("cmd/api/main.go"), "package main").unwrap();
+        let briefing = extract_briefing(dir.path(), &[go_stack()]);
+        assert!(briefing
+            .runbook
+            .run
+            .contains(&"go run ./cmd/api".to_string()));
     }
 }

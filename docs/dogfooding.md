@@ -63,7 +63,7 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
    ruins (linhas "ignored") — o fallback é honesto, mas dá pra cobrir
    `no bench targets`/`error: no tests` (futuro, baixa prioridade).
 
-### Achado extra — corpus Fase A (17/10, mesmo dia)
+### Achados extras — corpus Fase A/B (17/10, mesmo dia)
 
 9. **`run`/`up`/runbook/hint do prepare sugeriam `cargo run` em projeto
    só-lib (NOVO-1)**: serde e anyhow (reais, SHA pinado) têm **zero bins**
@@ -74,6 +74,13 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
    ficam em silêncio; workspace com **1 único bin** segue `cargo run` (o
    caso do DevForge — verificado sem regressão). Testes: runner ×4,
    briefing ×1, provision ×2. Detalhes: `~/devforge-corpus/pagina-interna.md`.
+10. **Runbook Go prometia `go run .` sem `main.go` (NOVO-2)**: cobra (real,
+    Fase B) é lib Go — o `run` já respondia NotFound, mas o
+    `context.runbook.run` mandava `go run .`, que falharia. **Corrigido**:
+    o runbook Go só promete `go run .` com `main.go` na raiz, ou
+    `go run ./cmd/<único>` com um único pacote cmd; zero/vários → silêncio
+    (o `run` pergunta). Teste ×1. Candidatos da mesma classe, ainda sem
+    prova real: runbook C#/Dart/Swift/Elixir (JS e Python já condicionais).
 
 ### Comportamentos verificados OK (sem achado)
 
