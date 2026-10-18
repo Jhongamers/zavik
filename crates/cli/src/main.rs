@@ -234,7 +234,10 @@ fn run_env(
                     "{}",
                     t_fmt(
                         "    • {} ❌ fora do PATH — sugestão: {}",
-                        &[&tool.tool, &install_hint(&tool.tool)]
+                        &[
+                            &tool.tool,
+                            &install_hint(&tool.tool, devforge_shared::i18n::lang())
+                        ]
                     )
                 );
             }
@@ -1989,6 +1992,7 @@ fn local_missing_tools(
     mode: PrepareMode,
     context: &Context,
     stacks: &[ProjectStack],
+    lang: devforge_shared::i18n::Lang,
 ) -> Result<Vec<MissingTool>, Box<dyn std::error::Error>> {
     if mode != PrepareMode::Local {
         return Ok(Vec::new());
@@ -1996,7 +2000,7 @@ fn local_missing_tools(
     let Some(runner) = kernel.command_runner() else {
         return Ok(Vec::new());
     };
-    Ok(missing_tools(runner, stacks, &context.project_root)?)
+    Ok(missing_tools(runner, stacks, &context.project_root, lang)?)
 }
 
 fn print_missing_tools(missing: &[MissingTool]) {
@@ -2291,7 +2295,14 @@ fn run_prepare(
             None => TrustReport::default(),
         };
         let plan = Provisioner::build_plan(mode, &stacks, &context.project_root);
-        let missing_tools = local_missing_tools(kernel, mode, context, &stacks)?;
+        // JSON prose is always English (docs/design-i18n.md).
+        let missing_tools = local_missing_tools(
+            kernel,
+            mode,
+            context,
+            &stacks,
+            devforge_shared::i18n::Lang::En,
+        )?;
         output::prepare_plan(
             context,
             command_name(mode),
@@ -2319,7 +2330,8 @@ fn run_prepare(
     // possible, offers to install with explicit permission (Phase 2, curated). Without
     // the toolchain prepare cannot run — but with --dry-run we still show the plan.
     if mode == PrepareMode::Local {
-        let missing = local_missing_tools(kernel, mode, context, &stacks)?;
+        let lang = devforge_shared::i18n::lang();
+        let missing = local_missing_tools(kernel, mode, context, &stacks, lang)?;
         if !missing.is_empty() {
             if options.dry_run {
                 print_missing_tools(&missing);
@@ -2327,7 +2339,7 @@ fn run_prepare(
                 offer_toolchain_install(kernel, context, gate, &missing);
                 // Re-checks honestly: the user may have declined or the
                 // installation may have failed.
-                let still = local_missing_tools(kernel, mode, context, &stacks)?;
+                let still = local_missing_tools(kernel, mode, context, &stacks, lang)?;
                 if !still.is_empty() {
                     print_missing_tools(&still);
                     // Without the toolchain prepare cannot run: abort (the `up`
@@ -2355,9 +2367,12 @@ fn run_prepare(
         println!("      {}", step.detail);
     }
     if !plan.run_hints.is_empty() {
-        println!("\nPara rodar depois de preparado:");
+        println!(
+            "{}",
+            devforge_shared::i18n::t("\nPara rodar depois de preparado:")
+        );
         for hint in &plan.run_hints {
-            println!("   $ {hint}");
+            println!("   $ {}", devforge_shared::i18n::t(hint));
         }
     }
 

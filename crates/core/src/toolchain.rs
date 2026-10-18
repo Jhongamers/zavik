@@ -32,6 +32,7 @@ pub fn missing_tools(
     runner: &dyn CommandRunner,
     stacks: &[ProjectStack],
     root: &Path,
+    lang: devforge_shared::i18n::Lang,
 ) -> Result<Vec<MissingTool>, Error> {
     let mut missing = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
@@ -44,7 +45,7 @@ pub fn missing_tools(
             if !on_path(runner, root, &tool) {
                 missing.push(MissingTool {
                     language: stack.language,
-                    hint: install_hint(&tool),
+                    hint: install_hint(&tool, lang),
                     tool,
                 });
             }
@@ -160,13 +161,18 @@ fn tool_version(runner: &dyn CommandRunner, root: &Path, tool: &str) -> Option<S
 
 /// Install suggestion for the current OS family — a reasonable guess per OS,
 /// not a guarantee (see module docs).
-pub fn install_hint(tool: &str) -> String {
+pub fn install_hint(tool: &str, lang: devforge_shared::i18n::Lang) -> String {
     match std::env::consts::OS {
         "macos" => format!("brew install {}", brew_formula(tool)),
         "windows" => format!("winget install {}", winget_id(tool)),
         _ => match linux_install_cmd() {
             Some(cmd) => format!("{cmd} {}", linux_pkg(tool)),
-            None => format!("instale '{}' (pacote sugerido: {})", tool, linux_pkg(tool)),
+            // Composed prose: translate BEFORE formatting (docs/design-i18n.md).
+            None => devforge_shared::i18n::t_fmt_in(
+                lang,
+                "instale '{}' (pacote sugerido: {})",
+                &[tool, linux_pkg(tool)],
+            ),
         },
     }
 }
@@ -394,12 +400,14 @@ mod tests {
 
     #[test]
     fn reports_missing_tools() {
+        use devforge_shared::i18n::Lang;
         // `node` present, `npm` missing.
         let runner = FakeRunner {
             present: vec!["node".into()],
             asked: Mutex::new(Vec::new()),
         };
-        let missing = missing_tools(&runner, &[node_stack()], Path::new("/p")).unwrap();
+        let missing =
+            missing_tools(&runner, &[node_stack()], Path::new("/p"), Lang::PtBr).unwrap();
         let tools: Vec<_> = missing.iter().map(|m| m.tool.as_str()).collect();
         assert!(tools.contains(&"npm"), "npm devia faltar: {tools:?}");
         assert!(!tools.contains(&"node"), "node tava presente");
@@ -408,11 +416,13 @@ mod tests {
 
     #[test]
     fn nothing_missing_when_everything_present() {
+        use devforge_shared::i18n::Lang;
         let runner = FakeRunner {
             present: vec!["node".into(), "npm".into()],
             asked: Mutex::new(Vec::new()),
         };
-        let missing = missing_tools(&runner, &[node_stack()], Path::new("/p")).unwrap();
+        let missing =
+            missing_tools(&runner, &[node_stack()], Path::new("/p"), Lang::PtBr).unwrap();
         assert!(missing.is_empty());
     }
 

@@ -134,6 +134,15 @@ que é gate de lançamento.
   em runtime (§1). Como o contrato é "JSON/SARIF sempre EN", a correção é
   reescrever o autoral em inglês antes do launch (mudança de conteúdo, não
   de runtime); wrappers humanos seguem pelo catálogo.
+- **Toolchain hints migrados (18/10)**: `run_hints` (provision) e o hint
+  composto do `install_hint` (core/toolchain). Padrões: hints estáticos
+  traduzem NOS emitters (humano `t`, JSON `t_en` — comandos puros caem na
+  identidade honesta do catálogo); o fallback composto
+  `instale '{}' (pacote sugerido: {})` recebe `lang` por plumbing
+  (`missing_tools(…, lang)` → construction-lang — composição nunca casa com
+  a chave no emit). `env` humano passa `i18n::lang()`; o JSON de env não
+  leva hint. Testes: `prepare_run_hints_json_is_english_even_under_default_pt`
+  e `prepare_run_hints_human_follows_lang_flag` (fixture Python).
 
 ## 5. Fora de escopo (por ora)
 

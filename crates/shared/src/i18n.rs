@@ -896,6 +896,23 @@ static EN: &[(&str, &str)] = &[
         "dataset above the limit of {} bytes — refused",
     ),
     ("erro de arquivo: {}", "file error: {}"),
+    // --- Toolchain hints (core/provision run_hints + core/toolchain) ---
+    (
+        "python3 main.py  (ou o seu entrypoint)",
+        "python3 main.py  (or your entrypoint)",
+    ),
+    (
+        "mvn spring-boot:run  (ou java -jar target/*.jar)",
+        "mvn spring-boot:run  (or java -jar target/*.jar)",
+    ),
+    (
+        "\nPara rodar depois de preparado:",
+        "\nTo run after preparation:",
+    ),
+    (
+        "instale '{}' (pacote sugerido: {})",
+        "install '{}' (suggested package: {})",
+    ),
 ];
 
 #[cfg(test)]

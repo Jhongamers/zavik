@@ -236,7 +236,7 @@ pub fn prepare_plan(
                 "reason": s.reason,
                 "requires_permission": s.requires_permission,
             })).collect::<Vec<_>>(),
-            "run_hints": plan.run_hints,
+            "run_hints": plan.run_hints.iter().map(|hint| t_en(hint)).collect::<Vec<_>>(),
         },
     }));
 }

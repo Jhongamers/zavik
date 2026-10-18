@@ -23,6 +23,59 @@ fn fixture_npm() -> TempDir {
     dir
 }
 
+fn fixture_python() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    std::fs::write(dir.path().join("main.py"), "print(\"hello\")\n").unwrap();
+    std::fs::write(
+        dir.path().join("pyproject.toml"),
+        "[project]\nname = \"demo\"\n",
+    )
+    .unwrap();
+    dir
+}
+
+#[test]
+fn prepare_run_hints_json_is_english_even_under_default_pt() {
+    let dir = fixture_python();
+    let output = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["prepare", dir.path().to_str().unwrap(), "--json"])
+        .output()
+        .unwrap();
+    let body = json_lines(&output.stdout).pop().expect("json final de prepare");
+    let hints: Vec<&str> = body["plan"]["run_hints"]
+        .as_array()
+        .expect("run_hints array")
+        .iter()
+        .map(|value| value.as_str().expect("hint string"))
+        .collect();
+    assert!(
+        hints.contains(&"python3 main.py  (or your entrypoint)"),
+        "hint EN no JSON sob default pt: {hints:?}"
+    );
+}
+
+#[test]
+fn prepare_run_hints_human_follows_lang_flag() {
+    let dir = fixture_python();
+    let output = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args([
+            "prepare",
+            dir.path().to_str().unwrap(),
+            "--dry-run",
+            "--lang",
+            "en",
+        ])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("To run after preparation:"), "{stdout}");
+    assert!(stdout.contains("(or your entrypoint)"), "{stdout}");
+    assert!(!stdout.contains("Para rodar depois"), "sem pt: {stdout}");
+}
+
 /// Parses stdout as JSON Lines: every non-empty line must be valid JSON.
 fn json_lines(stdout: &[u8]) -> Vec<serde_json::Value> {
     String::from_utf8_lossy(stdout)
