@@ -550,3 +550,51 @@ fn parse_and_policy_errors_follow_lang_flag() {
         "stderr em EN: {stderr}"
     );
 }
+
+/// Content-class strings (finding messages, audit evidence) are authored in
+/// English and NEVER translated at runtime (docs/design-i18n.md §5): the UI
+/// shell follows `--lang` (default = pt-BR during the migration), the facts
+/// stay English — same class as SARIF and JSON prose.
+#[test]
+fn finding_and_evidence_content_stays_english_under_pt_default() {
+    let dir = TempDir::new().unwrap();
+    std::fs::write(
+        dir.path().join("package.json"),
+        r#"{"name":"content-fixture","version":"1.0.0","dependencies":{"express":"*","lodash":"git+https://github.com/lodash/lodash.git"}}"#,
+    )
+    .unwrap();
+
+    let analyze = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["analyze"])
+        .arg(dir.path())
+        .output()
+        .unwrap();
+    assert!(analyze.status.success());
+    let stdout = stdout_of(&analyze);
+    assert!(
+        stdout.contains("has no pinned version"),
+        "finding content é classe EN: {stdout}"
+    );
+    assert!(
+        stdout.contains("ANÁLISE DE DEPENDÊNCIAS"),
+        "shell do analyze continua pt-BR no default: {stdout}"
+    );
+
+    let audit = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["audit"])
+        .arg(dir.path())
+        .output()
+        .unwrap();
+    assert!(audit.status.success());
+    let stdout = stdout_of(&audit);
+    assert!(
+        stdout.contains("version not pinned (range/wildcard)"),
+        "evidence é classe EN: {stdout}"
+    );
+    assert!(
+        stdout.contains("AUDITORIA DE SUPPLY-CHAIN"),
+        "shell do audit continua pt-BR no default: {stdout}"
+    );
+}

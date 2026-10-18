@@ -1,7 +1,9 @@
 # Design — i18n (pt-BR + en)
 
-Status: **fase 2 em execução (17/10)** — fase 1 concluída (infra + conteúdo
-de topo). Decisão do fundador: antes do launch
+Status: **fase 3 em execução (18/10)** — fase 1 (infra) e fase 2 (runtime,
+superfícies do CLI) concluídas; reautoria de conteúdo em EN fechada
+(18/10). Falta o flip do default `en` + sweep final para fechar a fase 3.
+Decisão do fundador: antes do launch
 do Product Hunt o CLI precisa de `--lang` com catálogo **pt-BR + en** e
 **default `en`**. Enquanto a migração não fecha, o default continua `pt-BR`
 (status quo — nenhuma mensagem muda de idioma sem o usuário pedir).
@@ -181,7 +183,7 @@ que é gate de lançamento.
   cobertos por catálogo/paridade. O scan de literais pt pegou restos para
   os próximos lotes: logger "evento de domínio", `plugin 'stack_detector'`,
   erro `--lang exige um valor`.
-- **Lote de restos de dispatch/parse (19/10)**: logger de eventos,
+- **Lote de restos de dispatch/parse (18/10)**: logger de eventos,
   `plugin 'stack_detector'`/`'local_command_runner'`, erros de policy e
   supressão (`--fail-on`, `fail_on` do policy, factor, `expires`), erros de
   parse (`--lang`, `--timeout`, opção desconhecida, caminho duplicado),
@@ -191,10 +193,27 @@ que é gate de lançamento.
   dataset ganharam `lang` — os `detail` das exposições/kill-list chegam no
   JSON, então JSON/SARIF constroem em `Lang::En`. ~17 chaves. Teste
   `parse_and_policy_errors_follow_lang_flag`. **Varredura de residuais do
-  main.rs agora: ZERO literais pt fora de catálogo/reautoria.** Fase 3
-  confirmada como content-level: `evidence`, `finding/risk message`, `reason`
-  da kill list (conteúdo do dataset assinado — autorar em EN no build do
-  dataset) e asserts de teste em pt (não são superfície de usuário).
+  main.rs agora: ZERO literais pt fora de catálogo/reautoria.**
+- **Reautoria de conteúdo em EN (fase 3, content-level, 18/10)**: a classe
+  conteúdo (evidence/finding/risk) foi reescrita em EN e **nunca é
+  traduzida em runtime** — sai EN até sob o default pt-BR; o shell/UI
+  continua seguindo `--lang` (pt por enquanto). `audit.rs` (15: origens,
+  hooks, downloads/week, integridade, comportamento), `offline.rs` (6:
+  lockfile, versão fixada, origem, versões divergentes), `registry.rs`
+  (2: versão mais nova, limite de checagem), `trust.rs` (14: scripts de
+  instalação, ausência no registry, downloads, verificação offline) —
+ 39 trocas literais com validação1×-por-string. Fora da classe conteúdo,
+  migração **runtime** do que a varredura do main.rs não alcançava: prints
+  do `WorkflowEngine` em `core/src/lib.rs` (`CORE: tentativa` /
+  `executando passo` / `concluído` / `transitória` / `falhou` — `{:?}` dos
+  steps composto pra `{}` positional antes da chave) e o erro do detector
+  (`diretório de projeto não encontrado`) — 6 chaves. Teste
+  `finding_and_evidence_content_stays_english_under_pt_default` trava o
+  split (shell pt + conteúdo EN sob default). **Registrado pro sweep
+  final da fase 3**: linhas `KERNEL:`/`EVENTBUS:` (crates `kernel`/
+  `events`), prefixos do `Display` de erro do shared (`erro de I/O:`),
+  asserts de teste em pt (não são superfície de usuário) e o `reason`
+  do dataset no build (authoring, `docs/design-data.md`).
 
 ## 5. Fora de escopo (por ora)
 

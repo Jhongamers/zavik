@@ -40,6 +40,10 @@ dados **atualizados diariamente pela CI**:
    *(Amendment: a primeira versão disse "nomes canônicos" — direção errada;
    e `/malicious/` cru bateria em "malicious inputs" de `jsonata`/`surrealdb`
    = blacklist de pacotes legítimos — o E2E em dados reais pegou isso.)*
+   **Idioma (18/10)**: todo prose autorado no builder — o `reason` da kill
+   list e rótulos do dataset — é **EN**: classe conteúdo, nunca traduzido
+   em runtime (`docs/design-i18n.md` §1); o advisory natural do GHSA já
+   vem em EN. Build do dataset assinado precisa honorar isso.
 3. **Pacotes maliciosos/removidos** entram **na kill list** (item 2) — sinal
    mais forte; **não** são duplicados como advisory `low` do mesmo nome.
    Upgrade opcional (decisão do founder): corpus OSV

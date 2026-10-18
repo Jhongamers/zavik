@@ -56,28 +56,47 @@ impl WorkflowEngine {
         context: &Context,
         detector: &dyn ProjectDetector,
     ) -> Result<WorkflowReport, String> {
+        use devforge_shared::i18n::t_fmt;
+        let steps_dbg = format!("{steps:?}");
         for attempt in 1..=self.max_retries {
             println!(
-                "CORE: tentativa {}/{} para os passos {:?}",
-                attempt, self.max_retries, steps
+                "{}",
+                t_fmt(
+                    "CORE: tentativa {}/{} para os passos {}",
+                    &[
+                        &attempt.to_string(),
+                        &self.max_retries.to_string(),
+                        &steps_dbg,
+                    ]
+                )
             );
 
             match self.run_attempt(steps, context, detector) {
                 Ok(report) => {
-                    println!("CORE: workflow concluído na tentativa {attempt}.");
+                    println!(
+                        "{}",
+                        t_fmt(
+                            "CORE: workflow concluído na tentativa {}.",
+                            &[&attempt.to_string()]
+                        )
+                    );
                     return Ok(report);
                 }
                 Err(error) if attempt < self.max_retries => {
                     let delay = self.initial_backoff_secs * 2f64.powi((attempt - 1) as i32);
                     eprintln!(
-                        "CORE: falha transitória ('{error}'). Retentando em {delay:.2}s (backoff exponencial)..."
+                        "{}",
+                        t_fmt(
+                            "CORE: falha transitória ('{}'). Retentando em {}s (backoff exponencial)...",
+                            &[&error, &format!("{delay:.2}")]
+                        )
                     );
                     std::thread::sleep(Duration::from_secs_f64(delay));
                 }
                 Err(error) => {
-                    return Err(format!(
-                        "workflow falhou após {} tentativas. Erro final: {error}",
-                        self.max_retries
+                    return Err(t_fmt(
+                        "workflow falhou após {} tentativas. Erro final: {}",
+                        &[&self.max_retries.to_string(), &error],
                     ));
                 }
             }
@@ -95,7 +114,10 @@ impl WorkflowEngine {
         let mut report = WorkflowReport::default();
 
         for step in steps {
-            println!("CORE: -> executando passo '{step}'");
+            println!(
+                "{}",
+                devforge_shared::i18n::t_fmt("CORE: -> executando passo '{}'", &[step])
+            );
             if step == STEP_DEPENDENCY_SCAN {
                 let stacks = detector.detect(context).map_err(|e: Error| e.to_string())?;
                 report.detected_stacks = stacks;

@@ -273,10 +273,14 @@ swift-argument-parser, googletest). Achados:
       p/ JSON), `analyze`, `print_stacks`/`print_execution`, `context`
       (envelopes) e o corpo do `prepare` (confiança/toolchain/execução);
       restos de dispatch/parse migrados (logger, plugins, policy, parse) —
-      varredura de residuais no main.rs: ZERO. Faltam só a reautoria de
-      conteúdo (`evidence` + `finding/risk message` + reason do dataset) com
-      o flip do default. Fase 3
-      (gate de lançamento): migração completa verificada +
+      varredura de residuais no main.rs: ZERO. **Reautoria de conteúdo ✅
+      (18/10)**: `evidence` + `finding/risk message` reescritos em EN
+      (classe conteúdo — nunca traduzido em runtime, sai EN até sob default
+      pt-BR; teste trava o split) + prints do `WorkflowEngine` e erro do
+      detector migrados (6 chaves). Faltam o **sweep final** (`KERNEL:`/
+      `EVENTBUS:` dos crates kernel/events + prefixos do `Display` de erro
+      do shared) e o flip do default. Fase 3
+      (gate de lançamento): sweep final +
       **flip do default `en`** + testes atualizados. Catálogo hand-rolled
       (`pt-BR` + `en`, zero dependência — mantém offline-first), idioma
       automático pelo locale (`LC_ALL`/`LANG`) com override `--lang

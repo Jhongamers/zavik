@@ -39,8 +39,8 @@ pub(crate) fn verify(stacks: &[ProjectStack], report: &mut TrustReport) {
                 report.push(TrustRisk::warning(
                     dependency.name.clone(),
                     format!(
-                        "{}: '{}' vem de fora do registro (git/path/file). \
-                         Instala código de terceiros sem auditoria de package manager.",
+                        "{}: '{}' comes from outside the registry (git/path/file). \
+                         Installs third-party code without package-manager audit.",
                         stack.language, dependency.name
                     ),
                     dependency.version.clone().unwrap_or_default(),
@@ -73,8 +73,8 @@ fn check_lifecycle_scripts(manifest: &std::path::Path, report: &mut TrustReport)
             report.push(TrustRisk::critical(
                 manifest.display().to_string(),
                 format!(
-                    "Script '{hook}' executa código arbitrário no `npm install` \
-                     (pra qualquer um que clonar este projeto)."
+                    "Script '{hook}' runs arbitrary code on `npm install` \
+                     (for anyone who clones this project)."
                 ),
                 command.to_string(),
             ));
@@ -127,10 +127,10 @@ fn check_dependency_install_scripts(stacks: &[ProjectStack], report: &mut TrustR
 
     if !entries.is_empty() {
         report.push(TrustRisk::warning(
-            "dependências".to_string(),
+            "dependencies".to_string(),
             format!(
-                "{} dependência(s) rodam script(s) de instalação no `npm install` \
-                 (código de terceiros). Revise antes de prosseguir.",
+                "{} dependency/dependencies run install script(s) on `npm install` \
+                 (third-party code). Review before proceeding.",
                 entries.len()
             ),
             entries.join("\n"),
@@ -170,7 +170,7 @@ fn check_registry_presence(stacks: &[ProjectStack], report: &mut TrustReport) {
             if requests >= MAX_CHECKS {
                 report.push(TrustRisk::info(
                     dependency.name.clone(),
-                    format!("Verificação de registry limitada a {MAX_CHECKS} pacotes."),
+                    format!("Registry verification limited to {MAX_CHECKS} packages."),
                     String::new(),
                 ));
                 break 'stacks;
@@ -189,11 +189,11 @@ fn check_registry_presence(stacks: &[ProjectStack], report: &mut TrustReport) {
                         report.push(TrustRisk::critical(
                             dependency.name.clone(),
                             format!(
-                                "{}: '{}' não existe no npm. Possível typo, privado ou \
-                                 removido. Confira antes de instalar.",
+                                "{}: '{}' does not exist on npm. Possible typo, private or \
+                                 removed. Check before installing.",
                                 stack.language, dependency.name
                             ),
-                            format!("npm não conhece '{}'", dependency.name),
+                            format!("npm doesn't know '{}'", dependency.name),
                         ));
                     }
                     Some(n) if n < LOW_DOWNLOADS => {
@@ -201,8 +201,8 @@ fn check_registry_presence(stacks: &[ProjectStack], report: &mut TrustReport) {
                         report.push(TrustRisk::warning(
                             dependency.name.clone(),
                             format!(
-                                "{}: '{}' tem só {n} download(s)/semana no npm. Confirme que \
-                                 é o pacote esperado (possível typo de um pacote popular).",
+                                "{}: '{}' has only {n} download(s)/week on npm. Confirm \
+                                 it is the expected package (possible typo of a popular package).",
                                 stack.language, dependency.name
                             ),
                             format!("https://www.npmjs.com/package/{}", dependency.name),
@@ -218,11 +218,11 @@ fn check_registry_presence(stacks: &[ProjectStack], report: &mut TrustReport) {
                         report.push(TrustRisk::critical(
                             dependency.name.clone(),
                             format!(
-                                "{}: '{}' não existe no registry oficial. Possível typo, \
-                                 pacote privado ou fraude. Confira antes de instalar.",
+                                "{}: '{}' does not exist in the official registry. Possible typo, \
+                                 private package or fraud. Check before installing.",
                                 stack.language, dependency.name
                             ),
-                            format!("registry não conhece '{}'", dependency.name),
+                            format!("registry doesn't know '{}'", dependency.name),
                         ));
                     }
                     Presence::Unknown => unknowns.push((stack, dependency.name.as_str())),
@@ -236,8 +236,8 @@ fn check_registry_presence(stacks: &[ProjectStack], report: &mut TrustReport) {
     if !any_answered && !unknowns.is_empty() {
         report.push(TrustRisk::info(
             "registry",
-            "Sem rede: não foi possível verificar os pacotes no registry (offline?).",
-            format!("{} pacote(s) não verificado(s).", unknowns.len()),
+            "No network: couldn't verify packages against the registry (offline?).",
+            format!("{} package(s) not verified.", unknowns.len()),
         ));
         return;
     }
@@ -245,7 +245,7 @@ fn check_registry_presence(stacks: &[ProjectStack], report: &mut TrustReport) {
         report.push(TrustRisk::info(
             name.to_string(),
             format!(
-                "{}: não foi possível verificar '{name}' no registry (rede/registro indisponível).",
+                "{}: couldn't verify '{name}' against the registry (network/registry unavailable).",
                 stack.language
             ),
             String::new(),

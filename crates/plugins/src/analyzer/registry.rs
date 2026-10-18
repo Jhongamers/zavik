@@ -66,7 +66,7 @@ pub(crate) fn check_latest(stacks: &[ProjectStack], report: &mut AnalysisReport)
                     report.push(Finding::warning(
                         dependency.name.clone(),
                         format!(
-                            "{}: '{}' tem versão mais nova no registro: {current} -> {latest}.",
+                            "{}: '{}' has a newer version in the registry: {current} -> {latest}.",
                             stack.language, dependency.name
                         ),
                     ));
@@ -80,7 +80,7 @@ pub(crate) fn check_latest(stacks: &[ProjectStack], report: &mut AnalysisReport)
 
     if truncated {
         report.push(Finding::info(format!(
-            "Checagem online limitada a {MAX_CHECKS} dependências."
+            "Online check limited to {MAX_CHECKS} dependencies."
         )));
     }
 }

@@ -1311,6 +1311,32 @@ static EN: &[(&str, &str)] = &[
         "nome consta na kill list como malicioso/typosquat: {}",
         "name is on the kill list as malicious/typosquat: {}",
     ),
+    // --- workflow engine (core) and detector root error: human stderr only,
+    //     rendered with the global language where they are constructed ---
+    (
+        "CORE: tentativa {}/{} para os passos {}",
+        "CORE: attempt {}/{} for steps {}",
+    ),
+    (
+        "CORE: -> executando passo '{}'",
+        "CORE: -> executing step '{}'",
+    ),
+    (
+        "CORE: workflow concluído na tentativa {}.",
+        "CORE: workflow completed on attempt {}.",
+    ),
+    (
+        "CORE: falha transitória ('{}'). Retentando em {}s (backoff exponencial)...",
+        "CORE: transient failure ('{}'). Retrying in {}s (exponential backoff)...",
+    ),
+    (
+        "workflow falhou após {} tentativas. Erro final: {}",
+        "workflow failed after {} attempts. Final error: {}",
+    ),
+    (
+        "diretório de projeto não encontrado: {}",
+        "project directory not found: {}",
+    ),
 ];
 
 #[cfg(test)]

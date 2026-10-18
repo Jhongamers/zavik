@@ -177,7 +177,7 @@ mod tests {
         assert!(report
             .findings
             .iter()
-            .any(|f| f.severity == Severity::Warning && f.message.contains("sem versão fixada")));
+            .any(|f| f.severity == Severity::Warning && f.message.contains("no pinned version")));
     }
 
     #[test]
@@ -209,7 +209,7 @@ mod tests {
         assert!(report
             .findings
             .iter()
-            .any(|f| f.message.contains("fora do registro")));
+            .any(|f| f.message.contains("outside the package registry")));
     }
 
     #[test]
@@ -243,7 +243,7 @@ mod tests {
         assert!(report
             .findings
             .iter()
-            .any(|f| f.message.contains("versões diferentes")));
+            .any(|f| f.message.contains("different versions")));
     }
 
     #[test]

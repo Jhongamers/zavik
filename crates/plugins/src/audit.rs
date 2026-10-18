@@ -79,21 +79,21 @@ fn suspicious_reason(lower: &str) -> Option<String> {
     if (lower.contains("curl ") || lower.contains("wget ") || lower.contains("curl\t"))
         && pipes_to_shell.iter().any(|p| lower.contains(p))
     {
-        return Some("baixa e executa código remoto via shell".into());
+        return Some("downloads and executes remote code via shell".into());
     }
     if lower.contains("/dev/tcp") || lower.contains("nc -e") || lower.contains("bash -i") {
-        return Some("possível shell reversa".into());
+        return Some("possible reverse shell".into());
     }
     if lower.contains("id_rsa") || lower.contains(".ssh") || lower.contains(".aws")
         || lower.contains("credentials") || lower.contains(".npmrc")
         || lower.contains(".kube")
     {
-        return Some("acesso a credenciais/chaves locais".into());
+        return Some("accesses local credentials/keys".into());
     }
     if (lower.contains("base64 -d") || lower.contains("base64 --decode") || lower.contains("atob("))
         && (lower.contains("eval") || lower.contains("exec") || lower.contains("Function("))
     {
-        return Some("código ofuscado executado em runtime".into());
+        return Some("obfuscated code executed at runtime".into());
     }
     None
 }
@@ -232,32 +232,32 @@ fn audit_one(
     if !matches!(snapshot.origin, PackageOrigin::Registry) && !allowlisted {
         let desc = match &snapshot.origin {
             PackageOrigin::Git(url) => format!("git: {url}"),
-            PackageOrigin::Path => "caminho local".to_string(),
-            PackageOrigin::File => "arquivo".to_string(),
-            PackageOrigin::Registry => unreachable!("só chamado fora do registro"),
+            PackageOrigin::Path => "local path".to_string(),
+            PackageOrigin::File => "file".to_string(),
+            PackageOrigin::Registry => unreachable!("only called outside the registry"),
         };
         detected.push((
             RiskFactor::NonRegistry,
-            vec![format!("procedência fora do registro ({desc})")],
+            vec![format!("origin outside the registry ({desc})")],
         ));
     }
     if !snapshot.pinned {
         detected.push((
             RiskFactor::Unpinned,
-            vec!["versão não fixada (range/coringa)".to_string()],
+            vec!["version not pinned (range/wildcard)".to_string()],
         ));
     }
     if !snapshot.has_integrity {
         detected.push((
             RiskFactor::NoIntegrity,
-            vec!["sem hash de integridade conhecido".to_string()],
+            vec!["no known integrity hash".to_string()],
         ));
     }
     if let Some(downloads) = snapshot.downloads_last_week {
         if downloads < LOW_DOWNLOADS {
             detected.push((
                 RiskFactor::LowDownloads,
-                vec![format!("downloads/semana={downloads} (<{LOW_DOWNLOADS})")],
+                vec![format!("downloads/week={downloads} (<{LOW_DOWNLOADS})")],
             ));
         }
     }
@@ -271,15 +271,15 @@ fn audit_one(
             HookVerdict::Suspicious => analysis
                 .reason
                 .clone()
-                .unwrap_or_else(|| "comportamento suspeito".to_string()),
-            HookVerdict::Benign => "hook de instalação com padrão esperado".to_string(),
-            HookVerdict::Unknown => "hook de instalação não reconhecido".to_string(),
+                .unwrap_or_else(|| "suspicious behavior".to_string()),
+            HookVerdict::Benign => "install hook with expected pattern".to_string(),
+            HookVerdict::Unknown => "unrecognized install hook".to_string(),
         };
         detected.push((RiskFactor::InstallScript, vec![reason]));
         for behavior in analysis.behaviors {
             detected.push((
                 behavior,
-                vec![format!("comportamento '{}' no script", behavior.id())],
+                vec![format!("behavior '{}' in the script", behavior.id())],
             ));
         }
     }

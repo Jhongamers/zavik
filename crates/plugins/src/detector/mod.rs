@@ -45,9 +45,9 @@ impl ProjectDetector for StackDetector {
     fn detect(&self, context: &Context) -> Result<Vec<ProjectStack>, Error> {
         let root = &context.project_root;
         if !root.is_dir() {
-            return Err(Error::IoError(format!(
+            return Err(Error::IoError(devforge_shared::i18n::t_fmt(
                 "diretório de projeto não encontrado: {}",
-                root.display()
+                &[&root.display().to_string()],
             )));
         }
 

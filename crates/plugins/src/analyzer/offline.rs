@@ -31,18 +31,18 @@ fn check_dependency(
     let name = &dependency.name;
     match SourceKind::classify(dependency.version.as_deref()) {
         SourceKind::NonRegistry(source) => report.push(Finding::info(format!(
-            "{}: '{name}' vem de '{source}' (fora do registro de pacotes).",
+            "{}: '{name}' comes from '{source}' (outside the package registry).",
             stack.language
         ))),
         SourceKind::Wildcard(value) => report.push(Finding::warning(
             name.clone(),
             format!(
-                "{}: '{name}' está sem versão fixada ({value}). Fixe uma versão para builds reprodutíveis.",
+                "{}: '{name}' has no pinned version ({value}). Pin a version for reproducible builds.",
                 stack.language
             ),
         )),
         SourceKind::Missing => report.push(Finding::info(format!(
-            "{}: '{name}' não declara versão.",
+            "{}: '{name}' declares no version.",
             stack.language
         ))),
         SourceKind::Registry => {}
@@ -67,7 +67,7 @@ fn check_duplicate_versions(stack: &ProjectStack, report: &mut AnalysisReport) {
             report.push(Finding::warning(
                 name.clone(),
                 format!(
-                    "{}: '{name}' aparece com versões diferentes: {}.",
+                    "{}: '{name}' appears with different versions: {}.",
                     stack.language,
                     found.into_iter().collect::<Vec<_>>().join(", ")
                 ),
@@ -98,9 +98,9 @@ fn check_lockfile(root: &Path, stack: &ProjectStack, report: &mut AnalysisReport
     report.push(Finding::warning(
         stack.manifest.display().to_string(),
         format!(
-            "{}: nenhum lockfile encontrado (esperado: {}). O build pode não ser reproduzível.",
+            "{}: no lockfile found (expected: {}). The build may not be reproducible.",
             stack.language,
-            expected.join(" ou ")
+            expected.join(" or ")
         ),
     ));
 }
