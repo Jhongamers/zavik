@@ -315,7 +315,12 @@ pub struct DatasetReport {
 
 /// Pure matching: project dependencies × dataset. FP policy in the module
 /// docs; deterministic output (kill-list hits first, both groups sorted).
-pub fn findings_for(stacks: &[ProjectStack], dataset: &Dataset) -> Vec<DatasetFinding> {
+pub fn findings_for(
+    stacks: &[ProjectStack],
+    dataset: &Dataset,
+    lang: devforge_shared::i18n::Lang,
+) -> Vec<DatasetFinding> {
+    use devforge_shared::i18n::t_fmt_in;
     let normalize_for = |ecosystem: &str, name: &str| normalize_name(ecosystem, name);
 
     let mut bad_index: HashMap<(String, String), &BadName> = HashMap::new();
@@ -362,9 +367,10 @@ pub fn findings_for(stacks: &[ProjectStack], dataset: &Dataset) -> Vec<DatasetFi
                         kind: "bad_name",
                         severity: "high",
                         id: None,
-                        detail: format!(
+                        detail: t_fmt_in(
+                            lang,
                             "nome consta na kill list como malicioso/typosquat: {}",
-                            bad.reason
+                            &[&bad.reason],
                         ),
                         url: bad.url.clone(),
                     });
@@ -381,14 +387,16 @@ pub fn findings_for(stacks: &[ProjectStack], dataset: &Dataset) -> Vec<DatasetFi
                     let first = list[0];
                     let extra = list.len() - 1;
                     let detail = if extra == 0 {
-                        format!(
+                        t_fmt_in(
+                            lang,
                             "possível exposição ({}) publicada em {} — confira se sua versão está coberta",
-                            first.id, first.published
+                            &[&first.id, &first.published],
                         )
                     } else {
-                        format!(
+                        t_fmt_in(
+                            lang,
                             "possível exposição ({} + mais {} advisories para este pacote; este publicado em {}) — confira se sua versão está coberta",
-                            first.id, extra, first.published
+                            &[&first.id, &extra.to_string(), &first.published],
                         )
                     };
                     advisory_hits.push(DatasetFinding {
@@ -414,7 +422,12 @@ pub fn findings_for(stacks: &[ProjectStack], dataset: &Dataset) -> Vec<DatasetFi
 }
 
 /// Builds the report `audit` embeds (meta + findings) for `today`.
-pub fn build_report(stacks: &[ProjectStack], dataset: &Dataset, today: &str) -> DatasetReport {
+pub fn build_report(
+    stacks: &[ProjectStack],
+    dataset: &Dataset,
+    today: &str,
+    lang: devforge_shared::i18n::Lang,
+) -> DatasetReport {
     let age = age_days(&dataset.generated, today).unwrap_or(-1);
     DatasetReport {
         version: dataset.version.clone(),
@@ -423,7 +436,7 @@ pub fn build_report(stacks: &[ProjectStack], dataset: &Dataset, today: &str) -> 
         stale: age >= 0 && is_stale(age),
         advisories_total: dataset.advisories.len(),
         bad_names_total: dataset.bad_names.len(),
-        findings: findings_for(stacks, dataset),
+        findings: findings_for(stacks, dataset, lang),
     }
 }
 
@@ -683,7 +696,7 @@ mod tests {
         let mut s = stacks[0].clone();
         s.dependencies
             .push(Dependency::new("LoDaHs", None, DependencyKind::Runtime));
-        let findings = findings_for(&[s], &dataset);
+        let findings = findings_for(&[s], &dataset, devforge_shared::i18n::Lang::PtBr);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].kind, "bad_name");
         assert_eq!(findings[0].severity, "high");
@@ -695,7 +708,7 @@ mod tests {
     fn advisory_name_match_is_low_with_link_even_with_version() {
         let dataset = sample_dataset();
         let stacks = [stack(Language::JavaScript, &[("lodash", "4.17.21")])];
-        let findings = findings_for(&stacks, &dataset);
+        let findings = findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].kind, "advisory");
         assert_eq!(findings[0].severity, "low", "v1 propõe, não confirma");
@@ -717,7 +730,7 @@ mod tests {
             kind: "advisory".into(),
         });
         let stacks = [stack(Language::JavaScript, &[("lodash", "4.17.21")])];
-        let findings = findings_for(&stacks, &dataset);
+        let findings = findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr);
         assert_eq!(findings.len(), 1, "um pacote = um achado");
         assert!(findings[0].detail.contains("GHSA-test-1"), "id principal citado");
         assert!(
@@ -735,7 +748,7 @@ mod tests {
             Language::JavaScript,
             &[("lodash-x", "1.0.0"), ("notlodahs", "1.0.0"), ("lo-dahs", "1.0.0")],
         )];
-        assert!(findings_for(&stacks, &dataset).is_empty());
+        assert!(findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr).is_empty());
     }
 
     #[test]
@@ -743,7 +756,7 @@ mod tests {
         // `lodash` advisory is npm-only; same name in a Go project = nothing.
         let dataset = sample_dataset();
         let stacks = [stack(Language::Go, &[("lodash", "v1.2.3")])];
-        assert!(findings_for(&stacks, &dataset).is_empty());
+        assert!(findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr).is_empty());
     }
 
     #[test]
@@ -771,20 +784,20 @@ mod tests {
 
         // PyPI folds case + separators: `Foo_Bar` == `foo-bar` → matches.
         let py = [stack(Language::Python, &[("Foo_Bar", "1.0")])];
-        assert_eq!(findings_for(&py, &dataset).len(), 1);
+        assert_eq!(findings_for(&py, &dataset, devforge_shared::i18n::Lang::PtBr).len(), 1);
 
         // PyPI near-miss (`Foo_Bar_Baz` → `foo-bar-baz`) stays silent.
         let py_near = [stack(Language::Python, &[("Foo_Bar_Baz", "1.0")])];
-        assert!(findings_for(&py_near, &dataset).is_empty());
+        assert!(findings_for(&py_near, &dataset, devforge_shared::i18n::Lang::PtBr).is_empty());
 
         // RubyGems does NOT fold separators: `foo_bar` ≠ `foo-bar` → no match
         // (folding there would invent findings for distinct gems).
         let rb = [stack(Language::Ruby, &[("foo_bar", "1.0")])];
-        assert!(findings_for(&rb, &dataset).is_empty());
+        assert!(findings_for(&rb, &dataset, devforge_shared::i18n::Lang::PtBr).is_empty());
 
         // ...while the exact rubygems name does match (case-only fold).
         let rb_exact = [stack(Language::Ruby, &[("Foo-Bar", "1.0")])];
-        assert_eq!(findings_for(&rb_exact, &dataset).len(), 1);
+        assert_eq!(findings_for(&rb_exact, &dataset, devforge_shared::i18n::Lang::PtBr).len(), 1);
     }
 
     #[test]
@@ -810,8 +823,8 @@ mod tests {
             kind: "advisory".into(),
         });
 
-        let a = findings_for(&stacks, &dataset);
-        let b = findings_for(&stacks, &dataset);
+        let a = findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr);
+        let b = findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr);
         assert_eq!(a, b, "saída determinística");
         let kinds: Vec<&str> = a.iter().map(|f| f.kind).collect();
         assert_eq!(kinds, ["bad_name", "advisory", "advisory"]);

@@ -20,12 +20,23 @@ pub fn spawn_detached(
     args: &[String],
     root: &Path,
     log_path: &Path,
+    lang: devforge_shared::i18n::Lang,
 ) -> Result<u32, String> {
-    let log = std::fs::File::create(log_path)
-        .map_err(|error| format!("não abri o log {}: {error}", log_path.display()))?;
-    let stderr_log = log
-        .try_clone()
-        .map_err(|error| format!("não clonei o log {}: {error}", log_path.display()))?;
+    use devforge_shared::i18n::t_fmt_in;
+    let log = std::fs::File::create(log_path).map_err(|error| {
+        t_fmt_in(
+            lang,
+            "não abri o log {}: {}",
+            &[&log_path.display().to_string(), &error.to_string()],
+        )
+    })?;
+    let stderr_log = log.try_clone().map_err(|error| {
+        t_fmt_in(
+            lang,
+            "não clonei o log {}: {}",
+            &[&log_path.display().to_string(), &error.to_string()],
+        )
+    })?;
 
     let mut command = Command::new(program);
     command
@@ -55,7 +66,13 @@ pub fn spawn_detached(
     command
         .spawn()
         .map(|child| child.id())
-        .map_err(|error| format!("não foi possível executar '{program}': {error}"))
+        .map_err(|error| {
+            t_fmt_in(
+                lang,
+                "não foi possível executar '{}': {}",
+                &[program, &error.to_string()],
+            )
+        })
 }
 
 #[cfg(all(test, unix))]
@@ -74,7 +91,7 @@ mod tests {
     fn detached_process_lives_in_its_own_session_and_is_stoppable() {
         let dir = tmpdir("session");
         let log = dir.join("run.log");
-        let pid = spawn_detached("sleep", &["30".into()], &dir, &log).expect("spawn");
+        let pid = spawn_detached("sleep", &["30".into()], &dir, &log, devforge_shared::i18n::Lang::PtBr).expect("spawn");
         assert!(pid > 0, "PID devolvido: {pid}");
         unsafe {
             // Alive…
@@ -100,6 +117,7 @@ mod tests {
             &["-c".into(), "echo detach-marker".into()],
             &dir,
             &log,
+            devforge_shared::i18n::Lang::PtBr,
         )
         .expect("spawn");
 
@@ -123,7 +141,7 @@ mod tests {
         let dir = tmpdir("fail");
         let log = dir.join("run.log");
         let error =
-            spawn_detached("definitely-not-a-real-binary-xyz", &[], &dir, &log).unwrap_err();
+            spawn_detached("definitely-not-a-real-binary-xyz", &[], &dir, &log, devforge_shared::i18n::Lang::PtBr).unwrap_err();
         assert!(
             error.contains("definitely-not-a-real-binary-xyz"),
             "erro nomeia o comando: {error}"

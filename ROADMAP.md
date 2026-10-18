@@ -271,10 +271,11 @@ swift-argument-parser, googletest). Achados:
       `data`/`license` + SARIF p/ EN (17/10, `message_in(lang)` pros erros
       compostos); migrados também `up` (corpo/erros/clone construction-lang
       p/ JSON), `analyze`, `print_stacks`/`print_execution`, `context`
-      (envelopes) e o corpo do `prepare` (confiança/toolchain/execução).
-      Faltam os restos de dispatch/parse (logger, `stack_detector`,
-      `--lang`), a reautoria (`evidence` + `finding/risk message`) com o
-      flip do default. Fase 3
+      (envelopes) e o corpo do `prepare` (confiança/toolchain/execução);
+      restos de dispatch/parse migrados (logger, plugins, policy, parse) —
+      varredura de residuais no main.rs: ZERO. Faltam só a reautoria de
+      conteúdo (`evidence` + `finding/risk message` + reason do dataset) com
+      o flip do default. Fase 3
       (gate de lançamento): migração completa verificada +
       **flip do default `en`** + testes atualizados. Catálogo hand-rolled
       (`pt-BR` + `en`, zero dependência — mantém offline-first), idioma

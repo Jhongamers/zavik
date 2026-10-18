@@ -1245,6 +1245,72 @@ static EN: &[(&str, &str)] = &[
         "EXECUÇÃO (você será perguntado a cada passo)",
         "EXECUTION (you'll be asked at every step)",
     ),
+    // --- dispatch / parse / policy errors (human stderr) ---
+    (
+        "   [logger] evento de domínio: '{}'",
+        "   [logger] domain event: '{}'",
+    ),
+    (
+        "plugin 'stack_detector' não registrado",
+        "plugin 'stack_detector' not registered",
+    ),
+    (
+        "plugin 'local_command_runner' não registrado",
+        "plugin 'local_command_runner' not registered",
+    ),
+    (
+        "nenhuma stack detectada pra auditar",
+        "no stack detected to audit",
+    ),
+    (
+        "--fail-on inválido: {} (use low|medium|high|critical)",
+        "--fail-on invalid: {} (use low|medium|high|critical)",
+    ),
+    (
+        "fail_on inválido no policy: {}",
+        "invalid fail_on in policy: {}",
+    ),
+    (
+        "factor desconhecido na supressão: {}",
+        "unknown factor in suppression: {}",
+    ),
+    (
+        "supressão de '{}' sem 'expires' (expiração é obrigatória)",
+        "suppression of '{}' without 'expires' (expiration is mandatory)",
+    ),
+    (
+        "--lang exige um valor (pt-BR | en)",
+        "--lang requires a value (pt-BR | en)",
+    ),
+    (
+        "--timeout exige um número de segundos: {}",
+        "--timeout requires a number of seconds: {}",
+    ),
+    ("opção desconhecida: {}", "unknown option: {}"),
+    (
+        "caminho informado mais de uma vez: {}",
+        "path given more than once: {}",
+    ),
+    // --- detached runner: spawn_detached inner errors (the caller wraps
+    //     them, but they are interpolated as arguments — build in lang) ---
+    ("não abri o log {}: {}", "couldn't open the log {}: {}"),
+    (
+        "não clonei o log {}: {}",
+        "couldn't duplicate the log handle {}: {}",
+    ),
+    // --- dataset findings (construction-lang: they reach JSON) ---
+    (
+        "possível exposição ({}) publicada em {} — confira se sua versão está coberta",
+        "possible exposure ({}) published on {} — check whether your version is covered",
+    ),
+    (
+        "possível exposição ({} + mais {} advisories para este pacote; este publicado em {}) — confira se sua versão está coberta",
+        "possible exposure ({} + {} more advisories for this package; this one published on {}) — check whether your version is covered",
+    ),
+    (
+        "nome consta na kill list como malicioso/typosquat: {}",
+        "name is on the kill list as malicious/typosquat: {}",
+    ),
 ];
 
 #[cfg(test)]

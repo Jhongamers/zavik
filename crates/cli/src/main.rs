@@ -148,9 +148,15 @@ fn build_kernel(
     let mut kernel = Kernel::new();
 
     // The presentation layer just listens to domain events.
-    kernel
-        .event_bus()
-        .subscribe(|event| eprintln!("   [logger] evento de domínio: '{}'", event.event_type));
+    kernel.event_bus().subscribe(|event| {
+        eprintln!(
+            "{}",
+            devforge_shared::i18n::t_fmt(
+                "   [logger] evento de domínio: '{}'",
+                &[&event.event_type.to_string()],
+            )
+        );
+    });
 
     let plugin_context = PluginContext {
         id: "system".to_string(),
@@ -177,9 +183,9 @@ fn run_detect(
     }
     // Demonstrates the WorkflowEngine (the original use case).
     section("Workflow de detecção (dependency_scan)");
-    let detector = kernel
-        .detector()
-        .ok_or("plugin 'stack_detector' não registrado")?;
+    let detector = kernel.detector().ok_or(devforge_shared::i18n::t(
+        "plugin 'stack_detector' não registrado",
+    ))?;
     let steps = vec!["step_1_setup".to_string(), "dependency_scan".to_string()];
     let report = WorkflowEngine::new().run_workflow(&steps, context, detector)?;
     print_stacks(&report.detected_stacks);
@@ -197,7 +203,9 @@ fn run_env(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let stacks = kernel.detect_stacks(context)?;
     let Some(runner) = kernel.command_runner() else {
-        return Err("plugin 'local_command_runner' não registrado".into());
+        return Err(
+            devforge_shared::i18n::t("plugin 'local_command_runner' não registrado").into(),
+        );
     };
     let tools = env_snapshot(runner, &stacks, &context.project_root)?;
 
@@ -443,14 +451,17 @@ fn run_audit(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let stacks = kernel.detect_stacks(context)?;
     if stacks.is_empty() {
-        return Err("nenhuma stack detectada pra auditar".into());
+        return Err(devforge_shared::i18n::t("nenhuma stack detectada pra auditar").into());
     }
 
     // Policy + suppressions (versioned TOML) + override via --fail-on.
     let mut policy = load_policy(options.policy.as_deref())?;
     if let Some(fail_on) = &options.fail_on {
         policy.fail_on = AuditSeverity::parse(fail_on).ok_or_else(|| {
-            format!("--fail-on inválido: {fail_on} (use low|medium|high|critical)")
+            devforge_shared::i18n::t_fmt(
+                "--fail-on inválido: {} (use low|medium|high|critical)",
+                &[fail_on],
+            )
         })?;
     }
     let suppressions = load_suppressions(options.ignore.as_deref())?;
@@ -488,9 +499,16 @@ fn run_audit(
             None
         }
     };
+    // Dataset findings are composed for the output language: JSON/SARIF =
+    // English, human = current (construction-lang — details reach JSON).
+    let dataset_lang = if options.json || options.sarif {
+        devforge_shared::i18n::Lang::En
+    } else {
+        devforge_shared::i18n::lang()
+    };
     let dataset_report = installed
         .as_ref()
-        .map(|ds| dataset::build_report(&stacks, ds, &today_iso()));
+        .map(|ds| dataset::build_report(&stacks, ds, &today_iso(), dataset_lang));
 
     if options.sarif {
         let sarif = build_sarif(&report, &stacks, &context.project_root);
@@ -581,8 +599,9 @@ fn load_policy(path: Option<&Path>) -> Result<AuditPolicy, Box<dyn std::error::E
     let value: toml::Value = text.parse()?;
     let mut policy = AuditPolicy::default();
     if let Some(fail_on) = value.get("fail_on").and_then(|v| v.as_str()) {
-        policy.fail_on = AuditSeverity::parse(fail_on)
-            .ok_or_else(|| format!("fail_on inválido no policy: {fail_on}"))?;
+        policy.fail_on = AuditSeverity::parse(fail_on).ok_or_else(|| {
+            devforge_shared::i18n::t_fmt("fail_on inválido no policy: {}", &[fail_on])
+        })?;
     }
     if let Some(list) = value.get("allowlist").and_then(|v| v.as_array()) {
         policy.allowlist = list
@@ -619,12 +638,17 @@ fn load_suppressions(path: Option<&Path>) -> Result<Vec<Suppression>, Box<dyn st
                 .unwrap_or_default()
                 .to_string();
             let Some(factor) = RiskFactor::from_id(factor_id) else {
-                return Err(format!("factor desconhecido na supressão: {factor_id}").into());
+                return Err(devforge_shared::i18n::t_fmt(
+                    "factor desconhecido na supressão: {}",
+                    &[factor_id],
+                )
+                .into());
             };
             // Expiration is MANDATORY — an ignore never becomes an eternal shield.
             if expires.is_empty() {
-                return Err(format!(
-                    "supressão de '{package}' sem 'expires' (expiração é obrigatória)"
+                return Err(devforge_shared::i18n::t_fmt(
+                    "supressão de '{}' sem 'expires' (expiração é obrigatória)",
+                    &[&package],
                 )
                 .into());
             }
@@ -974,15 +998,20 @@ fn run_run(
                 )
             })
             .and_then(|_| {
-                spawn_detached(&plan.command, &plan.args, &context.project_root, &log_path).map_err(
-                    |error| {
-                        t_fmt_in(
-                            lang,
-                            "não foi possível executar '{}': {}",
-                            &[&display, &error.to_string()],
-                        )
-                    },
+                spawn_detached(
+                    &plan.command,
+                    &plan.args,
+                    &context.project_root,
+                    &log_path,
+                    lang,
                 )
+                .map_err(|error| {
+                    t_fmt_in(
+                        lang,
+                        "não foi possível executar '{}': {}",
+                        &[&display, &error.to_string()],
+                    )
+                })
             });
         match spawn_result {
             Ok(pid) => {
@@ -2683,7 +2712,7 @@ fn extract_lang(args: &mut Vec<String>) -> Result<Option<String>, String> {
         if arg == "--lang" {
             let value = args
                 .get(index + 1)
-                .ok_or("--lang exige um valor (pt-BR | en)")?
+                .ok_or(devforge_shared::i18n::t("--lang exige um valor (pt-BR | en)"))?
                 .clone();
             lang = Some(value);
             args.drain(index..=index + 1);
@@ -2723,11 +2752,12 @@ fn parse_options(args: &[String]) -> Result<(Option<PathBuf>, Options), String> 
                     "--policy" => options.policy = Some(PathBuf::from(value)),
                     "--ignore" => options.ignore = Some(PathBuf::from(value)),
                     "--timeout" => {
-                        options.timeout = Some(
-                            value
-                                .parse()
-                                .map_err(|_| format!("--timeout exige um número de segundos: {value}"))?,
-                        );
+                        options.timeout = Some(value.parse().map_err(|_| {
+                            devforge_shared::i18n::t_fmt(
+                                "--timeout exige um número de segundos: {}",
+                                &[value],
+                            )
+                        })?);
                     }
                     "--health" => options.health = Some(value.clone()),
                     "--until" => options.until = Some(value.clone()),
@@ -2742,11 +2772,14 @@ fn parse_options(args: &[String]) -> Result<(Option<PathBuf>, Options), String> 
                 break;
             }
             other if other.starts_with('-') => {
-                return Err(format!("opção desconhecida: {other}"));
+                return Err(devforge_shared::i18n::t_fmt("opção desconhecida: {}", &[other]));
             }
             other => {
                 if path.is_some() {
-                    return Err(format!("caminho informado mais de uma vez: {other}"));
+                    return Err(devforge_shared::i18n::t_fmt(
+                        "caminho informado mais de uma vez: {}",
+                        &[other],
+                    ));
                 }
                 path = Some(PathBuf::from(other));
             }

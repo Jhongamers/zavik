@@ -498,3 +498,55 @@ fn prepare_trust_and_plan_follow_lang_flag() {
         "sem pt no --lang en: {stdout}"
     );
 }
+
+#[test]
+fn parse_and_policy_errors_follow_lang_flag() {
+    // Composed parse errors are built in the current language.
+    let project = js_project();
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args([
+            "run",
+            project.path().to_str().unwrap(),
+            "--banana",
+            "--lang",
+            "en",
+        ])
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&en.stderr);
+    assert!(
+        stderr.contains("unknown option: --banana"),
+        "stderr em EN: {stderr}"
+    );
+
+    let pt = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["run", project.path().to_str().unwrap(), "--banana"])
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&pt.stderr);
+    assert!(
+        stderr.contains("opção desconhecida: --banana"),
+        "stderr em pt: {stderr}"
+    );
+
+    // audit --fail-on validation composes with the flag value.
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args([
+            "audit",
+            project.path().to_str().unwrap(),
+            "--fail-on",
+            "bogus",
+            "--lang",
+            "en",
+        ])
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&en.stderr);
+    assert!(
+        stderr.contains("--fail-on invalid: bogus (use low|medium|high|critical)"),
+        "stderr em EN: {stderr}"
+    );
+}

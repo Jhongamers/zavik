@@ -181,6 +181,20 @@ que é gate de lançamento.
   cobertos por catálogo/paridade. O scan de literais pt pegou restos para
   os próximos lotes: logger "evento de domínio", `plugin 'stack_detector'`,
   erro `--lang exige um valor`.
+- **Lote de restos de dispatch/parse (19/10)**: logger de eventos,
+  `plugin 'stack_detector'`/`'local_command_runner'`, erros de policy e
+  supressão (`--fail-on`, `fail_on` do policy, factor, `expires`), erros de
+  parse (`--lang`, `--timeout`, opção desconhecida, caminho duplicado),
+  "nenhuma stack detectada pra auditar". Dois achados de composição:
+  `spawn_detached` ganhou `lang` — seus erros internos vazavam **em pt como
+  argumento** do wrapper já-EN do caller; e `findings_for`/`build_report` do
+  dataset ganharam `lang` — os `detail` das exposições/kill-list chegam no
+  JSON, então JSON/SARIF constroem em `Lang::En`. ~17 chaves. Teste
+  `parse_and_policy_errors_follow_lang_flag`. **Varredura de residuais do
+  main.rs agora: ZERO literais pt fora de catálogo/reautoria.** Fase 3
+  confirmada como content-level: `evidence`, `finding/risk message`, `reason`
+  da kill list (conteúdo do dataset assinado — autorar em EN no build do
+  dataset) e asserts de teste em pt (não são superfície de usuário).
 
 ## 5. Fora de escopo (por ora)
 
