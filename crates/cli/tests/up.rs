@@ -53,6 +53,17 @@ fn prepare_run_hints_json_is_english_even_under_default_pt() {
         hints.contains(&"python3 main.py  (or your entrypoint)"),
         "hint EN no JSON sob default pt: {hints:?}"
     );
+    // Same contract for the plan steps (composed at construction in Lang::En).
+    let steps: Vec<&str> = body["plan"]["steps"]
+        .as_array()
+        .expect("steps array")
+        .iter()
+        .map(|step| step["title"].as_str().expect("title string"))
+        .collect();
+    assert!(
+        steps.contains(&"Create virtual environment (python venv)"),
+        "step title EN no JSON sob default pt: {steps:?}"
+    );
 }
 
 #[test]

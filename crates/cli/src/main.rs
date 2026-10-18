@@ -2294,7 +2294,12 @@ fn run_prepare(
             Some(analyzer) => analyzer.verify_trust(context, &stacks)?,
             None => TrustReport::default(),
         };
-        let plan = Provisioner::build_plan(mode, &stacks, &context.project_root);
+        let plan = Provisioner::build_plan(
+            mode,
+            &stacks,
+            &context.project_root,
+            devforge_shared::i18n::Lang::En,
+        );
         // JSON prose is always English (docs/design-i18n.md).
         let missing_tools = local_missing_tools(
             kernel,
@@ -2359,7 +2364,12 @@ fn run_prepare(
         return Ok(PrepareOutcome::Aborted);
     }
 
-    let plan = Provisioner::build_plan(mode, &stacks, &context.project_root);
+    let plan = Provisioner::build_plan(
+        mode,
+        &stacks,
+        &context.project_root,
+        devforge_shared::i18n::lang(),
+    );
 
     section(&format!("PLANO ({})", mode_label(mode)));
     for (index, step) in plan.steps.iter().enumerate() {

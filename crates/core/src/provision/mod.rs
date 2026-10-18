@@ -84,17 +84,25 @@ pub struct Provisioner;
 
 impl Provisioner {
     /// Builds the plan. Does not touch the user's environment.
-    pub fn build_plan(mode: PrepareMode, stacks: &[ProjectStack], root: &Path) -> PreparePlan {
+    ///
+    /// `lang` is the construction language: step titles/reasons are composed
+    /// here (JSON = `Lang::En`, human = current — docs/design-i18n.md).
+    pub fn build_plan(
+        mode: PrepareMode,
+        stacks: &[ProjectStack],
+        root: &Path,
+        lang: devforge_shared::i18n::Lang,
+    ) -> PreparePlan {
         let mut plan = PreparePlan::default();
         match mode {
             PrepareMode::Local => {
                 for stack in stacks {
-                    plan.steps.extend(local::steps_for(stack, root));
+                    plan.steps.extend(local::steps_for(stack, root, lang));
                     plan.run_hints.extend(local::run_hints_for(stack));
                 }
             }
             PrepareMode::Docker => {
-                plan.steps.extend(docker::steps_for(stacks, root));
+                plan.steps.extend(docker::steps_for(stacks, root, lang));
                 plan.run_hints.extend(docker::run_hints_for(stacks, root));
             }
         }
@@ -180,6 +188,7 @@ impl Provisioner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use devforge_shared::i18n::Lang;
     use devforge_shared::{Dependency, DependencyKind, Language};
     use devforge_sdk::{
         Capability, CommandOutput, CommandRunner, CommandSpec, Decision, FileSystemAccess,
@@ -282,7 +291,8 @@ mod tests {
         let mut stack = rust_stack();
         stack.manifest = dir.path().join("Cargo.toml");
 
-        let plan = Provisioner::build_plan(PrepareMode::Local, &[stack], dir.path());
+        let plan =
+            Provisioner::build_plan(PrepareMode::Local, &[stack], dir.path(), Lang::PtBr);
         assert!(plan
             .steps
             .iter()
@@ -301,7 +311,8 @@ mod tests {
         let mut stack = rust_stack();
         stack.manifest = dir.path().join("Cargo.toml");
 
-        let plan = Provisioner::build_plan(PrepareMode::Local, &[stack], dir.path());
+        let plan =
+            Provisioner::build_plan(PrepareMode::Local, &[stack], dir.path(), Lang::PtBr);
         assert!(
             plan.run_hints.is_empty(),
             "sem binário = sem dica de run: {:?}",
@@ -311,7 +322,12 @@ mod tests {
 
     #[test]
     fn executes_when_approved() {
-        let plan = Provisioner::build_plan(PrepareMode::Local, &[rust_stack()], Path::new("/p"));
+        let plan = Provisioner::build_plan(
+            PrepareMode::Local,
+            &[rust_stack()],
+            Path::new("/p"),
+            Lang::PtBr,
+        );
         let runner = FakeRunner::default();
         let fs = FakeFs::default();
         let report = Provisioner::execute(
@@ -331,7 +347,12 @@ mod tests {
 
     #[test]
     fn skips_when_denied() {
-        let plan = Provisioner::build_plan(PrepareMode::Local, &[rust_stack()], Path::new("/p"));
+        let plan = Provisioner::build_plan(
+            PrepareMode::Local,
+            &[rust_stack()],
+            Path::new("/p"),
+            Lang::PtBr,
+        );
         let runner = FakeRunner::default();
         let fs = FakeFs::default();
         let report = Provisioner::execute(
@@ -351,7 +372,12 @@ mod tests {
 
     #[test]
     fn dry_run_executes_nothing() {
-        let plan = Provisioner::build_plan(PrepareMode::Local, &[rust_stack()], Path::new("/p"));
+        let plan = Provisioner::build_plan(
+            PrepareMode::Local,
+            &[rust_stack()],
+            Path::new("/p"),
+            Lang::PtBr,
+        );
         let runner = FakeRunner::default();
         let fs = FakeFs::default();
         let report = Provisioner::execute(
@@ -374,7 +400,12 @@ mod tests {
 
     #[test]
     fn docker_does_not_overwrite_existing_dockerfile() {
-        let plan = Provisioner::build_plan(PrepareMode::Docker, &[rust_stack()], Path::new("/p"));
+        let plan = Provisioner::build_plan(
+            PrepareMode::Docker,
+            &[rust_stack()],
+            Path::new("/p"),
+            Lang::PtBr,
+        );
         let runner = FakeRunner::default();
         let mut fs = FakeFs::default();
         fs.existing.push(PathBuf::from("/p/Dockerfile"));

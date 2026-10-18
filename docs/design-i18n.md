@@ -143,6 +143,17 @@ que é gate de lançamento.
   a chave no emit). `env` humano passa `i18n::lang()`; o JSON de env não
   leva hint. Testes: `prepare_run_hints_json_is_english_even_under_default_pt`
   e `prepare_run_hints_human_follows_lang_flag` (fixture Python).
+- **Provision steps migrados (18/10)**: títulos/reasons dos steps de
+  `prepare` (local por linguagem + docker) construídos no idioma-alvo —
+  `build_plan(…, lang)` (JSON = `Lang::En`, humano = corrente), porque
+  títulos compostos (`Instalar dependências ({})` com `{pm}`) não casam
+  chave no emit. ~40 chaves novas. **Bug de método pego no smoke**: uma
+  chave minha saiu com placeholder nomeado `{pm}` — `t_fmt_in` só substitui
+  `{}` posicional, e o literal vazou cru; corrigido para `{}` e a lição
+  virou travamento: teste novo `keys_use_only_positional_placeholders`
+  (toda `{` de chave/tradução precisa pertencer a um `{}` literal — pega
+  também format specs como `{:?}`). Teste de integração estendido para
+  assertar step title EN no JSON sob default pt.
 
 ## 5. Fora de escopo (por ora)
 

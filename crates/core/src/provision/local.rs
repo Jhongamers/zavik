@@ -9,7 +9,12 @@ use devforge_sdk::CommandSpec;
 use std::path::Path;
 
 /// Local steps for a stack.
-pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep> {
+pub(crate) fn steps_for(
+    stack: &ProjectStack,
+    root: &Path,
+    lang: devforge_shared::i18n::Lang,
+) -> Vec<ProvisionStep> {
+    use devforge_shared::i18n::{t_fmt_in, translate};
     let manifest = stack
         .manifest
         .file_name()
@@ -18,8 +23,8 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
 
     match stack.language {
         Language::Rust => vec![run(
-            "Baixar e compilar dependências (cargo)",
-            "Compila o projeto e baixa todas as crates declaradas.",
+            translate(lang, "Baixar e compilar dependências (cargo)"),
+            translate(lang, "Compila o projeto e baixa todas as crates declaradas."),
             "cargo",
             vec!["build"],
             root,
@@ -28,37 +33,37 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
         Language::JavaScript | Language::TypeScript => {
             let pm = stack.package_manager.as_deref().unwrap_or("npm");
             vec![run(
-                &format!("Instalar dependências ({pm})"),
-                "Baixa e instala os pacotes do package.json.",
+                &t_fmt_in(lang, "Instalar dependências ({})", &[pm]),
+                translate(lang, "Baixa e instala os pacotes do package.json."),
                 pm,
                 vec!["install".to_string()],
                 root,
             )]
         }
 
-        Language::Python => python_steps(stack, manifest, root),
+        Language::Python => python_steps(stack, manifest, root, lang),
 
         Language::Go => vec![run(
-            "Baixar módulos (go mod download)",
-            "Baixa os módulos declarados no go.mod.",
+            translate(lang, "Baixar módulos (go mod download)"),
+            translate(lang, "Baixa os módulos declarados no go.mod."),
             "go",
             vec!["mod".to_string(), "download".to_string()],
             root,
         )],
 
-        Language::Java | Language::Kotlin => jvm_steps(stack, manifest, root),
+        Language::Java | Language::Kotlin => jvm_steps(stack, manifest, root, lang),
 
         Language::Php => vec![run(
-            "Instalar dependências (composer install)",
-            "Instala os pacotes do composer.json.",
+            translate(lang, "Instalar dependências (composer install)"),
+            translate(lang, "Instala os pacotes do composer.json."),
             "composer",
             vec!["install".to_string()],
             root,
         )],
 
         Language::Ruby => vec![run(
-            "Instalar gems (bundle install)",
-            "Instala as gems do Gemfile.",
+            translate(lang, "Instalar gems (bundle install)"),
+            translate(lang, "Instala as gems do Gemfile."),
             "bundle",
             vec!["install".to_string()],
             root,
@@ -66,15 +71,15 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
 
         Language::CSharp => vec![
             run(
-                "Restaurar pacotes (.NET)",
-                "Baixa os pacotes NuGet do projeto.",
+                translate(lang, "Restaurar pacotes (.NET)"),
+                translate(lang, "Baixa os pacotes NuGet do projeto."),
                 "dotnet",
                 vec!["restore".to_string()],
                 root,
             ),
             run(
-                "Compilar projeto (.NET)",
-                "Compila a solução em modo Debug.",
+                translate(lang, "Compilar projeto (.NET)"),
+                translate(lang, "Compila a solução em modo Debug."),
                 "dotnet",
                 vec!["build".to_string()],
                 root,
@@ -88,8 +93,8 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
                 "dart"
             };
             vec![run(
-                &format!("Baixar pacotes ({program} pub get)"),
-                "Baixa as dependências do pubspec.yaml.",
+                &t_fmt_in(lang, "Baixar pacotes ({} pub get)", &[program]),
+                translate(lang, "Baixa as dependências do pubspec.yaml."),
                 program,
                 vec!["pub".to_string(), "get".to_string()],
                 root,
@@ -98,15 +103,15 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
 
         Language::Elixir => vec![
             run(
-                "Baixar dependências (mix deps.get)",
-                "Baixa as dependências do mix.exs.",
+                translate(lang, "Baixar dependências (mix deps.get)"),
+                translate(lang, "Baixa as dependências do mix.exs."),
                 "mix",
                 vec!["deps.get".to_string()],
                 root,
             ),
             run(
-                "Compilar (mix compile)",
-                "Compila o projeto Elixir.",
+                translate(lang, "Compilar (mix compile)"),
+                translate(lang, "Compila o projeto Elixir."),
                 "mix",
                 vec!["compile".to_string()],
                 root,
@@ -114,8 +119,8 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
         ],
 
         Language::Swift => vec![run(
-            "Compilar pacote (swift build)",
-            "Resolve e compila as dependências do Package.swift.",
+            translate(lang, "Compilar pacote (swift build)"),
+            translate(lang, "Resolve e compila as dependências do Package.swift."),
             "swift",
             vec!["build".to_string()],
             root,
@@ -123,8 +128,8 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
 
         Language::C | Language::Cpp => vec![
             run(
-                "Configurar build (cmake)",
-                "Gera os arquivos de build na pasta build/.",
+                translate(lang, "Configurar build (cmake)"),
+                translate(lang, "Gera os arquivos de build na pasta build/."),
                 "cmake",
                 vec![
                     "-S".to_string(),
@@ -135,8 +140,8 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
                 root,
             ),
             run(
-                "Compilar (cmake --build)",
-                "Compila o projeto.",
+                translate(lang, "Compilar (cmake --build)"),
+                translate(lang, "Compila o projeto."),
                 "cmake",
                 vec!["--build".to_string(), "build".to_string()],
                 root,
@@ -147,18 +152,24 @@ pub(crate) fn steps_for(stack: &ProjectStack, root: &Path) -> Vec<ProvisionStep>
     }
 }
 
-fn python_steps(stack: &ProjectStack, manifest: &str, root: &Path) -> Vec<ProvisionStep> {
+fn python_steps(
+    stack: &ProjectStack,
+    manifest: &str,
+    root: &Path,
+    lang: devforge_shared::i18n::Lang,
+) -> Vec<ProvisionStep> {
+    use devforge_shared::i18n::translate;
     match stack.package_manager.as_deref() {
         Some("poetry") => vec![run(
-            "Instalar dependências (poetry install)",
-            "Cria o ambiente virtual e instala as dependências.",
+            translate(lang, "Instalar dependências (poetry install)"),
+            translate(lang, "Cria o ambiente virtual e instala as dependências."),
             "poetry",
             vec!["install".to_string()],
             root,
         )],
         Some("pipenv") => vec![run(
-            "Instalar dependências (pipenv install)",
-            "Cria o ambiente virtual e instala as dependências.",
+            translate(lang, "Instalar dependências (pipenv install)"),
+            translate(lang, "Cria o ambiente virtual e instala as dependências."),
             "pipenv",
             vec!["install".to_string()],
             root,
@@ -166,8 +177,8 @@ fn python_steps(stack: &ProjectStack, manifest: &str, root: &Path) -> Vec<Provis
         _ => {
             // Virtual environment + installation.
             let mut steps = vec![run(
-                "Criar ambiente virtual (python venv)",
-                "Cria a pasta .venv isolando as dependências do sistema.",
+                translate(lang, "Criar ambiente virtual (python venv)"),
+                translate(lang, "Cria a pasta .venv isolando as dependências do sistema."),
                 "python3",
                 vec!["-m".to_string(), "venv".to_string(), ".venv".to_string()],
                 root,
@@ -190,8 +201,8 @@ fn python_steps(stack: &ProjectStack, manifest: &str, root: &Path) -> Vec<Provis
             }
             if args.len() > 1 {
                 steps.push(run(
-                    "Instalar dependências (pip install)",
-                    "Instala as dependências do projeto no ambiente virtual.",
+                    translate(lang, "Instalar dependências (pip install)"),
+                    translate(lang, "Instala as dependências do projeto no ambiente virtual."),
                     pip,
                     args,
                     root,
@@ -202,7 +213,13 @@ fn python_steps(stack: &ProjectStack, manifest: &str, root: &Path) -> Vec<Provis
     }
 }
 
-fn jvm_steps(stack: &ProjectStack, manifest: &str, root: &Path) -> Vec<ProvisionStep> {
+fn jvm_steps(
+    stack: &ProjectStack,
+    manifest: &str,
+    root: &Path,
+    lang: devforge_shared::i18n::Lang,
+) -> Vec<ProvisionStep> {
+    use devforge_shared::i18n::translate;
     match stack.package_manager.as_deref() {
         Some("gradle") => {
             // Prefers the `./gradlew` wrapper when present.
@@ -213,16 +230,16 @@ fn jvm_steps(stack: &ProjectStack, manifest: &str, root: &Path) -> Vec<Provision
             };
             let _ = manifest;
             vec![run(
-                "Compilar (gradle build)",
-                "Baixa as dependências e compila o projeto.",
+                translate(lang, "Compilar (gradle build)"),
+                translate(lang, "Baixa as dependências e compila o projeto."),
                 program,
                 vec!["build".to_string()],
                 root,
             )]
         }
         _ => vec![run(
-            "Baixar dependências (maven)",
-            "Resolve as dependências e compila sem rodar testes.",
+            translate(lang, "Baixar dependências (maven)"),
+            translate(lang, "Resolve as dependências e compila sem rodar testes."),
             "mvn",
             vec![
                 "-q".to_string(),

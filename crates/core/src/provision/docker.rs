@@ -10,15 +10,23 @@ use devforge_sdk::CommandSpec;
 use std::path::Path;
 
 /// Steps for Docker mode: check docker, generate Dockerfile(s) and build.
-pub(crate) fn steps_for(stacks: &[ProjectStack], root: &Path) -> Vec<ProvisionStep> {
+pub(crate) fn steps_for(
+    stacks: &[ProjectStack],
+    root: &Path,
+    lang: devforge_shared::i18n::Lang,
+) -> Vec<ProvisionStep> {
+    use devforge_shared::i18n::{t_fmt_in, translate};
     let mut steps = Vec::new();
 
     // 0. Check whether Docker is available (no permission required).
     steps.push(ProvisionStep {
-        title: "Verificar Docker".to_string(),
+        title: translate(lang, "Verificar Docker").to_string(),
         detail: "docker --version".to_string(),
-        reason: "Confere se o Docker está instalado antes de gerar/buildar imagens."
-            .to_string(),
+        reason: translate(
+            lang,
+            "Confere se o Docker está instalado antes de gerar/buildar imagens.",
+        )
+        .to_string(),
         requires_permission: false,
         action: ProvisionAction::RunCommand(CommandSpec::new(
             "docker",
@@ -52,11 +60,12 @@ pub(crate) fn steps_for(stacks: &[ProjectStack], root: &Path) -> Vec<ProvisionSt
         let path = root.join(&file_name);
 
         steps.push(ProvisionStep {
-            title: format!("Gerar {file_name}"),
+            title: t_fmt_in(lang, "Gerar {}", &[&file_name]),
             detail: path.display().to_string(),
-            reason: format!(
+            reason: t_fmt_in(
+                lang,
                 "Cria o Dockerfile para o stack {} usando a imagem base oficial.",
-                stack.language
+                &[&stack.language.to_string()],
             ),
             requires_permission: true,
             action: ProvisionAction::WriteFile {
@@ -80,9 +89,13 @@ pub(crate) fn steps_for(stacks: &[ProjectStack], root: &Path) -> Vec<ProvisionSt
         ];
         let spec = CommandSpec::new("docker", args, root);
         steps.push(ProvisionStep {
-            title: format!("Construir imagem {image}"),
+            title: t_fmt_in(lang, "Construir imagem {}", &[&image]),
             detail: spec.display(),
-            reason: "Executa o `docker build` (pode baixar imagens e demorar).".to_string(),
+            reason: translate(
+                lang,
+                "Executa o `docker build` (pode baixar imagens e demorar).",
+            )
+            .to_string(),
             requires_permission: true,
             action: ProvisionAction::RunCommand(spec),
         });
@@ -340,7 +353,11 @@ mod tests {
 
     #[test]
     fn single_dockerfile_when_single_stack() {
-        let steps = steps_for(&[stack(Language::Rust, "demo")], Path::new("/p"));
+        let steps = steps_for(
+            &[stack(Language::Rust, "demo")],
+            Path::new("/p"),
+            devforge_shared::i18n::Lang::PtBr,
+        );
         // 1 check + 1 Dockerfile + 1 build.
         assert_eq!(steps.len(), 3);
         assert!(steps.iter().any(|s| s.detail.ends_with("/p/Dockerfile")));

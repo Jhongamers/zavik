@@ -913,6 +913,141 @@ static EN: &[(&str, &str)] = &[
         "instale '{}' (pacote sugerido: {})",
         "install '{}' (suggested package: {})",
     ),
+    // --- Provision steps (core/provision local + docker; built in the
+    //     target language — composed titles never match keys at emit) ---
+    (
+        "Baixar e compilar dependências (cargo)",
+        "Download and compile dependencies (cargo)",
+    ),
+    (
+        "Compila o projeto e baixa todas as crates declaradas.",
+        "Compiles the project and downloads every declared crate.",
+    ),
+    ("Instalar dependências ({})", "Install dependencies ({})"),
+    (
+        "Baixa e instala os pacotes do package.json.",
+        "Downloads and installs the packages in package.json.",
+    ),
+    (
+        "Baixar módulos (go mod download)",
+        "Download modules (go mod download)",
+    ),
+    (
+        "Baixa os módulos declarados no go.mod.",
+        "Downloads the modules declared in go.mod.",
+    ),
+    (
+        "Instalar dependências (composer install)",
+        "Install dependencies (composer install)",
+    ),
+    (
+        "Instala os pacotes do composer.json.",
+        "Installs the packages in composer.json.",
+    ),
+    (
+        "Instalar gems (bundle install)",
+        "Install gems (bundle install)",
+    ),
+    ("Instala as gems do Gemfile.", "Installs the gems in the Gemfile."),
+    ("Restaurar pacotes (.NET)", "Restore packages (.NET)"),
+    (
+        "Baixa os pacotes NuGet do projeto.",
+        "Downloads the project's NuGet packages.",
+    ),
+    ("Compilar projeto (.NET)", "Build project (.NET)"),
+    (
+        "Compila a solução em modo Debug.",
+        "Builds the solution in Debug mode.",
+    ),
+    (
+        "Baixar pacotes ({} pub get)",
+        "Download packages ({} pub get)",
+    ),
+    (
+        "Baixa as dependências do pubspec.yaml.",
+        "Downloads the dependencies in pubspec.yaml.",
+    ),
+    (
+        "Baixar dependências (mix deps.get)",
+        "Download dependencies (mix deps.get)",
+    ),
+    (
+        "Baixa as dependências do mix.exs.",
+        "Downloads the dependencies in mix.exs.",
+    ),
+    ("Compilar (mix compile)", "Compile (mix compile)"),
+    ("Compila o projeto Elixir.", "Compiles the Elixir project."),
+    (
+        "Compilar pacote (swift build)",
+        "Build package (swift build)",
+    ),
+    (
+        "Resolve e compila as dependências do Package.swift.",
+        "Resolves and compiles the Package.swift dependencies.",
+    ),
+    ("Configurar build (cmake)", "Configure build (cmake)"),
+    (
+        "Gera os arquivos de build na pasta build/.",
+        "Generates the build files in the build/ folder.",
+    ),
+    ("Compilar (cmake --build)", "Build (cmake --build)"),
+    ("Compila o projeto.", "Builds the project."),
+    (
+        "Instalar dependências (poetry install)",
+        "Install dependencies (poetry install)",
+    ),
+    (
+        "Cria o ambiente virtual e instala as dependências.",
+        "Creates the virtual environment and installs the dependencies.",
+    ),
+    (
+        "Instalar dependências (pipenv install)",
+        "Install dependencies (pipenv install)",
+    ),
+    (
+        "Criar ambiente virtual (python venv)",
+        "Create virtual environment (python venv)",
+    ),
+    (
+        "Cria a pasta .venv isolando as dependências do sistema.",
+        "Creates the .venv folder, isolating dependencies from the system.",
+    ),
+    (
+        "Instalar dependências (pip install)",
+        "Install dependencies (pip install)",
+    ),
+    (
+        "Instala as dependências do projeto no ambiente virtual.",
+        "Installs the project dependencies inside the virtual environment.",
+    ),
+    ("Compilar (gradle build)", "Build (gradle build)"),
+    (
+        "Baixa as dependências e compila o projeto.",
+        "Downloads the dependencies and builds the project.",
+    ),
+    (
+        "Baixar dependências (maven)",
+        "Download dependencies (maven)",
+    ),
+    (
+        "Resolve as dependências e compila sem rodar testes.",
+        "Resolves the dependencies and builds without running tests.",
+    ),
+    ("Verificar Docker", "Check Docker"),
+    (
+        "Confere se o Docker está instalado antes de gerar/buildar imagens.",
+        "Checks that Docker is installed before generating/building images.",
+    ),
+    ("Gerar {}", "Generate {}"),
+    (
+        "Cria o Dockerfile para o stack {} usando a imagem base oficial.",
+        "Creates the Dockerfile for the {} stack using the official base image.",
+    ),
+    ("Construir imagem {}", "Build image {}"),
+    (
+        "Executa o `docker build` (pode baixar imagens e demorar).",
+        "Runs `docker build` (may download images and take a while).",
+    ),
 ];
 
 #[cfg(test)]
@@ -937,6 +1072,25 @@ mod tests {
                 source.matches("{}").count(),
                 target.matches("{}").count(),
                 "placeholders divergem: {source} / {target}"
+            );
+        }
+    }
+
+    #[test]
+    fn keys_use_only_positional_placeholders() {
+        // A named placeholder ({pm}) or format spec ({:?}) inside a catalog
+        // key is NEVER substituted by t_fmt/t_fmt_in and leaks literally.
+        // Every `{` in a key must belong to a plain `{}`.
+        for (source, target) in EN {
+            assert_eq!(
+                source.matches('{').count(),
+                source.matches("{}").count(),
+                "chave com placeholder não-posicional: {source}"
+            );
+            assert_eq!(
+                target.matches('{').count(),
+                target.matches("{}").count(),
+                "tradução com placeholder não-posicional: {target}"
             );
         }
     }
