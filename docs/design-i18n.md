@@ -154,6 +154,19 @@ que é gate de lançamento.
   (toda `{` de chave/tradução precisa pertencer a um `{}` literal — pega
   também format specs como `{:?}`). Teste de integração estendido para
   assertar step title EN no JSON sob default pt.
+- **up + analyze + printers migrados (19/10)**: corpo humano do pipeline `up`
+  (plano/`Alvo`, seção `UP — ETAPA`, clone, resumo com `(pulado)`), erros do
+  `up_plan`/`repo_name`, `analyze` (plugin err, linha de registries, `Resumo`
+  com contagens, `Nada a reportar`), `print_stacks`, `print_execution`,
+  `mode_label` + `PLANO ({})`. `clone_repo` recebe `lang` (construction-lang):
+  o erro composto também cai no `"error"` do JSON — travado por
+  `up_clone_failure_json_error_is_english` (EN sob default pt; git limpa o
+  destino — assert de limpeza incluído). Plano em ambos os idiomas travado
+  por `up_dry_run_output_follows_lang_flag`. ~33 chaves novas.
+  **Registrado como reautoria fase 3 (classe evidence)**: `finding.message`
+  (análise), `risk.message` (confiança, entra no JSON trust/context) e
+  labels de `key.kind` — prosa autorada no core; os envelopes ao redor já
+  traduzem. `context` ficou só com esses itens (cabeçalhos já eram fase 1).
 
 ## 5. Fora de escopo (por ora)
 

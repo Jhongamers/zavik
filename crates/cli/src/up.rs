@@ -56,6 +56,7 @@ pub fn is_git_url(target: &str) -> bool {
 /// Derives the clone destination directory name from the URL
 /// (`git@host:org/repo.git` → `repo`), sanitized to `[A-Za-z0-9._-]`.
 pub fn repo_name(url: &str) -> Result<String, String> {
+    use devforge_shared::i18n::t_fmt;
     let trimmed = url.strip_suffix(".git").unwrap_or(url);
     let last = trimmed.rsplit(['/', ':']).next().unwrap_or("");
     let sanitized: String = last
@@ -63,7 +64,10 @@ pub fn repo_name(url: &str) -> Result<String, String> {
         .filter(|character| character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | '-'))
         .collect();
     if sanitized.is_empty() || sanitized == "." || sanitized == ".." {
-        return Err(format!("não consegui derivar o nome do repositório de: {url}"));
+        return Err(t_fmt(
+            "não consegui derivar o nome do repositório de: {}",
+            &[url],
+        ));
     }
     Ok(sanitized)
 }
@@ -75,14 +79,22 @@ pub fn up_plan(
     until: Option<&str>,
     skip: &[&str],
 ) -> Result<Vec<UpStep>, String> {
+    use devforge_shared::i18n::{t, t_fmt};
     for value in skip {
-        step_for(value)
-            .ok_or_else(|| format!("--skip: etapa desconhecida: {value} (válidas: {VALID_STEPS})"))?;
+        step_for(value).ok_or_else(|| {
+            t_fmt(
+                "--skip: etapa desconhecida: {} (válidas: {})",
+                &[value, VALID_STEPS],
+            )
+        })?;
     }
     let until_index = match until {
         Some(name) => {
             let step = step_for(name).ok_or_else(|| {
-                format!("--until: etapa desconhecida: {name} (válidas: {VALID_STEPS})")
+                t_fmt(
+                    "--until: etapa desconhecida: {} (válidas: {})",
+                    &[name, VALID_STEPS],
+                )
             })?;
             Some(
                 ORDER
@@ -96,13 +108,15 @@ pub fn up_plan(
     if skip.contains(&"clone") {
         // Never sensible: a path has no clone step; with a URL the clone IS
         // the target (skipping it would silently run on the cwd instead).
-        return Err(
-            "--skip clone não é suportado: sem URL não há o que clonar; com URL o clone é obrigatório"
-                .to_string(),
-        );
+        return Err(t(
+            "--skip clone não é suportado: sem URL não há o que clonar; com URL o clone é obrigatório",
+        )
+        .to_string());
     }
     if !target_is_url && until == Some("clone") {
-        return Err("--until clone exige uma URL (sem URL não há etapa de clone)".to_string());
+        return Err(
+            t("--until clone exige uma URL (sem URL não há etapa de clone)").to_string(),
+        );
     }
 
     let mut plan = Vec::new();

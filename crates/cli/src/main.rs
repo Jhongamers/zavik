@@ -265,7 +265,9 @@ fn run_analyze(
     let stacks = kernel.detect_stacks(context)?;
     let analyzer = kernel
         .analyzer()
-        .ok_or("plugin 'dependency_analyzer' não registrado")?;
+        .ok_or(devforge_shared::i18n::t(
+            "plugin 'dependency_analyzer' não registrado",
+        ))?;
     let analysis_options = AnalysisOptions {
         check_latest: options.online,
     };
@@ -281,7 +283,12 @@ fn run_analyze(
         return Ok(());
     }
     if options.online {
-        println!("\nConsultando registries (crates.io / npm / PyPI)… isso pode demorar.");
+        println!(
+            "{}",
+            devforge_shared::i18n::t(
+                "\nConsultando registries (crates.io / npm / PyPI)… isso pode demorar."
+            )
+        );
     }
     print_findings(&report);
     Ok(())
@@ -306,7 +313,7 @@ fn run_context(
 
     print_stacks(&stacks);
     if stacks.is_empty() {
-        println!("Nenhum stack reconhecido.");
+        println!("{}", devforge_shared::i18n::t("Nenhum stack reconhecido."));
         return Ok(());
     }
 
@@ -1888,9 +1895,10 @@ fn civil_from_days(z: i64) -> String {
 }
 
 fn print_findings(report: &AnalysisReport) {
+    use devforge_shared::i18n::t;
     section("ANÁLISE DE DEPENDÊNCIAS");
     if report.is_empty() {
-        println!("✅ Nada a reportar: dependências e lockfiles parecem saudáveis.");
+        println!("{}", t("✅ Nada a reportar: dependências e lockfiles parecem saudáveis."));
         return;
     }
 
@@ -1904,10 +1912,15 @@ fn print_findings(report: &AnalysisReport) {
     }
 
     println!(
-        "\nResumo: {} crítico(s), {} aviso(s), {} informação(ões).",
-        report.count(Severity::Critical),
-        report.count(Severity::Warning),
-        report.count(Severity::Info)
+        "{}",
+        devforge_shared::i18n::t_fmt(
+            "\nResumo: {} crítico(s), {} aviso(s), {} informação(ões).",
+            &[
+                &report.count(Severity::Critical).to_string(),
+                &report.count(Severity::Warning).to_string(),
+                &report.count(Severity::Info).to_string(),
+            ],
+        )
     );
 }
 
@@ -2120,17 +2133,24 @@ fn run_up(
                        "target": target, "steps": steps})
             );
         } else {
+            use devforge_shared::i18n::{t, t_fmt};
             section("PLANO DO UP");
-            println!("Alvo: {target}\n");
+            println!("{}", t_fmt("Alvo: {}\n", &[&target]));
             for (index, step) in all_steps.iter().enumerate() {
                 let suffix = if plan.contains(step) {
                     ""
                 } else {
-                    "   (pulado por flag)"
+                    t("   (pulado por flag)")
                 };
-                println!("{:>2}. {} — {}{}", index + 1, step.name(), step.description(), suffix);
+                println!(
+                    "{:>2}. {} — {}{}",
+                    index + 1,
+                    step.name(),
+                    step.description(),
+                    suffix
+                );
             }
-            println!("\n(--dry-run: nada foi executado.)");
+            println!("{}", t("\n(--dry-run: nada foi executado.)"));
         }
         return Ok(());
     }
@@ -2141,18 +2161,29 @@ fn run_up(
 
     for (position, step) in plan.iter().enumerate() {
         if !options.json {
-            section(&format!(
+            section(&devforge_shared::i18n::t_fmt(
                 "UP — ETAPA {} DE {}: {}",
-                position + 1,
-                plan.len(),
-                step.name().to_uppercase()
+                &[
+                    &(position + 1).to_string(),
+                    &plan.len().to_string(),
+                    &step.name().to_uppercase(),
+                ],
             ));
         }
         match step {
             UpStep::Clone => {
-                let url = url.ok_or("clone sem URL (inconsistência interna do plano)")?;
+                let url = url.ok_or(devforge_shared::i18n::t(
+                    "clone sem URL (inconsistência interna do plano)",
+                ))?;
                 let destination = env::current_dir()?.join(up::repo_name(url)?);
-                if let Err(error) = clone_repo(url, &destination) {
+                // Clone errors are composed AND reach the JSON `"error"`
+                // field: build them in the target language (construction-lang).
+                let lang = if options.json {
+                    devforge_shared::i18n::Lang::En
+                } else {
+                    devforge_shared::i18n::lang()
+                };
+                if let Err(error) = clone_repo(url, &destination, lang) {
                     let diagnosis = diagnose(&error);
                     if options.json {
                         println!(
@@ -2170,7 +2201,11 @@ fn run_up(
                     project_root: destination,
                 };
                 if !options.json {
-                    println!("✅ clonado em {}", active_context.project_root.display());
+                    let cloned_into = active_context.project_root.display().to_string();
+                    println!(
+                        "{}",
+                        devforge_shared::i18n::t_fmt("✅ clonado em {}", &[&cloned_into])
+                    );
                 }
                 cloned_kernel = Some(build_kernel(&active_context, options.all)?);
                 statuses.push(("clone", "ok"));
@@ -2232,18 +2267,22 @@ fn emit_up_summary(
                    "steps": steps, "exit_code": exit_code})
         );
     } else {
+        use devforge_shared::i18n::t;
         section("RESULTADO DO UP");
         for step in all_steps {
             match statuses.iter().find(|(name, _)| *name == step.name()) {
                 Some((_, "ok")) => println!("✅ {}", step.name()),
                 Some((_, state)) => println!("⏹️  {} ({state})", step.name()),
-                None => println!("⏭️  {} (pulado)", step.name()),
+                None => println!("⏭️  {} {}", step.name(), t("(pulado)")),
             }
         }
         if status == "ok" {
-            println!("\n✨ Pipeline concluído.");
+            println!("{}", t("\n✨ Pipeline concluído."));
         } else {
-            println!("\n⏹️ Pipeline interrompido — nada além do ponto de aborto foi executado.");
+            println!(
+                "{}",
+                t("\n⏹️ Pipeline interrompido — nada além do ponto de aborto foi executado.")
+            );
         }
     }
 }
@@ -2252,20 +2291,32 @@ fn emit_up_summary(
 /// defense-in-depth against template hooks (`core.hooksPath=/dev/null` —
 /// hooks/config don't travel with a clone anyway; submodules/LFS would).
 /// git's progress goes to stderr, so `--json` stdout stays clean JSONL.
-fn clone_repo(url: &str, destination: &Path) -> Result<(), String> {
+fn clone_repo(
+    url: &str,
+    destination: &Path,
+    lang: devforge_shared::i18n::Lang,
+) -> Result<(), String> {
+    use devforge_shared::i18n::t_fmt_in;
     if destination.exists() {
-        return Err(format!(
+        return Err(t_fmt_in(
+            lang,
             "o destino já existe: {} — nada foi clonado (remova ou use outro alvo)",
-            destination.display()
+            &[&destination.display().to_string()],
         ));
     }
     let status = std::process::Command::new("git")
         .args(["-c", "core.hooksPath=/dev/null", "clone", "--depth", "1", url])
         .arg(destination)
         .status()
-        .map_err(|error| format!("não consegui executar git: {error}"))?;
+        .map_err(|error| {
+            t_fmt_in(
+                lang,
+                "não consegui executar git: {}",
+                &[&error.to_string()],
+            )
+        })?;
     if !status.success() {
-        return Err(format!("git clone falhou ({status})"));
+        return Err(t_fmt_in(lang, "git clone falhou ({})", &[&status.to_string()]));
     }
     Ok(())
 }
@@ -2371,7 +2422,7 @@ fn run_prepare(
         devforge_shared::i18n::lang(),
     );
 
-    section(&format!("PLANO ({})", mode_label(mode)));
+    section(&devforge_shared::i18n::t_fmt("PLANO ({})", &[mode_label(mode)]));
     for (index, step) in plan.steps.iter().enumerate() {
         println!("{:>2}. {}", index + 1, step.title);
         println!("      {}", step.detail);
@@ -2419,27 +2470,37 @@ fn run_prepare(
 }
 
 fn print_stacks(stacks: &[ProjectStack]) {
+    use devforge_shared::i18n::{t, t_fmt};
     section("STACKS DETECTADOS");
     if stacks.is_empty() {
-        println!("Nenhum manifesto reconhecido neste diretório.");
+        println!("{}", t("Nenhum manifesto reconhecido neste diretório."));
         return;
     }
     for stack in stacks {
+        let language = stack.language.to_string();
+        let manager = stack.package_manager.as_deref().unwrap_or("-");
+        let name = stack.name.as_deref().unwrap_or("-");
         println!(
-            "\n• Linguagem : {}   |   Gerenciador: {}   |   Nome: {}",
-            stack.language,
-            stack.package_manager.as_deref().unwrap_or("-"),
-            stack.name.as_deref().unwrap_or("-")
+            "{}",
+            t_fmt(
+                "\n• Linguagem : {}   |   Gerenciador: {}   |   Nome: {}",
+                &[&language, manager, name],
+            )
         );
-        println!("  Manifesto : {}", stack.manifest.display());
+        let manifest = stack.manifest.display().to_string();
+        println!("{}", t_fmt("  Manifesto : {}", &[&manifest]));
         if !stack.frameworks.is_empty() {
             println!("  Frameworks: {}", stack.frameworks.join(", "));
         }
-        println!("  Dependências: {}", stack.dependencies.len());
+        println!(
+            "{}",
+            t_fmt("  Dependências: {}", &[&stack.dependencies.len().to_string()])
+        );
     }
 }
 
 fn print_execution(report: &PrepareReport) {
+    use devforge_shared::i18n::{t, t_fmt};
     section("RESULTADO");
     for title in &report.executed {
         println!("✅ {title}");
@@ -2448,19 +2509,29 @@ fn print_execution(report: &PrepareReport) {
         println!("⏭️  {title}");
     }
     if let Some(error) = &report.failed {
-        println!("\n❌ A execução parou: {error}");
-        println!("   Corrija o problema e rode novamente.");
+        println!("{}", t_fmt("\n❌ A execução parou: {}", &[error.as_str()]));
+        println!("{}", t("   Corrija o problema e rode novamente."));
     } else if report.executed.is_empty() && report.skipped.is_empty() {
-        println!("Nada foi executado.");
+        println!("{}", t("Nada foi executado."));
     } else {
-        println!("\n✨ Concluído: {} passo(s) executado(s), {} pulado(s).", report.executed.len(), report.skipped.len());
+        println!(
+            "{}",
+            t_fmt(
+                "\n✨ Concluído: {} passo(s) executado(s), {} pulado(s).",
+                &[
+                    &report.executed.len().to_string(),
+                    &report.skipped.len().to_string(),
+                ],
+            )
+        );
     }
 }
 
 fn mode_label(mode: PrepareMode) -> &'static str {
+    use devforge_shared::i18n::t;
     match mode {
-        PrepareMode::Local => "sem Docker",
-        PrepareMode::Docker => "com Docker",
+        PrepareMode::Local => t("sem Docker"),
+        PrepareMode::Docker => t("com Docker"),
     }
 }
 

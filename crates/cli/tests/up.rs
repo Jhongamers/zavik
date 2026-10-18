@@ -230,3 +230,32 @@ fn url_with_skip_clone_is_rejected() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("--skip clone"), "stderr: {stderr}");
 }
+
+#[test]
+fn up_clone_failure_json_error_is_english() {
+    // The composed clone error also reaches the JSON `"error"` field: it is
+    // built in the target language (construction-lang), so JSON stays English
+    // even under the default pt language.
+    let sandbox = TempDir::new().unwrap();
+    let missing = sandbox.path().join("nope-clone-src.git");
+    let url = format!("file://{}", missing.display());
+    let output = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .current_dir(sandbox.path())
+        .args(["up", &url, "--json", "--until", "clone"])
+        .output()
+        .unwrap();
+    assert!(
+        !output.status.success(),
+        "clone de fonte inexistente deve falhar"
+    );
+    let line: serde_json::Value = json_lines(&output.stdout)
+        .into_iter()
+        .last()
+        .expect("uma linha JSON de falha");
+    let error = line["error"].as_str().expect("error string");
+    assert!(error.contains("git clone failed"), "error EN: {error}");
+    assert!(!error.contains("falhou"), "resíduo pt no JSON: {error}");
+    // git removes the destination on failure — nothing left behind.
+    assert!(!sandbox.path().join("nope-clone-src").exists());
+}

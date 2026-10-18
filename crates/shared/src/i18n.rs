@@ -1048,6 +1048,111 @@ static EN: &[(&str, &str)] = &[
         "Executa o `docker build` (pode baixar imagens e demorar).",
         "Runs `docker build` (may download images and take a while).",
     ),
+    // --- `up` pipeline body (plan, clone, summary) ---
+    ("Alvo: {}\n", "Target: {}\n"),
+    ("   (pulado por flag)", "   (skipped by flag)"),
+    ("(pulado)", "(skipped)"),
+    (
+        "\n(--dry-run: nada foi executado.)",
+        "\n(--dry-run: nothing was executed.)",
+    ),
+    (
+        "UP — ETAPA {} DE {}: {}",
+        "UP — STEP {} OF {}: {}",
+    ),
+    (
+        "clone sem URL (inconsistência interna do plano)",
+        "clone without URL (internal plan inconsistency)",
+    ),
+    ("✅ clonado em {}", "✅ cloned into {}"),
+    (
+        "\n✨ Pipeline concluído.",
+        "\n✨ Pipeline completed.",
+    ),
+    (
+        "\n⏹️ Pipeline interrompido — nada além do ponto de aborto foi executado.",
+        "\n⏹️ Pipeline interrupted — nothing past the abort point was executed.",
+    ),
+    // clone_repo errors (composed — built in the target language; they also
+    // reach the JSON `"error"` field, so construction-lang matters here).
+    (
+        "o destino já existe: {} — nada foi clonado (remova ou use outro alvo)",
+        "destination already exists: {} — nothing was cloned (remove it or use another target)",
+    ),
+    (
+        "não consegui executar git: {}",
+        "could not execute git: {}",
+    ),
+    (
+        "git clone falhou ({})",
+        "git clone failed ({})",
+    ),
+    // up.rs plan/derive errors (human stderr via the `?` handler).
+    (
+        "não consegui derivar o nome do repositório de: {}",
+        "could not derive the repository name from: {}",
+    ),
+    (
+        "--skip: etapa desconhecida: {} (válidas: {})",
+        "--skip: unknown step: {} (valid: {})",
+    ),
+    (
+        "--until: etapa desconhecida: {} (válidas: {})",
+        "--until: unknown step: {} (valid: {})",
+    ),
+    (
+        "--skip clone não é suportado: sem URL não há o que clonar; com URL o clone é obrigatório",
+        "--skip clone is not supported: without a URL there is nothing to clone; with a URL the clone is mandatory",
+    ),
+    (
+        "--until clone exige uma URL (sem URL não há etapa de clone)",
+        "--until clone requires a URL (without a URL there is no clone step)",
+    ),
+    // --- analyze / context / shared printers ---
+    (
+        "plugin 'dependency_analyzer' não registrado",
+        "plugin 'dependency_analyzer' not registered",
+    ),
+    (
+        "\nConsultando registries (crates.io / npm / PyPI)… isso pode demorar.",
+        "\nQuerying registries (crates.io / npm / PyPI)… this may take a while.",
+    ),
+    (
+        "\nResumo: {} crítico(s), {} aviso(s), {} informação(ões).",
+        "\nSummary: {} critical, {} warning(s), {} info.",
+    ),
+    (
+        "Nenhum stack reconhecido.",
+        "No stack recognized.",
+    ),
+    (
+        "Nenhum manifesto reconhecido neste diretório.",
+        "No manifest recognized in this directory.",
+    ),
+    (
+        "\n• Linguagem : {}   |   Gerenciador: {}   |   Nome: {}",
+        "\n• Language : {}   |   Manager: {}   |   Name: {}",
+    ),
+    ("  Manifesto : {}", "  Manifest : {}"),
+    ("  Dependências: {}", "  Dependencies: {}"),
+    (
+        "✅ Nada a reportar: dependências e lockfiles parecem saudáveis.",
+        "✅ Nothing to report: dependencies and lockfiles look healthy.",
+    ),
+    ("❌ A execução parou: {}", "❌ Execution stopped: {}"),
+    (
+        "   Corrija o problema e rode novamente.",
+        "   Fix the problem and run again.",
+    ),
+    ("Nada foi executado.", "Nothing was executed."),
+    (
+        "\n✨ Concluído: {} passo(s) executado(s), {} pulado(s).",
+        "\n✨ Done: {} step(s) executed, {} skipped.",
+    ),
+    // --- prepare section headers / mode label ---
+    ("PLANO ({})", "PLAN ({})"),
+    ("sem Docker", "without Docker"),
+    ("com Docker", "with Docker"),
 ];
 
 #[cfg(test)]

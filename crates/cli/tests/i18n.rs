@@ -407,3 +407,46 @@ fn data_and_license_follow_lang_flag() {
         "hint EN em JSON sob --lang pt: {hint}"
     );
 }
+
+#[test]
+fn up_dry_run_output_follows_lang_flag() {
+    // pt default: plan section, target label and the dry-run note stay pt.
+    let project = js_project();
+    let pt = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["up", project.path().to_str().unwrap(), "--dry-run"])
+        .output()
+        .unwrap();
+    let stdout = stdout_of(&pt);
+    assert!(stdout.contains("PLANO DO UP"), "cabeçalho pt: {stdout}");
+    assert!(stdout.contains("Alvo:"), "Alvo pt: {stdout}");
+    assert!(
+        stdout.contains("(--dry-run: nada foi executado.)"),
+        "nota pt: {stdout}"
+    );
+
+    // --lang en: the same plan fully English, no pt residue.
+    let project = js_project();
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args([
+            "up",
+            project.path().to_str().unwrap(),
+            "--dry-run",
+            "--lang",
+            "en",
+        ])
+        .output()
+        .unwrap();
+    let stdout = stdout_of(&en);
+    assert!(stdout.contains("UP PLAN"), "UP PLAN em EN: {stdout}");
+    assert!(stdout.contains("Target:"), "Target em EN: {stdout}");
+    assert!(
+        stdout.contains("(--dry-run: nothing was executed.)"),
+        "nota em EN: {stdout}"
+    );
+    assert!(
+        !stdout.contains("Alvo:") && !stdout.contains("nada foi executado"),
+        "sem pt no --lang en: {stdout}"
+    );
+}
