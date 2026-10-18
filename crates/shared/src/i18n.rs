@@ -1153,6 +1153,98 @@ static EN: &[(&str, &str)] = &[
     ("PLANO ({})", "PLAN ({})"),
     ("sem Docker", "without Docker"),
     ("com Docker", "with Docker"),
+    // --- prepare: trust pre-flight ---
+    (
+        "   (verificação de confiança falhou, seguindo): {}",
+        "   (trust verification failed, proceeding): {}",
+    ),
+    (
+        "\n✅ Verificação de confiança: nenhum risco detectado.",
+        "\n✅ Trust verification: no risk detected.",
+    ),
+    (
+        "O DevForge não confia cegamente no manifest. Riscos encontrados:\n",
+        "DevForge doesn't trust the manifest blindly. Risks found:\n",
+    ),
+    (
+        "\n(Só avisos informativos — seguindo.)",
+        "\n(Only informational warnings — proceeding.)",
+    ),
+    (
+        "\n(--dry-run: nada será executado, então os riscos acima só foram exibidos.)",
+        "\n(--dry-run: nothing will be executed, so the risks above were only displayed.)",
+    ),
+    (
+        "\nOs {} risco(s) abaixo exigem confirmação EXPLÍCITA cada um ('sim para todas' e --yes NÃO valem aqui).",
+        "\nThe {} risk(s) below require EXPLICIT confirmation each ('yes to all' and --yes do NOT apply here).",
+    ),
+    ("Aceitar risco: {}", "Accept risk: {}"),
+    // --- prepare: missing tools + toolchain install ---
+    (
+        "Estas ferramentas não estão no PATH e serão necessárias pra rodar o projeto:\n",
+        "These tools are not on the PATH and will be needed to run the project:\n",
+    ),
+    ("      sugestão: {}", "      suggestion: {}"),
+    (
+        "\nInstale manualmente e rode de novo. As sugestões são por gerenciador",
+        "\nInstall manually and run again. The suggestions are per package",
+    ),
+    (
+        "de pacotes — sua máquina pode variar.",
+        "manager — your machine may vary.",
+    ),
+    ("Instalar {} ({})", "Install {} ({})"),
+    (
+        "Vou rodar (sem shell, argumento a argumento):\n  {}\nIsso altera seu sistema e pode pedir sua senha. Recuse se não confiar.",
+        "I'll run (no shell, argument by argument):\n  {}\nThis changes your system and may ask for your password. Decline if you don't trust it.",
+    ),
+    ("{} não está no PATH", "{} is not on the PATH"),
+    (
+        "   {} — deixado de lado (você optou por não instalar).",
+        "   {} — set aside (you chose not to install).",
+    ),
+    (
+        "\n▶ Instalando {} — siga o prompt se ele pedir senha...",
+        "\n▶ Installing {} — follow the prompt if it asks for a password...",
+    ),
+    ("   ✓ {} instalado.", "   ✓ {} installed."),
+    (
+        "   ✗ '{}' terminou com exit {}.",
+        "   ✗ '{}' finished with exit {}.",
+    ),
+    (
+        "   ✗ não consegui rodar: {}",
+        "   ✗ couldn't run: {}",
+    ),
+    // --- prepare: body + execution section ---
+    (
+        "Nenhum stack reconhecido — nada a preparar.",
+        "No stack recognized — nothing to prepare.",
+    ),
+    (
+        "\n✅ Toolchain instalada — seguindo.",
+        "\n✅ Toolchain installed — proceeding.",
+    ),
+    (
+        "\n⏹️  Abortado por risco de segurança. Nada foi instalado nem buildado.",
+        "\n⏹️  Aborted by security risk. Nothing was installed or built.",
+    ),
+    (
+        "plugin 'file_system_access' não registrado",
+        "plugin 'file_system_access' not registered",
+    ),
+    (
+        "plugin 'command_runner' não registrado",
+        "plugin 'command_runner' not registered",
+    ),
+    (
+        "EXECUÇÃO (aprovação automática)",
+        "EXECUTION (automatic approval)",
+    ),
+    (
+        "EXECUÇÃO (você será perguntado a cada passo)",
+        "EXECUTION (you'll be asked at every step)",
+    ),
 ];
 
 #[cfg(test)]

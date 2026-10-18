@@ -167,6 +167,20 @@ que é gate de lançamento.
   (análise), `risk.message` (confiança, entra no JSON trust/context) e
   labels de `key.kind` — prosa autorada no core; os envelopes ao redor já
   traduzem. `context` ficou só com esses itens (cabeçalhos já eram fase 1).
+- **Corpo do prepare migrado (19/10)**: `pre_flight_trust` inteiro (linha de
+  confiança limpa, seção de riscos, "só avisos", nota de dry-run,
+  "N risco(s) exigem confirmação EXPLÍCITA" + prompt "Aceitar risco"),
+  `print_missing_tools` (sugestões), `offer_toolchain_install` (prompts
+  "Instalar X", "Vou rodar (sem shell…)", recusa, instalando, sucesso/
+  exit/não-rodou) e o corpo do `run_prepare` (stack vazio, "Toolchain
+  instalada", aborto de segurança, seção EXECUÇÃO, erros de plugin, nota de
+  dry-run). ~26 chaves. Teste `prepare_trust_and_plan_follow_lang_flag`
+  trava trust+plano nos dois idiomas. **Limitação honesta**: caminhos
+  interativos (senha do sudo/brew, toolchain faltando de verdade) não são
+  exercitáveis em non-TTY — o gate nega fora de TTY e os textos ficam
+  cobertos por catálogo/paridade. O scan de literais pt pegou restos para
+  os próximos lotes: logger "evento de domínio", `plugin 'stack_detector'`,
+  erro `--lang exige um valor`.
 
 ## 5. Fora de escopo (por ora)
 

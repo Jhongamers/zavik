@@ -270,10 +270,11 @@ swift-argument-parser, googletest). Achados:
       ✅ `diagnose` (17/10, incl. plugins), ✅ `run` (17/10) e ✅
       `data`/`license` + SARIF p/ EN (17/10, `message_in(lang)` pros erros
       compostos); migrados também `up` (corpo/erros/clone construction-lang
-      p/ JSON), `analyze`, `print_stacks`/`print_execution` e `context`
-      (envelopes). Faltam corpo do `prepare` (confiança/toolchain/execução),
-      restos de detect/env/parse-erros, e a reautoria (`evidence` +
-      `finding/risk message`) com o flip do default. Fase 3
+      p/ JSON), `analyze`, `print_stacks`/`print_execution`, `context`
+      (envelopes) e o corpo do `prepare` (confiança/toolchain/execução).
+      Faltam os restos de dispatch/parse (logger, `stack_detector`,
+      `--lang`), a reautoria (`evidence` + `finding/risk message`) com o
+      flip do default. Fase 3
       (gate de lançamento): migração completa verificada +
       **flip do default `en`** + testes atualizados. Catálogo hand-rolled
       (`pt-BR` + `en`, zero dependência — mantém offline-first), idioma

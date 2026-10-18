@@ -450,3 +450,51 @@ fn up_dry_run_output_follows_lang_flag() {
         "sem pt no --lang en: {stdout}"
     );
 }
+
+#[test]
+fn prepare_trust_and_plan_follow_lang_flag() {
+    // pt default: trust line, plan section and dry-run note stay pt.
+    let project = js_project();
+    let pt = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args(["prepare", project.path().to_str().unwrap(), "--dry-run"])
+        .output()
+        .unwrap();
+    let stdout = stdout_of(&pt);
+    assert!(
+        stdout.contains("Verificação de confiança: nenhum risco detectado."),
+        "trust pt: {stdout}"
+    );
+    assert!(stdout.contains("PLANO (sem Docker)"), "plano pt: {stdout}");
+
+    // --lang en: the same surfaces fully English, no pt residue.
+    let project = js_project();
+    let en = devforge()
+        .env_remove("DEVFORGE_LANG")
+        .args([
+            "prepare",
+            project.path().to_str().unwrap(),
+            "--dry-run",
+            "--lang",
+            "en",
+        ])
+        .output()
+        .unwrap();
+    let stdout = stdout_of(&en);
+    assert!(
+        stdout.contains("Trust verification: no risk detected."),
+        "trust em EN: {stdout}"
+    );
+    assert!(
+        stdout.contains("PLAN (without Docker)"),
+        "plano em EN: {stdout}"
+    );
+    assert!(
+        stdout.contains("(--dry-run: nothing was executed.)"),
+        "nota em EN: {stdout}"
+    );
+    assert!(
+        !stdout.contains("Verificação") && !stdout.contains("sem Docker"),
+        "sem pt no --lang en: {stdout}"
+    );
+}

@@ -1936,24 +1936,34 @@ fn pre_flight_trust(
     gate: &dyn PermissionGate,
     require_confirmation: bool,
 ) -> bool {
+    use devforge_shared::i18n::{t, t_fmt};
     let Some(analyzer) = kernel.analyzer() else {
         return true;
     };
     let report = match analyzer.verify_trust(context, stacks) {
         Ok(report) => report,
         Err(error) => {
-            eprintln!("   (verificação de confiança falhou, seguindo): {error}");
+            eprintln!(
+                "{}",
+                t_fmt(
+                    "   (verificação de confiança falhou, seguindo): {}",
+                    &[&error.to_string()],
+                )
+            );
             return true;
         }
     };
 
     if report.is_empty() {
-        println!("\n✅ Verificação de confiança: nenhum risco detectado.");
+        println!("{}", t("\n✅ Verificação de confiança: nenhum risco detectado."));
         return true;
     }
 
     section("VERIFICAÇÃO DE CONFIANÇA (pré-instalação)");
-    println!("O DevForge não confia cegamente no manifest. Riscos encontrados:\n");
+    println!(
+        "{}",
+        t("O DevForge não confia cegamente no manifest. Riscos encontrados:\n")
+    );
     for risk in report.sorted() {
         let icon = match risk.severity {
             Severity::Critical => "🛑",
@@ -1968,25 +1978,28 @@ fn pre_flight_trust(
 
     let blocking = report.blocking();
     if blocking.is_empty() {
-        println!("\n(Só avisos informativos — seguindo.)");
+        println!("{}", t("\n(Só avisos informativos — seguindo.)"));
         return true;
     }
 
     if !require_confirmation {
         println!(
-            "\n(--dry-run: nada será executado, então os riscos acima só foram exibidos.)"
+            "{}",
+            t("\n(--dry-run: nada será executado, então os riscos acima só foram exibidos.)")
         );
         return true;
     }
 
     println!(
-        "\nOs {} risco(s) abaixo exigem confirmação EXPLÍCITA cada um \
-         ('sim para todas' e --yes NÃO valem aqui).",
-        blocking.len()
+        "{}",
+        t_fmt(
+            "\nOs {} risco(s) abaixo exigem confirmação EXPLÍCITA cada um ('sim para todas' e --yes NÃO valem aqui).",
+            &[&blocking.len().to_string()],
+        )
     );
     for risk in &blocking {
         let decision = gate.confirm(&PermissionRequest {
-            title: format!("Aceitar risco: {}", risk.message),
+            title: t_fmt("Aceitar risco: {}", &[risk.message.as_str()]),
             detail: risk.detail.clone(),
             reason: risk.message.clone(),
             critical: true,
@@ -2017,14 +2030,21 @@ fn local_missing_tools(
 }
 
 fn print_missing_tools(missing: &[MissingTool]) {
+    use devforge_shared::i18n::{t, t_fmt};
     section("FERRAMENTAS FALTANDO");
-    println!("Estas ferramentas não estão no PATH e serão necessárias pra rodar o projeto:\n");
+    println!(
+        "{}",
+        t("Estas ferramentas não estão no PATH e serão necessárias pra rodar o projeto:\n")
+    );
     for m in missing {
         println!("  • {} ({})", m.tool, m.language);
-        println!("      sugestão: {}", m.hint);
+        println!("{}", t_fmt("      sugestão: {}", &[m.hint.as_str()]));
     }
-    println!("\nInstale manualmente e rode de novo. As sugestões são por gerenciador");
-    println!("de pacotes — sua máquina pode variar.");
+    println!(
+        "{}",
+        t("\nInstale manualmente e rode de novo. As sugestões são por gerenciador")
+    );
+    println!("{}", t("de pacotes — sua máquina pode variar."));
 }
 
 /// Phase 2: offers to install, one by one, the missing tools that have a
@@ -2038,6 +2058,7 @@ fn offer_toolchain_install(
     gate: &dyn PermissionGate,
     missing: &[MissingTool],
 ) {
+    use devforge_shared::i18n::t_fmt;
     let Some(runner) = kernel.command_runner() else {
         return;
     };
@@ -2056,27 +2077,49 @@ fn offer_toolchain_install(
     section("INSTALAR TOOLCHAIN (com sua permissão)");
     for (entry, spec) in plans {
         let decision = gate.confirm(&PermissionRequest {
-            title: format!("Instalar {} ({})", entry.tool, entry.language),
-            detail: format!(
-                "Vou rodar (sem shell, argumento a argumento):\n  {}\n\
-                 Isso altera seu sistema e pode pedir sua senha. Recuse se não confiar.",
-                spec.display()
+            title: t_fmt(
+                "Instalar {} ({})",
+                &[&entry.tool, &entry.language.to_string()],
             ),
-            reason: format!("{} não está no PATH", entry.tool),
+            detail: t_fmt(
+                "Vou rodar (sem shell, argumento a argumento):\n  {}\nIsso altera seu sistema e pode pedir sua senha. Recuse se não confiar.",
+                &[&spec.display().to_string()],
+            ),
+            reason: t_fmt("{} não está no PATH", &[&entry.tool]),
             critical: true,
         });
         if decision != Decision::Approved {
             println!(
-                "   {} — deixado de lado (você optou por não instalar).",
-                entry.tool
+                "{}",
+                t_fmt(
+                    "   {} — deixado de lado (você optou por não instalar).",
+                    &[&entry.tool]
+                )
             );
             continue;
         }
-        println!("\n▶ Instalando {} — siga o prompt se ele pedir senha...", entry.tool);
+        println!(
+            "{}",
+            t_fmt(
+                "\n▶ Instalando {} — siga o prompt se ele pedir senha...",
+                &[&entry.tool]
+            )
+        );
         match runner.run_interactive(&spec) {
-            Ok(Some(0)) | Ok(None) => println!("   ✓ {} instalado.", entry.tool),
-            Ok(Some(code)) => eprintln!("   ✗ '{}' terminou com exit {code}.", spec.display()),
-            Err(error) => eprintln!("   ✗ não consegui rodar: {error}"),
+            Ok(Some(0)) | Ok(None) => {
+                println!("{}", t_fmt("   ✓ {} instalado.", &[&entry.tool]))
+            }
+            Ok(Some(code)) => eprintln!(
+                "{}",
+                t_fmt(
+                    "   ✗ '{}' terminou com exit {}.",
+                    &[&spec.display().to_string(), &code.to_string()],
+                )
+            ),
+            Err(error) => eprintln!(
+                "{}",
+                t_fmt("   ✗ não consegui rodar: {}", &[&error.to_string()])
+            ),
         }
     }
 }
@@ -2373,7 +2416,10 @@ fn run_prepare(
     }
 
     if stacks.is_empty() {
-        println!("Nenhum stack reconhecido — nada a preparar.");
+        println!(
+            "{}",
+            devforge_shared::i18n::t("Nenhum stack reconhecido — nada a preparar.")
+        );
         return Ok(PrepareOutcome::Completed);
     }
     print_stacks(&stacks);
@@ -2402,7 +2448,10 @@ fn run_prepare(
                     // pipeline must not continue to `run` unprepared).
                     return Ok(PrepareOutcome::Aborted);
                 }
-                println!("\n✅ Toolchain instalada — seguindo.");
+                println!(
+                    "{}",
+                    devforge_shared::i18n::t("\n✅ Toolchain instalada — seguindo.")
+                );
             }
         }
     }
@@ -2410,7 +2459,12 @@ fn run_prepare(
     // Trust pre-flight: does NOT install/build anything before checking for
     // arbitrary code scripts and packages that don't match the registry.
     if !pre_flight_trust(kernel, context, &stacks, gate, !options.dry_run) {
-        println!("\n⏹️  Abortado por risco de segurança. Nada foi instalado nem buildado.");
+        println!(
+            "{}",
+            devforge_shared::i18n::t(
+                "\n⏹️  Abortado por risco de segurança. Nada foi instalado nem buildado."
+            )
+        );
         // Security abort: the `up` pipeline stops here — never reach `run`.
         return Ok(PrepareOutcome::Aborted);
     }
@@ -2438,22 +2492,25 @@ fn run_prepare(
     }
 
     if options.dry_run {
-        println!("\n(--dry-run: nada foi executado.)");
+        println!(
+            "{}",
+            devforge_shared::i18n::t("\n(--dry-run: nada foi executado.)")
+        );
         return Ok(PrepareOutcome::Completed);
     }
 
-    let files = kernel
-        .file_system()
-        .ok_or("plugin 'file_system_access' não registrado")?;
-    let runner = kernel
-        .command_runner()
-        .ok_or("plugin 'command_runner' não registrado")?;
+    let files = kernel.file_system().ok_or(devforge_shared::i18n::t(
+        "plugin 'file_system_access' não registrado",
+    ))?;
+    let runner = kernel.command_runner().ok_or(devforge_shared::i18n::t(
+        "plugin 'command_runner' não registrado",
+    ))?;
 
-    section(if options.yes {
+    section(devforge_shared::i18n::t(if options.yes {
         "EXECUÇÃO (aprovação automática)"
     } else {
         "EXECUÇÃO (você será perguntado a cada passo)"
-    });
+    }));
 
     let execute_options = ExecuteOptions {
         dry_run: false,
