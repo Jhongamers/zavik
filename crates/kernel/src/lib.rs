@@ -50,14 +50,17 @@ impl Kernel {
         _context: &PluginContext,
     ) -> Result<(), String> {
         let name = plugin.name().to_string();
-        eprintln!("KERNEL: registrando plugin '{name}'");
+        eprintln!(
+            "{}",
+            devforge_shared::i18n::t_fmt("KERNEL: registrando plugin '{}'", &[&name])
+        );
         self.plugins.insert(name, plugin);
         Ok(())
     }
 
     /// Starts the Kernel by publishing the first system event.
     pub fn run_initialization(&self) {
-        eprintln!("KERNEL: DevForge inicializado.");
+        eprintln!("{}", devforge_shared::i18n::t("KERNEL: DevForge inicializado."));
         self.event_bus.publish(EventEnvelope::new("system_ready"));
     }
 

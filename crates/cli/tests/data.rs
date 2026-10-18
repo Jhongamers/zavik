@@ -12,7 +12,13 @@ use std::process::Command;
 use tempfile::TempDir;
 
 fn devforge() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_devforge"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_devforge"));
+    // Locale must not flip the post-flip default (en) on any machine.
+    cmd.env_remove("LC_ALL")
+        .env_remove("LC_MESSAGES")
+        .env_remove("LANGUAGE")
+        .env_remove("LANG");
+    cmd
 }
 
 /// Isolated XDG root: no real license/dataset of the machine can leak in,
@@ -68,8 +74,8 @@ fn status_human_explains_the_free_tier_honestly() {
     };
     assert!(output.status.success());
     let text = String::from_utf8_lossy(&output.stdout);
-    assert!(text.contains("nenhum dataset instalado"), "{text}");
-    assert!(text.contains("grátis"), "deve dizer o que é grátis: {text}");
+    assert!(text.contains("no dataset installed"), "{text}");
+    assert!(text.contains("free:"), "deve dizer o que é grátis: {text}");
     assert!(text.contains("Pro"), "deve dizer o que é Pro: {text}");
 }
 
@@ -133,9 +139,13 @@ fn update_without_license_denies_in_human_message_that_keeps_free_intact() {
     let text = String::from_utf8_lossy(&output.stdout);
     assert!(text.contains("Pro"), "{text}");
     assert!(text.contains("license install"), "deve dizer como instalar: {text}");
-    assert!(text.contains("grátis"), "deve prometer que o tier grátis não muda: {text}");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).matches("baixando").count(), 0,
-        "nunca toca a rede sem licença");
+    assert!(text.contains("free tier"), "deve prometer que o tier grátis não muda: {text}");
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(
+        out.matches("baixando").count() + out.matches("downloading").count(),
+        0,
+        "nunca toca a rede sem licença"
+    );
 }
 
 #[test]
@@ -186,7 +196,7 @@ fn unknown_subcommand_and_flag_are_rejected() {
     };
     assert_eq!(url_without_value.status.code(), Some(1));
     assert!(
-        String::from_utf8_lossy(&url_without_value.stderr).contains("exige um valor"),
+        String::from_utf8_lossy(&url_without_value.stderr).contains("requires a value"),
         "{:?}",
         String::from_utf8_lossy(&url_without_value.stderr)
     );
@@ -244,7 +254,7 @@ fn audit_with_corrupt_dataset_warns_on_stderr_and_keeps_stdout_clean() {
     let body = single_json(&output.stdout);
     assert!(body.get("dataset").is_none(), "inválido nunca vira seção");
     assert!(
-        String::from_utf8_lossy(&output.stderr).contains("INVÁLIDO"),
+        String::from_utf8_lossy(&output.stderr).contains("INVALID"),
         "anomalia é barulhenta no stderr: {:?}",
         String::from_utf8_lossy(&output.stderr)
     );

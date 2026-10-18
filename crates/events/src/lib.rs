@@ -63,9 +63,11 @@ impl EventBus {
             .read()
             .expect("EventBus: lock de leitura envenenado");
         eprintln!(
-            "EVENTBUS: publicando '{}' para {} assinante(s)",
-            event.event_type,
-            handlers.len()
+            "{}",
+            devforge_shared::i18n::t_fmt(
+                "EVENTBUS: publicando '{}' para {} assinante(s)",
+                &[&event.event_type, &handlers.len().to_string()]
+            )
         );
         for handler in handlers.iter() {
             handler(&event);

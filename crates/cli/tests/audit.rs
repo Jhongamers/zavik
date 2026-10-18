@@ -13,7 +13,13 @@ use std::process::Command;
 use tempfile::TempDir;
 
 fn devforge() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_devforge"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_devforge"));
+    // Locale must not flip the post-flip default (en) on any machine.
+    cmd.env_remove("LC_ALL")
+        .env_remove("LC_MESSAGES")
+        .env_remove("LANGUAGE")
+        .env_remove("LANG");
+    cmd
 }
 
 fn workspace_fixture() -> TempDir {
@@ -58,10 +64,10 @@ fn workspace_root_human_audit_reports_real_packages() {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("Pacotes auditados: 1"),
+        stdout.contains("Packages audited: 1"),
         "audit real na raiz do workspace: {stdout}"
     );
-    assert!(!stdout.contains("SEM DADOS"), "não é mais um audit vazio");
+    assert!(!stdout.contains("NO DATA"), "não é mais um audit vazio");
 }
 
 #[test]
@@ -77,11 +83,11 @@ fn zero_packages_is_no_data_in_human_and_zero_in_json() {
     assert!(human.status.success());
     let stdout = String::from_utf8_lossy(&human.stdout);
     assert!(
-        stdout.contains("0 pacotes auditados"),
+        stdout.contains("0 packages audited"),
         "avisa que auditou nada: {stdout}"
     );
     assert!(
-        stdout.contains("SEM DADOS") && !stdout.contains("APROVADO"),
+        stdout.contains("NO DATA") && !stdout.contains("APPROVED"),
         "zero pacotes nunca vira aprovação: {stdout}"
     );
 

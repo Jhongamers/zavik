@@ -145,12 +145,12 @@ Example (`detect --json`, trimmed):
 
 ### Language (`--lang`)
 
-Human CLI text: **pt-BR by default today**; `--lang en` (also `--lang=pt-BR`
-and `DEVFORGE_LANG=en`) switches the messages to English, and a BR system
-locale (`LC_ALL`/`LANG=pt_BR…`) opts into pt-BR with no flag at all.
-**Machine output never switches**: JSON keys/values, SARIF and exit codes
-are always English. The default flips to `en` at launch once the catalog is
-complete — migration design and status: `docs/design-i18n.md`.
+Human CLI text: **English by default** (flipped at the pre-launch i18n
+milestone); `--lang pt-BR` (also `--lang=pt-BR` and `DEVFORGE_LANG=pt-BR`,
+or a BR system locale `LC_ALL`/`LANG=pt_BR…`) switches the messages to
+Brazilian Portuguese, `--lang en` forces English back. **Machine output
+never switches**: JSON keys/values, SARIF and exit codes are always
+English. Migration design and status: `docs/design-i18n.md`.
 
 ```bash
 devforge env --lang en            # human sections in English
@@ -644,12 +644,12 @@ The full keyword table lives in `crates/plugins/src/detector/`.
 
 ## Status & honesty
 
-- Everything described above is implemented and under test (135 passing,
-  clippy clean). Pre-launch roadmap (i18n catalog, installer, brew/npx/winget):
+- Everything described above is implemented and under test (200 passing,
+  clippy clean). Pre-launch roadmap (installer, brew/npx/winget):
   [ROADMAP.md](ROADMAP.md).
-- **Language**: human-facing CLI messages are currently **pt-BR**; the machine
-  contract (JSON, SARIF, exit codes) is **always English**. A `--lang` catalog
-  (pt-BR + en, default en) lands **before** the public launch.
+- **Language**: human-facing CLI messages ship in **pt-BR + English** with
+  **English as the default** (pre-launch i18n, `--lang pt-BR` to switch); the
+  machine contract (JSON, SARIF, exit codes) is **always English**.
 - Honest limitations are called out inline throughout this README — nothing
   claims more than the tool does. Automatic fix execution is **out of scope**
   by design: DevForge only **proposes** fixes.

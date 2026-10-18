@@ -34,10 +34,13 @@ pub enum Error {
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use crate::i18n::t_fmt;
         match self {
-            Error::IoError(m) => write!(f, "erro de I/O: {m}"),
-            Error::SerializationError(m) => write!(f, "erro de desserialização: {m}"),
-            Error::Unknown(m) => write!(f, "erro desconhecido: {m}"),
+            Error::IoError(m) => f.write_str(&t_fmt("erro de I/O: {}", &[m])),
+            Error::SerializationError(m) => {
+                f.write_str(&t_fmt("erro de desserialização: {}", &[m]))
+            }
+            Error::Unknown(m) => f.write_str(&t_fmt("erro desconhecido: {}", &[m])),
         }
     }
 }

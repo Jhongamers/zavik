@@ -128,13 +128,12 @@ Exemplo (`detect --json`, enxugado):
 
 ### Idioma (`--lang`)
 
-Texto humano da CLI: **pt-BR por padrão hoje**; `--lang en` (também
-`--lang=pt-BR` e `DEVFORGE_LANG=en`) troca as mensagens pro inglês, e
-locale BR do sistema (`LC_ALL`/`LANG=pt_BR…`) opta pelo pt-BR sem flag
-nenhuma. **Saída de máquina nunca troca**: chaves/valores de JSON, SARIF e
-exit codes são sempre inglês. O default vira `en` no lançamento, quando o
-catálogo estiver completo — design e status da migração:
-`docs/design-i18n.md`.
+Texto humano da CLI: **inglês por padrão** (default virado no i18n de
+pré-lançamento); `--lang pt-BR` (também `--lang=pt-BR` e
+`DEVFORGE_LANG=pt-BR`, ou locale BR do sistema `LC_ALL`/`LANG=pt_BR…`)
+troca as mensagens pro português, `--lang en` volta pro inglês. **Saída de
+máquina nunca troca**: chaves/valores de JSON, SARIF e exit codes são
+sempre inglês. Design e status da migração: `docs/design-i18n.md`.
 
 ```bash
 devforge env --lang en            # seções humanas em inglês

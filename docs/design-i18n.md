@@ -1,12 +1,11 @@
 # Design — i18n (pt-BR + en)
 
-Status: **fase 3 em execução (18/10)** — fase 1 (infra) e fase 2 (runtime,
-superfícies do CLI) concluídas; reautoria de conteúdo em EN fechada
-(18/10). Falta o flip do default `en` + sweep final para fechar a fase 3.
-Decisão do fundador: antes do launch
-do Product Hunt o CLI precisa de `--lang` com catálogo **pt-BR + en** e
-**default `en`**. Enquanto a migração não fecha, o default continua `pt-BR`
-(status quo — nenhuma mensagem muda de idioma sem o usuário pedir).
+Status: **fase 3 concluída (18/10)** — infra (fase 1), runtime (fase 2),
+reautoria de conteúdo em EN, sweep final (kernel/events/Display) e **flip do
+default `en`** fechados. Decisão do fundador atendida antes do launch do
+Product Hunt: `--lang` com catálogo **pt-BR + en** e **default `en`**; pt-BR
+segue disponível via `--lang pt-BR`, `DEVFORGE_LANG` ou locale BR — nenhuma
+mensagem troca de idioma sem o usuário pedir.
 
 ## 1. O que traduz e o que NÃO traduz
 
@@ -45,10 +44,9 @@ Ordem: **`--lang <pt-BR|en>` > env `DEVFORGE_LANG` > locale do sistema >
 
 - Locale (decisão registrada no ROADMAP §4): `LC_ALL` > `LC_MESSAGES` >
   `LANG`; família `pt` (pt_BR, pt_PT, pt-BR…) → `pt-BR`; **qualquer outro
-  locale cai no default** — que vira `en` após o flip final, produzindo
-  exatamente a regra "padrão en quando o locale não é BR". Durante a
-  migração o default é `pt-BR`, então o locale só tem efeito de opt-in
-  (status quo preservado, sem saída mista).
+  locale cai no default** — que é `en` desde o flip (18/10), produzindo
+  exatamente a regra "padrão en quando o locale não é BR". O locale `pt`
+  só tem efeito de opt-in de pt-BR, nunca muda o default sozinho.
 - `--lang` é extraído dos args **antes do dispatch** (helper
   `extract_lang`), então vale para TODOS os comandos — inclusive
   `license`/`data`, que fazem parse próprio. O extractor respeita flags de
@@ -71,8 +69,8 @@ separados).
   inteira passa por `t`, os call sites não mudam), `banner`, saída humana
   de `env`, prompts de `permission`, títulos de etapa do `up`.
   Testes: paridade/unicidade do catálogo, ordem de resolução, integração
-  (`--lang en` troca cabeçalho, default segue pt-BR, env var funciona,
-  `--lang` inválido barra, JSON não muda).
+  (`--lang en` troca cabeçalho — na fase 1 o default ainda era pt-BR, env
+  var funciona, `--lang` inválido barra, JSON não muda).
 - **Fase 2 (em curso)**: corpos dos comandos (`audit`, `run`, `prepare`, `context`,
   `diagnose`, `analyze`, `license`, `data`), help completo, strings de
   erro de parse, `diagnose` em plugins, hints de toolchain.
@@ -85,7 +83,7 @@ Mensagem humana não migrada no meio do caminho aparece em pt-BR mesmo com
 `--lang en` — **limite aceitável enquanto o repo é privado**; some na fase 3,
 que é gate de lançamento.
 
-### Status da migração (atualização 17/10)
+### Status da migração (atualização 18/10)
 
 - **Fase 2 em curso**: migrados o corpo humano completo do `audit` (incl.
   veredito "SEM DADOS") e o `help` inteiro. O help foi movido para as
@@ -214,6 +212,23 @@ que é gate de lançamento.
   `events`), prefixos do `Display` de erro do shared (`erro de I/O:`),
   asserts de teste em pt (não são superfície de usuário) e o `reason`
   do dataset no build (authoring, `docs/design-data.md`).
+- **Sweep final + flip do default (fase 3 concluída, 18/10)**: `KERNEL:`
+  (registrar/inicializado) e `EVENTBUS:` (publicando) migrados pro catálogo
+  via `t_fmt`/`t` — são `eprintln`, então continuam seguros pra JSON; os
+  prefixos do `Display` de erro do shared (`erro de I/O` /
+  `desserialização` / `desconhecido`) agora leem o idioma global no momento
+  do emit (padrão do `LicenseError::Display`) — 6 chaves. **`DEFAULT_LANG`
+  virou `Lang::En`** (+ docs do const e do `resolve`). Testes: o default
+  passou a ser pinado como EN (`default_language_is_english_after_the_
+  phase3_flip`), os lados pt dos testes `*_follows_lang_flag` ganharam
+  `--lang pt-BR` explícito (cobertura pt mantida e até mais forte), testes
+  de comportamento (audit/data/env) migraram os asserts pro EN, os helpers
+  de teste removem `LC_*`/`LANG` do processo (locale BR não vira flake) e o
+  teste `t_en` fixa o contraste via `translate(PtBr)` em vez de depender do
+  default. Bug de catálogo achado no caminho: o valor EN de `--url exige um
+  valor` carregava `<caminho>` em pt → `<path>`. Smoke: default EN em
+  `audit`/`detect`/erros, `--lang pt-BR` e locale `pt_BR` seguem pt, e o
+  `Display` de erro sai nos dois idiomas. **Migração fases 1–3 FECHADA.**
 
 ## 5. Fora de escopo (por ora)
 

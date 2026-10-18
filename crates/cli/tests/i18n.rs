@@ -1,5 +1,5 @@
 //! Integration tests for i18n (real binary): `--lang`, `DEVFORGE_LANG`,
-//! the migration-phase default, and the invariant that machine output
+//! the post-flip default (en), and the invariant that machine output
 //! (JSON) never changes language (docs/design-i18n.md).
 
 #![cfg(unix)]
@@ -8,7 +8,13 @@ use std::process::Command;
 use tempfile::TempDir;
 
 fn devforge() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_devforge"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_devforge"));
+    // Locale must not flip the post-flip default (en) on any machine.
+    cmd.env_remove("LC_ALL")
+        .env_remove("LC_MESSAGES")
+        .env_remove("LANGUAGE")
+        .env_remove("LANG");
+    cmd
 }
 
 /// Minimal JavaScript project — `env` prints human sections in both langs.
@@ -27,7 +33,7 @@ fn stdout_of(output: &std::process::Output) -> String {
 }
 
 #[test]
-fn default_language_is_ptbr_until_the_migration_flips() {
+fn default_language_is_english_after_the_phase3_flip() {
     let project = js_project();
     let output = devforge()
         .env_remove("DEVFORGE_LANG") // the machine must not leak in
@@ -37,11 +43,11 @@ fn default_language_is_ptbr_until_the_migration_flips() {
         .unwrap();
     assert!(output.status.success());
     let stdout = stdout_of(&output);
-    assert!(stdout.contains("AMBIENTE"), "default segue pt-BR: {stdout}");
     assert!(
-        !stdout.contains("ENVIRONMENT"),
-        "sem flag nada muda: {stdout}"
+        stdout.contains("ENVIRONMENT"),
+        "default é EN desde o flip: {stdout}"
     );
+    assert!(!stdout.contains("AMBIENTE"), "nada muda sem flag: {stdout}");
 }
 
 #[test]
@@ -188,15 +194,35 @@ fn lang_after_double_dash_is_passed_to_the_child_not_consumed() {
 }
 
 #[test]
-fn help_translates_to_english_and_stays_pt_by_default() {
-    let pt = Command::new(env!("CARGO_BIN_EXE_devforge"))
+fn help_follows_the_lang_flag_with_english_default() {
+    // Default (no flag): English since the phase-3 flip.
+    let def = Command::new(env!("CARGO_BIN_EXE_devforge"))
         .arg("help")
+        .output()
+        .unwrap();
+    assert!(def.status.success());
+    let def = String::from_utf8_lossy(&def.stdout);
+    assert!(def.contains("USAGE:"), "help default é EN: {def}");
+    assert!(!def.contains("USO:"), "sem pt sem pedido: {def}");
+    assert!(
+        def.contains("--lang       human-output language: pt-BR | en"),
+        "--lang documentado em EN: {def}"
+    );
+
+    // Explicit pt-BR: the same document fully Portuguese (chave = HELP_PT).
+    let pt = Command::new(env!("CARGO_BIN_EXE_devforge"))
+        .args(["help", "--lang", "pt-BR"])
         .output()
         .unwrap();
     assert!(pt.status.success());
     let pt = String::from_utf8_lossy(&pt.stdout);
-    assert!(pt.contains("USO:"), "help default continua pt-BR: {pt}");
+    assert!(pt.contains("USO:"), "help em pt-BR: {pt}");
+    assert!(
+        pt.contains("--lang       idioma da saída humana: pt-BR | en"),
+        "--lang documentado em pt-BR: {pt}"
+    );
 
+    // Explicit --lang en: same English document, no pt residue.
     let en = Command::new(env!("CARGO_BIN_EXE_devforge"))
         .args(["help", "--lang", "en"])
         .output()
@@ -205,15 +231,6 @@ fn help_translates_to_english_and_stays_pt_by_default() {
     let en = String::from_utf8_lossy(&en.stdout);
     assert!(en.contains("USAGE:"), "help em EN: {en}");
     assert!(!en.contains("USO:"), "sem pt vazando no --lang en: {en}");
-    assert!(
-        en.contains("--lang       human-output language: pt-BR | en"),
-        "--lang documentado em EN: {en}"
-    );
-    // O texto novo vale nos dois idiomas (chave = const HELP_PT, sem drift).
-    assert!(
-        pt.contains("--lang       idioma da saída humana: pt-BR | en"),
-        "--lang documentado em pt-BR: {pt}"
-    );
 }
 
 #[test]
@@ -247,17 +264,23 @@ fn diagnose_human_output_follows_lang_flag() {
         "sem pt vazando no --lang en: {stdout}"
     );
 
-    // Default stays pt-BR until the phase-3 flip.
+    // Explicit pt-BR keeps the pt path covered — the default is EN now.
     let pt = devforge()
         .env_remove("DEVFORGE_LANG")
-        .args(["diagnose", "--message", "sh: 1: cargo: not found"])
+        .args([
+            "diagnose",
+            "--message",
+            "sh: 1: cargo: not found",
+            "--lang",
+            "pt-BR",
+        ])
         .output()
         .unwrap();
     assert!(pt.status.success());
     let stdout = stdout_of(&pt);
     assert!(
         stdout.contains("DIAGNÓSTICO") && stdout.contains("  conserto:"),
-        "default continua pt-BR: {stdout}"
+        "pt-BR explícito continua pt: {stdout}"
     );
 }
 
@@ -410,11 +433,17 @@ fn data_and_license_follow_lang_flag() {
 
 #[test]
 fn up_dry_run_output_follows_lang_flag() {
-    // pt default: plan section, target label and the dry-run note stay pt.
+    // Explicit pt-BR: plan section, target label and dry-run note stay pt.
     let project = js_project();
     let pt = devforge()
         .env_remove("DEVFORGE_LANG")
-        .args(["up", project.path().to_str().unwrap(), "--dry-run"])
+        .args([
+            "up",
+            project.path().to_str().unwrap(),
+            "--dry-run",
+            "--lang",
+            "pt-BR",
+        ])
         .output()
         .unwrap();
     let stdout = stdout_of(&pt);
@@ -453,11 +482,17 @@ fn up_dry_run_output_follows_lang_flag() {
 
 #[test]
 fn prepare_trust_and_plan_follow_lang_flag() {
-    // pt default: trust line, plan section and dry-run note stay pt.
+    // Explicit pt-BR: trust line, plan section and dry-run note stay pt.
     let project = js_project();
     let pt = devforge()
         .env_remove("DEVFORGE_LANG")
-        .args(["prepare", project.path().to_str().unwrap(), "--dry-run"])
+        .args([
+            "prepare",
+            project.path().to_str().unwrap(),
+            "--dry-run",
+            "--lang",
+            "pt-BR",
+        ])
         .output()
         .unwrap();
     let stdout = stdout_of(&pt);
@@ -522,7 +557,13 @@ fn parse_and_policy_errors_follow_lang_flag() {
 
     let pt = devforge()
         .env_remove("DEVFORGE_LANG")
-        .args(["run", project.path().to_str().unwrap(), "--banana"])
+        .args([
+            "run",
+            project.path().to_str().unwrap(),
+            "--banana",
+            "--lang",
+            "pt-BR",
+        ])
         .output()
         .unwrap();
     let stderr = String::from_utf8_lossy(&pt.stderr);
@@ -553,10 +594,10 @@ fn parse_and_policy_errors_follow_lang_flag() {
 
 /// Content-class strings (finding messages, audit evidence) are authored in
 /// English and NEVER translated at runtime (docs/design-i18n.md §5): the UI
-/// shell follows `--lang` (default = pt-BR during the migration), the facts
-/// stay English — same class as SARIF and JSON prose.
+/// shell follows `--lang`, the facts stay English — same class as SARIF and
+/// JSON prose. Runs in explicit pt-BR to prove the split even under pt.
 #[test]
-fn finding_and_evidence_content_stays_english_under_pt_default() {
+fn finding_and_evidence_content_is_english_even_in_ptbr() {
     let dir = TempDir::new().unwrap();
     std::fs::write(
         dir.path().join("package.json"),
@@ -566,7 +607,7 @@ fn finding_and_evidence_content_stays_english_under_pt_default() {
 
     let analyze = devforge()
         .env_remove("DEVFORGE_LANG")
-        .args(["analyze"])
+        .args(["analyze", "--lang", "pt-BR"])
         .arg(dir.path())
         .output()
         .unwrap();
@@ -578,12 +619,12 @@ fn finding_and_evidence_content_stays_english_under_pt_default() {
     );
     assert!(
         stdout.contains("ANÁLISE DE DEPENDÊNCIAS"),
-        "shell do analyze continua pt-BR no default: {stdout}"
+        "shell do analyze em pt-BR: {stdout}"
     );
 
     let audit = devforge()
         .env_remove("DEVFORGE_LANG")
-        .args(["audit"])
+        .args(["audit", "--lang", "pt-BR"])
         .arg(dir.path())
         .output()
         .unwrap();
@@ -595,6 +636,6 @@ fn finding_and_evidence_content_stays_english_under_pt_default() {
     );
     assert!(
         stdout.contains("AUDITORIA DE SUPPLY-CHAIN"),
-        "shell do audit continua pt-BR no default: {stdout}"
+        "shell do audit em pt-BR: {stdout}"
     );
 }

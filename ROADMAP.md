@@ -253,7 +253,8 @@ swift-argument-parser, googletest). Achados:
       risco). 17 testes novos (10 unit + 7 integração), E2E real com repo git
       local: clone + pipeline completo saiu 0; trust negada interrompeu antes
       do `run`; destino existente → erro honesto + exit1; non-TTY → nega.
-- [ ] **i18n da CLI (decidido, implementar ANTES do PH)** — **FASE 1 ✅
+- [x] **i18n da CLI (decidido, implementar ANTES do PH)** ✅ **CONCLUÍDO
+      18/10 (fases 1–3)** — **FASE 1 ✅
       (17/10**, design `docs/design-i18n.md`): infra no shared (`Lang`,
       `t`/`t_fmt` — pt-BR é a chave, `EN` é o catálogo, fallback honesto =
       identidade), resolução `--lang` > `DEVFORGE_LANG` > locale >
@@ -275,17 +276,17 @@ swift-argument-parser, googletest). Achados:
       restos de dispatch/parse migrados (logger, plugins, policy, parse) —
       varredura de residuais no main.rs: ZERO. **Reautoria de conteúdo ✅
       (18/10)**: `evidence` + `finding/risk message` reescritos em EN
-      (classe conteúdo — nunca traduzido em runtime, sai EN até sob default
-      pt-BR; teste trava o split) + prints do `WorkflowEngine` e erro do
-      detector migrados (6 chaves). Faltam o **sweep final** (`KERNEL:`/
-      `EVENTBUS:` dos crates kernel/events + prefixos do `Display` de erro
-      do shared) e o flip do default. Fase 3
-      (gate de lançamento): sweep final +
-      **flip do default `en`** + testes atualizados. Catálogo hand-rolled
+      (classe conteúdo — nunca traduzido em runtime; teste trava o split
+      shell-`--lang`/conteúdo-EN). **FASE 3 ✅ (18/10)**: sweep final
+      (`KERNEL:`/`EVENTBUS:` dos crates kernel/events + prefixos do
+      `Display` de erro do shared) + **flip do default `en`** + testes
+      atualizados (default pinado como EN, lado pt coberto por `--lang
+      pt-BR` explícito, helpers de teste removem locale — máquina BR não
+      vira flake) + README. Catálogo hand-rolled
       (`pt-BR` + `en`, zero dependência — mantém offline-first), idioma
       automático pelo locale (`LC_ALL`/`LANG`) com override `--lang
-      pt-BR|en`, **padrão `en`** quando não há locale BR (vigoroso pós-flip;
-      durante a migração o default é `pt-BR` pra nunca sair texto misto).
+      pt-BR|en`, **padrão `en`** vigente desde o flip (o default era
+      `pt-BR` durante a migração, pra nunca sair texto misto).
       Regras: **JSON/SARIF/exit codes nunca traduzem** (contrato travado em
       en); identificadores, comentários e rustdoc **em inglês desde o 1º
       commit** (migração feita antes de versionar). Custo: extrair ~100+
@@ -371,8 +372,8 @@ swift-argument-parser, googletest). Achados:
   já entrega o "conserto"); qualquer `--fix` futuro seria restrito a regras
   inequívocas atrás de gate individual, nunca execução automática.
 - **Idioma**: identificadores, testes e comentários em **inglês**; mensagens
-  humanas da CLI em **pt-BR** até o i18n (ROADMAP §4); contrato de máquina
-  (JSON/SARIF/exit codes) **sempre en**.
+  humanas da CLI em **pt-BR + en** com default **en** desde o i18n de 18/10
+  (ROADMAP §4); contrato de máquina (JSON/SARIF/exit codes) **sempre en**.
 - Injeção de comando é **impossível por construção**: sem shell
   (`Command::new(prog).args([...])`), imagem Docker saneada `[a-z0-9._-]`.
 - Riscos de execução de código exigem confirmação **individual** —

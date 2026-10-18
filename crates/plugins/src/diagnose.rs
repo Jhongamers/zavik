@@ -382,7 +382,7 @@ mod tests {
     #[test]
     fn linking_points_to_real_lib_cause() {
         let out = "   = note: /usr/bin/ld: cannot find -lssl\ncollect2: error: ld returned 1 exit status";
-        let d = diagnose(out);
+        let d = diagnose_in(Lang::PtBr, out);
         let top = &d.causes[0];
         assert_eq!(top.id, "missing-lib");
         // The dynamic fix points at the dev library, not the linker.
@@ -431,7 +431,7 @@ mod tests {
 
     #[test]
     fn unknown_output_uses_fallback() {
-        let d = diagnose("algo totalmente estranho sem padrao conhecido");
+        let d = diagnose_in(Lang::PtBr, "algo totalmente estranho sem padrao conhecido");
         assert!(d.causes.is_empty());
         assert!(d.summary.contains("Não reconheci"));
     }

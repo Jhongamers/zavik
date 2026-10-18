@@ -21,11 +21,12 @@ pub enum Lang {
 
 /// Language used when nothing asks for one.
 ///
-/// **Migration status (docs/design-i18n.md):** stays `PtBr` until the phase-2
-/// sweep migrates every human message; the final pre-launch commit flips this
-/// to `En` (one line + test updates). Never flip with untranslated messages
-/// still printing.
-pub const DEFAULT_LANG: Lang = Lang::PtBr;
+/// **Migration status (docs/design-i18n.md):** flipped to `En` in the
+/// pre-launch phase-3 commit — every human message goes through the catalog
+/// and the content class (evidence/finding/risk) is authored in EN, so no pt
+/// text leaks under the new default. `--lang pt-BR`, `DEVFORGE_LANG=pt-BR`
+/// and a BR system locale still select pt-BR.
+pub const DEFAULT_LANG: Lang = Lang::En;
 
 impl Lang {
     /// Parses a user-supplied tag (`--lang`, `DEVFORGE_LANG`).
@@ -62,10 +63,10 @@ pub fn lang() -> Lang {
 /// locale (`LC_ALL`/`LC_MESSAGES`/`LANG`) > default.
 ///
 /// The locale can only opt **into** pt-BR (`pt`, `pt_BR`, `pt-BR`…); any
-/// other locale falls through to [`DEFAULT_LANG`] — which is `PtBr` during
-/// the migration and `En` after the pre-launch flip, yielding exactly the
-/// ROADMAP rule "default en when the locale isn't BR". Invalid explicit
-/// values are an error — never a silent fallback.
+/// other locale falls through to [`DEFAULT_LANG`] — `En` since the
+/// pre-launch flip, yielding exactly the ROADMAP rule "default en when the
+/// locale isn't BR". Invalid explicit values are an error — never a silent
+/// fallback.
 pub fn resolve(flag: Option<&str>) -> Result<Lang, String> {
     if let Some(raw) = flag {
         return Lang::parse(raw).ok_or_else(|| invalid_lang(raw));
@@ -694,7 +695,7 @@ static EN: &[(&str, &str)] = &[
     // --- `data` command (main.rs: run_data/data_status/data_update/fetch_dataset) ---
     (
         "--url exige um valor (<https://...> ou file://<caminho>)",
-        "--url requires a value (<https://...> or file://<caminho>)",
+        "--url requires a value (<https://...> or file://<path>)",
     ),
     (
         "opção desconhecida: {} (uso: devforge data status|update [--json] [--url <url>])",
@@ -1337,6 +1338,26 @@ static EN: &[(&str, &str)] = &[
         "diretório de projeto não encontrado: {}",
         "project directory not found: {}",
     ),
+    // --- kernel/events stdout-noise and shared Error Display prefixes:
+    //     human stderr, rendered with the global language at emit time ---
+    (
+        "KERNEL: registrando plugin '{}'",
+        "KERNEL: registering plugin '{}'",
+    ),
+    (
+        "KERNEL: DevForge inicializado.",
+        "KERNEL: DevForge initialized.",
+    ),
+    (
+        "EVENTBUS: publicando '{}' para {} assinante(s)",
+        "EVENTBUS: publishing '{}' to {} subscriber(s)",
+    ),
+    ("erro de I/O: {}", "I/O error: {}"),
+    (
+        "erro de desserialização: {}",
+        "deserialization error: {}",
+    ),
+    ("erro desconhecido: {}", "unknown error: {}"),
 ];
 
 #[cfg(test)]
@@ -1421,7 +1442,7 @@ mod tests {
         std::env::remove_var("DEVFORGE_LANG");
 
         // Locale: `pt*` opts into pt-BR; a non-pt locale falls to the
-        // default (which becomes `en` after the pre-launch flip).
+        // default (already `en` since the pre-launch flip).
         for var in ["LC_ALL", "LC_MESSAGES", "LANG"] {
             std::env::remove_var(var);
         }
@@ -1448,9 +1469,10 @@ mod tests {
 
     #[test]
     fn t_en_forces_english_whatever_the_current_language() {
-        // The process default is pt during the migration: t() says pt, t_en()
-        // says EN — that's the JSON contract (dogfooding #6).
-        assert_eq!(t("AMBIENTE"), "AMBIENTE");
+        // t_en() forces EN whatever the current language — the JSON contract
+        // (dogfooding #6). The process default is EN since the flip, so pin
+        // the contrast against an explicit pt translation of the same key.
+        assert_eq!(translate(Lang::PtBr, "AMBIENTE"), "AMBIENTE");
         assert_eq!(t_en("AMBIENTE"), "ENVIRONMENT");
         assert_eq!(
             t_en("Veredito: SEM DADOS ⚠️  (0 pacotes — nada foi atestado)",

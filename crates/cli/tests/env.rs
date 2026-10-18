@@ -12,7 +12,13 @@ use std::process::Command;
 use tempfile::TempDir;
 
 fn devforge() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_devforge"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_devforge"));
+    // Locale must not flip the post-flip default (en) on any machine.
+    cmd.env_remove("LC_ALL")
+        .env_remove("LC_MESSAGES")
+        .env_remove("LANGUAGE")
+        .env_remove("LANG");
+    cmd
 }
 
 /// Minimal JavaScript project so stack detection has something to find.
@@ -158,7 +164,7 @@ fn env_human_prints_sections() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("AMBIENTE"), "seção AMBIENTE no modo humano");
+    assert!(stdout.contains("ENVIRONMENT"), "seção ENVIRONMENT no modo humano");
     assert!(stdout.contains("os:"), "OS na saída humana");
     assert!(stdout.contains("node"), "toolchains por stack");
 }
