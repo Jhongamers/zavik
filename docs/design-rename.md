@@ -93,3 +93,8 @@ token de licença `ZV1.…`.
   proteções;200 testes / clippy0 / fmt (só2 falsos positivos de header em drift
   pré-existente: main.rs:1927,2424); smoke OK (banner `✨ ZAVIK — audit ✨`, help pt,
   erros EN/pt com binário `zavik`).
+- 2026-10-19: **Lote B concluído** — repo `Jhongamers/devforge` → `Jhongamers/zavik`
+  (redirect API confirmado por sinal positivo; curl local continua servindo 404
+  fantasma), secret `ZV_DATASET_KEY` (valor do arquivo local; antigo removido),
+  sweep de URLs em install.sh +2 READMEs, CI green (`963725d`) e **dataset workflow
+  disparado com sucesso** → release `dataset-latest/dataset.json` prova o secret E2E.
