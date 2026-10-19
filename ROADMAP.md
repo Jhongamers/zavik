@@ -184,8 +184,12 @@ swift-argument-parser, googletest). Achados:
 - [x] **README**: workflow de exemplo do consumidor + limitações honestas
       (SARIF inline exige Code Scanning; gate por exit code funciona sempre;
       Windows só download manual).
-- Pendência (requer repositório no GitHub): publicar a `v0.1.0` e validar o
-  action de ponta a ponta num PR real.
+- [x] **Publicação da `v0.1.0`** (19/10) ✅: tag anotada em `936c4fb` →
+  `release.yml` verde nos 4 alvos, 8 assets (binários + `.sha256`). E2E
+  local com o binário **baixado da release**: sha256 OK, `--version`
+  0.1.0, fix do lote E e `DEFAULT_DATASET_URL` gravados no artefato.
+- Pendência: validar o action de ponta a ponta num PR real (requer
+  repositório público ou consumidor autenticado).
 - Próximos (futuro): typosquat por similaridade, integridade de lockfile,
   advisory DB (GHSA) online.
 
@@ -231,7 +235,8 @@ swift-argument-parser, googletest). Achados:
       preenchido; dispatch do workflow + E2E local verdes (license `ZV1`
       → `data update file://` → audit com seção FRESH DATA). Download
       direto do URL embutido resolve com repo público (asset privado
-      hoje → 404 honesto). Falta: tag `v0.1.0`.
+      hoje → 404 honesto). Tag `v0.1.0` publicada (19/10) com release de
+      binários nos 4 alvos.
       Upgrade opcional (founder): corpus OSV `ossf/malicious-packages`
       (238k nomes ≈ 28 MB/asset vs ~1 MB hoje) — ver design-data §2.
 - [ ] Action no GitHub Marketplace (billing deles, compute do cliente) —
@@ -312,9 +317,10 @@ swift-argument-parser, googletest). Achados:
       (gerenciador), IA/Action**. Recomendado por público marcado ✅;
       página do Chocolatey olhada (convenção padrão `choco install
       zavik` — sem inspiração extra necessária):
-  - **F0 (founder — bloqueante de todas)**: `git push -u origin main` +
-    `git tag v0.1.0 && git push origin v0.1.0` → `release.yml` publica
-    binários (linux x64/arm64, macOS arm, windows) + `.sha256`.
+  - **F0 (founder — bloqueante de todas)** ✅ **FEITO** (19/10): tag
+    anotada `v0.1.0` em `936c4fb` → `release.yml` publicou binários
+    (linux x64/arm64, macOS arm, windows) + `.sha256` — 4/4 alvos
+    verdes, checksum conferido no binário baixado da release.
   - **F1**: `install.sh` ✅ **recomendado (usuário final, inclui WSL e
     macOS)** — **FEITO** (17/10): detecta OS/arch, baixa da Release, confere
     sha256 (sem flag de pular — adulterado é recusado, com teste), não
@@ -324,8 +330,9 @@ swift-argument-parser, googletest). Achados:
     desconhecido com mensagem clara). Versão manual de 2 linhas documentada
     ao lado (comemos o pastel: nosso próprio `audit` classifica `curl|sh`
     como risco) + seção "Install" do README escrita pra humano E pra IA
-    (linha canônica copiável por OS — a IA usa o mesmo prompt). Ativa quando
-    a tag `v0.1.0` publicar os binários (F0).
+    (linha canônica copiável por OS — a IA usa o mesmo prompt). Binários
+    já publicados (F0 ✅ 19/10); o download anônimo via URL resolve quando
+    o repo abrir (asset privado ainda → 404).
   - **F2**: `cargo install` ✅ **recomendado (dev com Rust já instalado)**
     + testar `action.yml` no E2E do release — caminho zero-install de CI
     (é o que a IA escreve num workflow).
