@@ -53,6 +53,16 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Restore the default SIGPIPE handler (Rust ignores it, so a downstream
+    // consumer closing the pipe — `zavik … | head`, `| jq` — would otherwise
+    // panic on the next write and exit 101, which an AI driver reads as a
+    // product crash). With the default restored the process just dies on
+    // SIGPIPE like a normal CLI.
+    #[cfg(unix)]
+    unsafe {
+        libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+    }
+
     let mut args: Vec<String> = env::args().skip(1).collect();
     // `--lang` is pulled before dispatch so it reaches EVERY parser —
     // including `license`/`data`, which parse their own flags. Values after
