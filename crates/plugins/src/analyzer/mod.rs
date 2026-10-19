@@ -345,6 +345,71 @@ mod tests {
     }
 
     #[test]
+    fn workspace_member_lockfile_at_root_is_accepted() {
+        // Dogfooding #14: when analyzing a single workspace member, the
+        // governing Cargo.lock lives at the workspace root, not in the member.
+        // The rule walks up only while ancestors declare `[workspace]`, so the
+        // root lockfile satisfies the member.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("Cargo.lock"), "").unwrap();
+        std::fs::create_dir_all(dir.path().join("crates/app")).unwrap();
+        std::fs::write(
+            dir.path().join("crates/app/Cargo.toml"),
+            "[package]\nname = \"app\"\nversion = \"0.1.0\"\n\n[dependencies]\nserde = \"1\"\n",
+        )
+        .unwrap();
+
+        // Non-vacuous: analyze the MEMBER dir, which has no lockfile of its
+        // own; the governing Cargo.lock sits at the workspace root.
+        let member = dir.path().join("crates/app");
+        let report = analyze(&member);
+        assert!(
+            !report
+                .findings
+                .iter()
+                .any(|f| f.message.contains("no lockfile found")),
+            "membro de workspace aceita o Cargo.lock da raiz: {:?}",
+            report.findings
+        );
+    }
+
+    #[test]
+    fn nested_non_workspace_project_still_warns_about_lockfile() {
+        // The walk stops at the first ancestor that does NOT declare
+        // `[workspace]`: a nested project under a plain outer package must NOT
+        // borrow the outer lockfile, so the reproducibility warning still fires.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[package]\nname = \"outer\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("Cargo.lock"), "").unwrap();
+        std::fs::create_dir_all(dir.path().join("nested")).unwrap();
+        std::fs::write(
+            dir.path().join("nested/Cargo.toml"),
+            "[package]\nname = \"nested\"\nversion = \"0.1.0\"\n\n[dependencies]\nserde = \"1\"\n",
+        )
+        .unwrap();
+
+        let nested = dir.path().join("nested");
+        let report = analyze(&nested);
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.message.contains("no lockfile found")),
+            "projeto aninhado fora de workspace ainda avisa sem lockfile: {:?}",
+            report.findings
+        );
+    }
+
+    #[test]
     fn classifies_sources() {
         assert!(matches!(SourceKind::classify(None), SourceKind::Missing));
         assert!(matches!(
@@ -393,5 +458,80 @@ mod tests {
             .unwrap();
 
         assert!(report.blocking().is_empty());
+    }
+
+    #[test]
+    fn rust_git_dependency_is_flagged_as_non_registry_in_trust() {
+        // Regression for dogfooding #13: a Rust `git = …` dep used to reach
+        // the analyzer with `version: None` (the origin was dropped in the
+        // detector), so it was classified Missing and the trust "outside the
+        // registry" rule — which only fires for NonRegistry — never saw it.
+        // The detector now records `git+<url>`, so trust flags it.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[package]\nname = \"gitdep\"\nversion = \"0.1.0\"\n\n[dependencies]\ngitty = { git = \"https://example.com/gitty.git\" }\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("Cargo.lock"), "").unwrap();
+
+        let context = context(dir.path());
+        let stacks = StackDetector::default().detect(&context).unwrap();
+        // Non-vacuous: the git dep must actually be detected as non-registry.
+        let gitty = stacks[0]
+            .dependencies
+            .iter()
+            .find(|d| d.name == "gitty")
+            .expect("gitty listado");
+        assert_eq!(
+            gitty.version.as_deref(),
+            Some("git+https://example.com/gitty.git"),
+            "detector preserva a origem git no campo version"
+        );
+
+        let report = DependencyAnalyzer
+            .verify_trust(&context, &stacks)
+            .unwrap();
+        assert!(
+            report
+                .risks
+                .iter()
+                .any(|r| r.message.contains("comes from outside the registry")
+                    && r.package.as_deref() == Some("gitty")),
+            "git-dep do Rust agora vira risco de trust: {:?}",
+            report.risks
+        );
+    }
+
+    #[test]
+    fn rust_git_dependency_reports_origin_not_missing_version() {
+        // Same root cause as #13, seen in `analyze`: the finding must name the
+        // git origin, never the misleading "declares no version".
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[package]\nname = \"gitdep\"\nversion = \"0.1.0\"\n\n[dependencies]\ngitty = { git = \"https://example.com/gitty.git\" }\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("Cargo.lock"), "").unwrap();
+
+        let report = analyze(dir.path());
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.message.contains("outside the package registry")
+                    && f.message.contains("git+https://example.com/gitty.git")),
+            "analyze aponta a origem git: {:?}",
+            report.findings
+        );
+        assert!(
+            !report
+                .findings
+                .iter()
+                .any(|f| f.message.contains("declares no version")),
+            "git-dep NUNCA e reportado como 'sem versao': {:?}",
+            report.findings
+        );
     }
 }

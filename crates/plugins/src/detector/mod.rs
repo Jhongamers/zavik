@@ -468,6 +468,49 @@ version = "0.1.0"
     }
 
     #[test]
+    fn rust_git_dependency_records_origin_in_version_field() -> Result<(), Box<dyn std::error::Error>>
+    {
+        // Dogfooding #13: a `git = …` dep carries no registry version, but the
+        // origin must survive into the `version` field as `git+<url>` (the same
+        // shape npm uses) so the analyzer reports "outside the registry" and the
+        // trust rule — which only fires for NonRegistry — can see it.
+        let dir = tempfile::tempdir()?;
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[package]
+name = "app"
+version = "0.1.0"
+
+[dependencies]
+gitty = { git = "https://example.com/gitty.git" }
+serde = "1.7.99"
+"#,
+        )?;
+
+        let stacks = StackDetector::default().detect(&context(dir.path()))?;
+        let dep = |n: &str| {
+            stacks[0]
+                .dependencies
+                .iter()
+                .find(|d| d.name == n)
+                .unwrap_or_else(|| panic!("{n} listado"))
+        };
+
+        assert_eq!(
+            dep("gitty").version.as_deref(),
+            Some("git+https://example.com/gitty.git"),
+            "origem git vira git+<url> no campo version"
+        );
+        assert!(
+            !dep("gitty").local,
+            "git-dep NÃO é local (resolve da rede, não da árvore)"
+        );
+        assert_eq!(dep("serde").version.as_deref(), Some("1.7.99"));
+        Ok(())
+    }
+
+    #[test]
     fn detects_node_typescript() -> Result<(), Box<dyn std::error::Error>> {
         let dir = tempfile::tempdir()?;
         std::fs::write(

@@ -142,6 +142,12 @@ fn rust_stack_from(
 /// filesystem rather than from a registry — its version lives in the target
 /// manifest, so the analyzer must not report it as missing. A `workspace = true`
 /// entry that the workspace never declares stays honestly `(None, false)`.
+///
+/// A `git = …` dependency carries no registry version, so it is recorded as
+/// `git+<url>` (the exact shape the npm detector already emits for
+/// `"pkg": "git+https://…"`). That keeps the analyzer honest — it reports
+/// "outside the registry", not "declares no version" — and lets the trust
+/// check see the origin instead of classifying the dependency as `Missing`.
 fn toml_source(
     name: &str,
     spec: &toml::Value,
@@ -155,6 +161,11 @@ fn toml_source(
             Some(entry) => (plain_version(entry), entry.get("path").is_some()),
             None => (None, false),
         };
+    }
+    // `foo = { git = "https://…" }` — no version; record the git origin so the
+    // analyzer/trust see where the code actually comes from.
+    if let Some(url) = spec.get("git").and_then(|v| v.as_str()) {
+        return (Some(format!("git+{url}")), false);
     }
     (None, spec.get("path").is_some())
 }
