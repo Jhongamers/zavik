@@ -42,7 +42,6 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
    não há o que atestar" e o vira **"Veredito: SEM DADOS ⚠️"** (em vez de
    APROVADO). JSON **intocado** — `packages_audited` já era visível e
    `passed`/exit codes mantidos: contrato de máquina estável.
-
 ### Registrados, ainda pendentes
 
 5. ~~`context --json` → `entrypoints: []`~~ **FECHADO (17/10, corpus
@@ -65,7 +64,7 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
 
 ### Achados extras — corpus Fase A/B (17/10, mesmo dia)
 
-9. **`run`/`up`/runbook/hint do prepare sugeriam `cargo run` em projeto
+16. **`run`/`up`/runbook/hint do prepare sugeriam `cargo run` em projeto
    só-lib (NOVO-1)**: serde e anyhow (reais, SHA pinado) têm **zero bins**
    (ground truth: `cargo metadata`) — o comando falharia. **Corrigido**:
    a resolução Rust conta binários do pacote **e dos membros do
@@ -74,14 +73,14 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
    ficam em silêncio; workspace com **1 único bin** segue `cargo run` (o
    caso do Zavik — verificado sem regressão). Testes: runner ×4,
    briefing ×1, provision ×2. Detalhes: `~/devforge-corpus/pagina-interna.md`.
-10. **Runbook Go prometia `go run .` sem `main.go` (NOVO-2)**: cobra (real,
+17. **Runbook Go prometia `go run .` sem `main.go` (NOVO-2)**: cobra (real,
     Fase B) é lib Go — o `run` já respondia NotFound, mas o
     `context.runbook.run` mandava `go run .`, que falharia. **Corrigido**:
     o runbook Go só promete `go run .` com `main.go` na raiz, ou
     `go run ./cmd/<único>` com um único pacote cmd; zero/vários → silêncio
     (o `run` pergunta). Teste ×1. Candidatos da mesma classe, ainda sem
     prova real: runbook C#/Dart/Swift/Elixir (JS e Python já condicionais).
-11. **Runbook Dart prometia `dart run` sem `bin/*.dart` e swift pedia
+18. **Runbook Dart prometia `dart run` sem `bin/*.dart` e swift pedia
     `swift run` em qualquer `Package.swift` (NOVO-3 e NOVO-4)**: args
     (real, lib pura) e swift-argument-parser (real, **9 executáveis** —
     `swift run` puro falharia pedindo o produto) confirmaram os dois.
@@ -96,9 +95,9 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
     documentado `--all`, não FP; observação registrada: o aviso de
     "nenhuma stack" poderia sugerir `--all`).
 
-### Correção 19/10 (lote E) — FP do `analyze` em workspace + novos pendentes
+### Correção 19/10 (lote E) — FP do `analyze` em workspace
 
-12. **`analyze` marcava path-deps internos como "declares no version"**
+19. **`analyze` marcava path-deps internos como "declares no version"**
     (16 infos na raiz, 6 em `crates/cli` — causa-raiz ligada ao item 2:
     o detector grava `version: None` em path-dep e o analyzer tratava
     `None` como "esqueceu de declarar versão"). **Correção:** o detector
@@ -114,34 +113,44 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
     sem versão **não-local** ainda dispara), trust ×1 (membro de workspace
     nunca vira risco, determinístico offline).
 
-13. **NOVO (pendente): git-deps do Rust escapam do trust.** `foo = { git =
-    … }` perde a origem no detector (mesma raiz do item 2) e vira
-    `version: None` → o `analyze` reporta "declares no version" (mensagem
-    errada: o dep **tem** origem) e o `trust` **não sinaliza** o risco 2
-    ("deps fora do registro: git/path/file" — está no doc comment do
-    próprio trust). Prova empírica (fixture): `gitty = { git = … }` → só
-    o info de versão, zero de trust. Correção proposta (aguarda go):
-    gravar `git+<url>` no campo `version` — padrão que o detector npm já
-    usa (`classify` → `NonRegistry` → mensagem correta no analyze +
-    warning de trust). Entra na mesma correção o path-dep apontando
-    **pra fora** do projeto (mesma classe; hoje o trust também não o vê).
+### Correção 19/10 (lote E.1) — git-deps, lockfile de membro, broken pipe
 
-14. **NOVO (pendente): lockfile de membro de workspace.** `analyze
-    crates/cli` avisa "no lockfile" (warning): o `check_lockfile` olha só
-    `root.join("Cargo.lock")`, mas o lockfile de um membro vive na **raiz
-    do workspace** — FP de warning na análise do diretório de um membro.
-    Correção proposta (aguarda go): subir ancestrais **só** enquanto
-    houver `[workspace]` declarado (subir cegamente suprimiria o warning
-    legítimo de projeto aninhado que não é membro).
-
-15. **NOVO (pendente): panic em broken pipe ao pipear a saída.**
-    `zavik analyze . --json | head -c 1` → panic do Rust em stdout e
-    **exit 101** (medido também com `zavik version | head -c 1`;
-    pré-existente, qualquer comando, nada a ver com o lote E). O driver IA
-    pipea muito (`| jq`), e panic + 101 pode ser lido como falha do
-    produto. Correção proposta (aguarda go): restaurar o default do
-    SIGPIPE no início do `main` (comportamento de CLI de verdade) + teste
-    de exit code com stdout fechado.
+13. **Git-deps do Rust escapavam do trust** (era pendência): `foo = { git =
+    … }` perdia a origem no detector (mesma raiz do item 19) e virava
+    `version: None` → o `analyze` reportava "declares no version" (mensagem
+    errada: o dep **tem** origem) e o `trust` **não sinalizava** o risco 2
+    ("deps fora do registro: git/path/file"). **Correção:** o detector grava
+    `git+<url>` no campo `version` (padrão que o detector npm já usava);
+    `classify` vira `NonRegistry` → mensagem correta no `analyze` ("comes
+    from … (outside the package registry)") + warning de trust.
+    Resultado empírico (fixture `gitty = { git = … }`): analyze passou de
+    "declares no version" para apontar a origem; trust agora emite
+    "MEDIUM · origin outside the registry (git: git+https://…)". Testes:
+    detector ×1 (origem no campo, não-local), analyzer ×2 (trust NonRegistry
+    + origem no analyze, nunca "sem versão") — determinístico offline (o
+    `check_registry_presence` do trust só consulta deps `Registry`).
+14. **Lockfile de membro de workspace** (era pendência): `analyze
+    crates/cli` avisava "no lockfile" (FP de warning): o `check_lockfile`
+    olhava só `root.join("Cargo.lock")`, mas o lockfile de um membro vive
+    na **raiz do workspace**. **Correção:** `lockfile_present` sobe
+    ancestrais **só** enquanto houver `[workspace]` declarado; diretório
+    sem manifesto (ex.: `crates/` entre membro e raiz) é pulado; manifesto
+    real sem `[workspace]` **para** o aviso (não pega lockfile alheio).
+    Correção de caminho no meio do caminho: a subida precisava pular
+    diretórios sem manifesto antes de achar a raiz. Resultado empírico:
+    `analyze crates/cli` **6 → 0** (lockfile resolvido da raiz do repo,
+    que declara `[workspace]`); projeto aninhado sob pacote não-workspace
+    **ainda avisa** (contra-exemplo verificado). Testes ×2 (positivo +
+    negativo).
+15. **Panic em broken pipe ao pipear a saída** (era pendência, pré-existente
+    em qualquer comando): `zavik analyze . --json | head -c 1` → panic do
+    Rust em stdout e **exit 101** (medido também com `zavik version | head
+    -c 1`); o driver IA pipea muito (`| jq`), e panic + 101 pode ser lido
+    como falha do produto. **Correção:** `main` restaura o default do
+    SIGPIPE (`libc::signal(SIGPIPE, SIG_DFL)`, só unix) — comportamento de
+    CLI de verdade. Resultado empírico: **exit 141** (morte limpa por
+    sinal), stderr sem panic. Teste: exit code com stdout fechado
+    (verificado não-vacuo: sem a correção o teste falha com o panic).
 
 ### Comportamentos verificados OK (sem achado)
 
