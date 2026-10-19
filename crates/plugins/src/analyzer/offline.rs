@@ -86,6 +86,55 @@ fn check_duplicate_versions(stack: &ProjectStack, report: &mut AnalysisReport) {
     }
 }
 
+/// Whether a lockfile is present for `root`, looking only where Cargo would
+/// actually place one. For a plain package that is `root` itself. When `root`
+/// is inside a workspace (or is the workspace root), Cargo keeps a single
+/// `Cargo.lock` at the workspace root, so we walk up — but *only* while each
+/// ancestor `Cargo.toml` still declares `[workspace]`. The moment an ancestor
+/// is not a workspace root we stop, so a nested package that merely sits
+/// under an unrelated directory keeps its honest "no lockfile" warning
+/// instead of borrowing a lockfile that doesn't govern it.
+fn lockfile_present(language: Language, root: &Path, expected: &[&str]) -> bool {
+    if expected.iter().any(|name| root.join(name).is_file()) {
+        return true;
+    }
+    if language != Language::Rust {
+        // Workspace inheritance is a Cargo concept; other ecosystems resolve
+        // from the analyzed root.
+        return false;
+    }
+    let mut dir = root.parent();
+    while let Some(ancestor) = dir {
+        let manifest = ancestor.join("Cargo.toml");
+        if !manifest.is_file() {
+            // A plain directory (e.g. the `crates/` between a member and the
+            // workspace root) hosts no package, so it governs nothing — keep
+            // walking up.
+            dir = ancestor.parent();
+            continue;
+        }
+        if !declares_workspace(&manifest) {
+            // A real package that is not a workspace root: its lockfile
+            // governs only itself, so the searched root genuinely has none.
+            return false;
+        }
+        if expected.iter().any(|name| ancestor.join(name).is_file()) {
+            return true;
+        }
+        dir = ancestor.parent();
+    }
+    false
+}
+
+/// True when `manifest` parses and declares a `[workspace]` table.
+fn declares_workspace(manifest: &Path) -> bool {
+    std::fs::read_to_string(manifest)
+        .ok()
+        .and_then(|text| text.parse::<toml::Value>().ok())
+        .map(|value| value.get("workspace").is_some())
+        .unwrap_or(false)
+}
+
 fn check_lockfile(root: &Path, stack: &ProjectStack, report: &mut AnalysisReport) {
     // Plain `pip` has no standard lockfile; avoid noise.
     if stack.language == Language::Python
@@ -101,7 +150,7 @@ fn check_lockfile(root: &Path, stack: &ProjectStack, report: &mut AnalysisReport
     if expected.is_empty() {
         return;
     }
-    if expected.iter().any(|name| root.join(name).is_file()) {
+    if lockfile_present(stack.language, root, expected) {
         return;
     }
 
