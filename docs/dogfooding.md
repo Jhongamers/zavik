@@ -96,6 +96,53 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
     documentado `--all`, não FP; observação registrada: o aviso de
     "nenhuma stack" poderia sugerir `--all`).
 
+### Correção 19/10 (lote E) — FP do `analyze` em workspace + novos pendentes
+
+12. **`analyze` marcava path-deps internos como "declares no version"**
+    (16 infos na raiz, 6 em `crates/cli` — causa-raiz ligada ao item 2:
+    o detector grava `version: None` em path-dep e o analyzer tratava
+    `None` como "esqueceu de declarar versão"). **Correção:** o detector
+    agora preserva a origem (`Dependency.local` = `path = …` direto ou
+    herdado do `[workspace.dependencies]`; precedência de versão idêntica
+    à antiga, `None` honesto intacto) e as **regras de versão** do
+    `offline` pulam deps locais — pacote do próprio projeto não tem
+    versão de registro pra declarar/pinar. Só regras de versão: regras de
+    origem (`NonRegistry`) e trust intocadas. Resultado empírico: **raiz
+    16 → 0** ("Nothing to report"), **crates/cli 6 → 0**. Testes: detector
+    ×1 (path herdado/direto = local, versão herdada de registro ≠ local),
+    analyzer ×2 (guarda anti-vacuidade do FP + contra-garantia de que dep
+    sem versão **não-local** ainda dispara), trust ×1 (membro de workspace
+    nunca vira risco, determinístico offline).
+
+13. **NOVO (pendente): git-deps do Rust escapam do trust.** `foo = { git =
+    … }` perde a origem no detector (mesma raiz do item 2) e vira
+    `version: None` → o `analyze` reporta "declares no version" (mensagem
+    errada: o dep **tem** origem) e o `trust` **não sinaliza** o risco 2
+    ("deps fora do registro: git/path/file" — está no doc comment do
+    próprio trust). Prova empírica (fixture): `gitty = { git = … }` → só
+    o info de versão, zero de trust. Correção proposta (aguarda go):
+    gravar `git+<url>` no campo `version` — padrão que o detector npm já
+    usa (`classify` → `NonRegistry` → mensagem correta no analyze +
+    warning de trust). Entra na mesma correção o path-dep apontando
+    **pra fora** do projeto (mesma classe; hoje o trust também não o vê).
+
+14. **NOVO (pendente): lockfile de membro de workspace.** `analyze
+    crates/cli` avisa "no lockfile" (warning): o `check_lockfile` olha só
+    `root.join("Cargo.lock")`, mas o lockfile de um membro vive na **raiz
+    do workspace** — FP de warning na análise do diretório de um membro.
+    Correção proposta (aguarda go): subir ancestrais **só** enquanto
+    houver `[workspace]` declarado (subir cegamente suprimiria o warning
+    legítimo de projeto aninhado que não é membro).
+
+15. **NOVO (pendente): panic em broken pipe ao pipear a saída.**
+    `zavik analyze . --json | head -c 1` → panic do Rust em stdout e
+    **exit 101** (medido também com `zavik version | head -c 1`;
+    pré-existente, qualquer comando, nada a ver com o lote E). O driver IA
+    pipea muito (`| jq`), e panic + 101 pode ser lido como falha do
+    produto. Correção proposta (aguarda go): restaurar o default do
+    SIGPIPE no início do `main` (comportamento de CLI de verdade) + teste
+    de exit code com stdout fechado.
+
 ### Comportamentos verificados OK (sem achado)
 
 - `env --json`: os logs do KERNEL vão pra **stderr**; stdout é JSON puro.

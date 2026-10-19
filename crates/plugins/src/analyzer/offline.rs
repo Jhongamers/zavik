@@ -6,6 +6,11 @@
 //! - dependency coming from outside the registry (git/path/file/...);
 //! - missing lockfile (build not reproducible);
 //! - same dependency declared with different versions in the same stack.
+//!
+//! Local (`path = …`) dependencies are exempt from the version rules: they
+//! resolve from this project's own source tree, so there is no registry
+//! version to declare or pin — reporting one would be noise (dogfooding on
+//! Zavik itself reported 16 such findings for its own crates).
 
 use super::SourceKind;
 use zavik_shared::{AnalysisReport, Finding, Language, ProjectStack};
@@ -17,6 +22,11 @@ pub(crate) fn analyze(root: &Path, stacks: &[ProjectStack], report: &mut Analysi
     for stack in stacks {
         check_lockfile(root, stack, report);
         for dependency in &stack.dependencies {
+            if dependency.local {
+                // First-party path/workspace-member code: no registry
+                // version applies, so none of the version rules below do.
+                continue;
+            }
             check_dependency(stack, dependency, report);
         }
         check_duplicate_versions(stack, report);

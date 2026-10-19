@@ -400,6 +400,74 @@ serde = { workspace = true }
     }
 
     #[test]
+    fn path_dependencies_are_marked_local_registry_ones_are_not(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[workspace]
+members = ["crates/*"]
+
+[workspace.dependencies]
+shared = { path = "crates/shared" }
+serde = "1.7.99"
+"#,
+        )?;
+        std::fs::create_dir_all(dir.path().join("crates/app"))?;
+        std::fs::create_dir_all(dir.path().join("crates/shared"))?;
+        std::fs::write(
+            dir.path().join("crates/app/Cargo.toml"),
+            r#"
+[package]
+name = "app"
+version = "0.1.0"
+
+[dependencies]
+shared = { workspace = true }
+serde = { workspace = true }
+helper = { path = "../helper" }
+"#,
+        )?;
+        std::fs::write(
+            dir.path().join("crates/shared/Cargo.toml"),
+            r#"
+[package]
+name = "shared"
+version = "0.1.0"
+"#,
+        )?;
+
+        let stacks = StackDetector::default().detect(&context(dir.path()))?;
+        let app = stacks
+            .iter()
+            .find(|s| s.name.as_deref() == Some("app"))
+            .expect("stack do membro app");
+        let dep = |n: &str| {
+            app.dependencies
+                .iter()
+                .find(|d| d.name == n)
+                .unwrap_or_else(|| panic!("{n} listado"))
+        };
+
+        assert!(
+            dep("shared").local,
+            "path herdado do [workspace.dependencies] é local"
+        );
+        assert_eq!(dep("shared").version, None, "path sem versão segue None");
+        assert!(
+            dep("helper").local,
+            "path declarado direto no membro é local"
+        );
+        assert!(
+            !dep("serde").local,
+            "versão herdada de registro não é local"
+        );
+        assert_eq!(dep("serde").version.as_deref(), Some("1.7.99"));
+        Ok(())
+    }
+
+    #[test]
     fn detects_node_typescript() -> Result<(), Box<dyn std::error::Error>> {
         let dir = tempfile::tempdir()?;
         std::fs::write(

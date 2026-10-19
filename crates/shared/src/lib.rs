@@ -132,6 +132,11 @@ pub struct Dependency {
     pub name: String,
     pub version: Option<String>,
     pub kind: DependencyKind,
+    /// Declared with `path = …` (directly or inherited through
+    /// `[workspace.dependencies]`): the package resolves from the local
+    /// filesystem instead of a registry, so registry version rules
+    /// (pinning, "declares no version") do not apply to it.
+    pub local: bool,
 }
 
 impl Dependency {
@@ -140,6 +145,7 @@ impl Dependency {
             name: name.into(),
             version,
             kind,
+            local: false,
         }
     }
 }

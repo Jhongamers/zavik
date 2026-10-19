@@ -228,6 +228,104 @@ mod tests {
     }
 
     #[test]
+    fn workspace_path_dependencies_produce_no_version_finding() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n\n[workspace.dependencies]\nshared = { path = \"crates/shared\" }\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(dir.path().join("crates/app")).unwrap();
+        std::fs::write(
+            dir.path().join("crates/app/Cargo.toml"),
+            "[package]\nname = \"app\"\nversion = \"0.1.0\"\n\n[dependencies]\nshared = { workspace = true }\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(dir.path().join("crates/shared")).unwrap();
+        std::fs::write(
+            dir.path().join("crates/shared/Cargo.toml"),
+            "[package]\nname = \"shared\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("Cargo.lock"), "").unwrap();
+
+        // Non-vacuous guard: the members and the inherited dep must actually
+        // be detected, otherwise "no finding" below would prove nothing.
+        let context = context(dir.path());
+        let stacks = StackDetector::default().detect(&context).unwrap();
+        assert_eq!(stacks.len(), 2, "raiz virtual expande os membros");
+        let app = stacks
+            .iter()
+            .find(|s| s.name.as_deref() == Some("app"))
+            .unwrap();
+        assert_eq!(app.dependencies.len(), 1);
+        assert!(app.dependencies[0].local, "dep herdada com path é local");
+
+        let report = DependencyAnalyzer
+            .analyze(&context, &stacks, &AnalysisOptions::default())
+            .unwrap();
+        assert!(
+            !report
+                .findings
+                .iter()
+                .any(|f| f.message.contains("declares no version")),
+            "path-dep de workspace não é 'sem versão': {:?}",
+            report.findings
+        );
+    }
+
+    #[test]
+    fn non_local_dependency_without_version_is_still_reported() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[package]\nname = \"solo\"\nversion = \"0.1.0\"\n\n[dependencies]\nmystery = { workspace = true }\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("Cargo.lock"), "").unwrap();
+
+        let report = analyze(dir.path());
+        assert!(
+            report.findings.iter().any(|f| f.message
+                .contains("'mystery' declares no version")),
+            "a regra continua pegando dep sem versão que NÃO é local: {:?}",
+            report.findings
+        );
+    }
+
+    #[test]
+    fn workspace_path_dependency_is_not_a_trust_risk() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(dir.path().join("crates/app")).unwrap();
+        std::fs::create_dir_all(dir.path().join("crates/shared")).unwrap();
+        std::fs::write(
+            dir.path().join("crates/app/Cargo.toml"),
+            "[package]\nname = \"app\"\nversion = \"0.1.0\"\n\n[dependencies]\nshared = { path = \"../shared\" }\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("crates/shared/Cargo.toml"),
+            "[package]\nname = \"shared\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+
+        let context = context(dir.path());
+        let stacks = StackDetector::default().detect(&context).unwrap();
+        let report = DependencyAnalyzer.verify_trust(&context, &stacks).unwrap();
+
+        assert!(
+            report.risks.is_empty(),
+            "código próprio do workspace nunca vira risco de trust (sem rede): {:?}",
+            report.risks
+        );
+    }
+
+    #[test]
     fn detects_duplicate_version() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(

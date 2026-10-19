@@ -113,11 +113,10 @@ fn rust_stack_from(
     ] {
         if let Some(entries) = value.get(table).and_then(|v| v.as_table()) {
             for (name, spec) in entries {
-                deps.push(Dependency::new(
-                    name.clone(),
-                    toml_version(name, spec, inherited),
-                    kind,
-                ));
+                let (version, local) = toml_source(name, spec, inherited);
+                let mut dependency = Dependency::new(name.clone(), version, kind);
+                dependency.local = local;
+                deps.push(dependency);
             }
         }
     }
@@ -134,21 +133,30 @@ fn rust_stack_from(
         .with_dependencies(deps)
 }
 
-/// Extracts the version from a Cargo.toml dependency entry.
+/// Version requirement and local-ness of a Cargo dependency entry.
 /// Accepts `serde = "1"`, `serde = { version = "1", ... }` and
 /// `serde = { workspace = true }` (version from `[workspace.dependencies]`).
-fn toml_version(
+///
+/// Returns `(version, local)`: `local` marks a dependency declared with
+/// `path = …` (directly or inherited), i.e. one that resolves from the local
+/// filesystem rather than from a registry — its version lives in the target
+/// manifest, so the analyzer must not report it as missing. A `workspace = true`
+/// entry that the workspace never declares stays honestly `(None, false)`.
+fn toml_source(
     name: &str,
     spec: &toml::Value,
     inherited: &toml::map::Map<String, toml::Value>,
-) -> Option<String> {
+) -> (Option<String>, bool) {
     if let Some(version) = plain_version(spec) {
-        return Some(version);
+        return (Some(version), spec.get("path").is_some());
     }
     if spec.get("workspace").and_then(|v| v.as_bool()) == Some(true) {
-        return inherited.get(name).and_then(plain_version);
+        return match inherited.get(name) {
+            Some(entry) => (plain_version(entry), entry.get("path").is_some()),
+            None => (None, false),
+        };
     }
-    None
+    (None, spec.get("path").is_some())
 }
 
 /// Version of a plain spec: `"1"` or `{ version = "1" }`.
