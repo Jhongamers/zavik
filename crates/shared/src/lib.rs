@@ -1,4 +1,4 @@
-//! Crate `devforge-shared` — the **domain** layer.
+//! Crate `zavik-shared` — the **domain** layer.
 //!
 //! Contains only universal types, with no business logic and no dependency on
 //! external frameworks. It is the innermost crate in the architecture (Clean

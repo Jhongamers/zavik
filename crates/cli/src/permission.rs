@@ -9,8 +9,8 @@
 //! nor by `--yes`. They require explicit individual confirmation — that way an AI (or
 //! a `--yes` in CI) does not install arbitrary code without a human deciding.
 
-use devforge_sdk::{Decision, PermissionGate, PermissionRequest};
-use devforge_shared::i18n::{t, t_fmt};
+use zavik_sdk::{Decision, PermissionGate, PermissionRequest};
+use zavik_shared::i18n::{t, t_fmt};
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 

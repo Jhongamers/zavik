@@ -4,7 +4,7 @@
 Aprovado
 
 ## Contexto
-O DevForge precisa suportar múltiplos canais de apresentação (CLI, GUI via Tauri, futura extensão de VSCode) compartilhando a mesma lógica de negócio, sem que o Core precise conhecer cada interface gráfica ou terminal.
+O Zavik precisa suportar múltiplos canais de apresentação (CLI, GUI via Tauri, futura extensão de VSCode) compartilhando a mesma lógica de negócio, sem que o Core precise conhecer cada interface gráfica ou terminal.
 
 ## Decisão
 Implementamos um **Event Bus** assíncrono interno baseado em eventos de domínio puro no Kernel. A comunicação entre os módulos core e as camadas de apresentação ocorre exclusivamente por meio do envio e assinatura de eventos assíncronos. Nenhum módulo do Core chama métodos ou instancia dependências das camadas de apresentação.

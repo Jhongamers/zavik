@@ -7,12 +7,12 @@
 ## 1. Objetivo
 
 Tornar o produto **comprável** sem gastar nada: o CLI ganha um tier **Pro**
-activado por licença (o sistema `DF1`/Ed25519 já existe e está testado),
+activado por licença (o sistema `ZV1`/Ed25519 já existe e está testado),
 entregando **dados de risco frescos** — o moat que código nenhum (nem IA)
 reproduz, porque exige trabalho contínuo nosso.
 
 **O que NÃO é esta fase** (é fase 2, paga pela receita da fase 1):
-`api.devforge` (gate server-side), dashboard, trilha de auditoria,
+`api.zavik` (gate server-side), dashboard, trilha de auditoria,
 entrega automatizada de licença via webhook. Aqui: **GitHub Releases é o
 "servidor"** (grátis) e a verificação é **local, no binário**.
 
@@ -80,13 +80,13 @@ um dump bruto.
 ```
 CI (cron diário + dispatch manual)              CLI (offline-first)
 ┌──────────────────────────────────┐            ┌──────────────────────────────┐
-│ dataset.yml                      │            │ devforge data update          │
-│  1. clone github/advisory-db     │  Releases │   1. gate: licença DF1 válida?│
+│ dataset.yml                      │            │ zavik data update          │
+│  1. clone github/advisory-db     │  Releases │   1. gate: licença ZV1 válida?│
 │  2. condensar (90d, typosquat)   │ ─────────► │   2. baixa dataset.json       │
-│  3. assinar (DF_DATASET_KEY)     │  tag      │   3. verifica assinatura      │
+│  3. assinar (ZV_DATASET_KEY)     │  tag      │   3. verifica assinatura      │
 │  4. upload p/ tag `dataset-latest│  (grátis) │      (pubkey embutida)        │
 │     --clobber` (substitui asset) │            │   4. grava no XDG atômico     │
-└──────────────────────────────────┘            │ devforge data status          │
+└──────────────────────────────────┘            │ zavik data status          │
         chave privada = GitHub Secret           │ audit usa se presente+OK      │
                                                 └──────────────────────────────┘
 ```
@@ -95,7 +95,7 @@ CI (cron diário + dispatch manual)              CLI (offline-first)
 
 ### 4.1 Assinatura do dataset (chave separada da licença)
 
-- Keypair **próprio** `DF_DATASET_KEY` (blast radius: vazou a chave do dataset
+- Keypair **próprio** `ZV_DATASET_KEY` (blast radius: vazou a chave do dataset
   ≠ conseguem mintar licenças; rotacionar dataset = release nova do CLI).
 - Privada em **GitHub Secret** (só o workflow roda com ela); pública embutida
   no binário (`DATASET_PUBLIC_KEY`, ao lado da `PUBLIC_KEY_B64`).
@@ -104,14 +104,14 @@ CI (cron diário + dispatch manual)              CLI (offline-first)
 
 ### 4.2 Comandos novos
 
-- **`devforge data update [--json] [--url <url>]`** — baixa, verifica,
+- **`zavik data update [--json] [--url <url>]`** — baixa, verifica,
   instala. **Gate: exige licença instalada E válida** (sem → mensagem honesta
   de Pro + como comprar/instalar; `--json` → linha `status:"no_license"`,
-  exit 1). URL: `--url` → env `DF_DATASET_URL` → const default (**vazia até
+  exit 1). URL: `--url` → env `ZV_DATASET_URL` → const default (**vazia até
   o repo GitHub existir — preencher no F0**; sem → erro honesto). Aceita
   `file://`/caminho local (testes offline + espelho airgap). Download via
   `ureq` (mesma família do `--online`), com limite de tamanho (32 MB).
-- **`devforge data status [--json]`** — versão, data, nº de registros,
+- **`zavik data status [--json]`** — versão, data, nº de registros,
   idade; avisa staleness (>14 dias → "atrasado, rode data update").
   Sem dataset → mostra o **snapshot embutido** (tier grátis) e como passar
   pra Pro. `status` é sempre grátis (mostrar o degrau é a venda).
@@ -132,9 +132,9 @@ CI (cron diário + dispatch manual)              CLI (offline-first)
 
 1. Cliente compra (MoR a definir — pesquisa de preço é tarefa do founder).
 2. Founder minta o token (`license_tool mint`) e envia por e-mail.
-3. Cliente: `devforge license install DF1...` → `devforge data update`.
+3. Cliente: `zavik license install ZV1...` → `zavik data update`.
 4. Automação (webhook MoR → emissão) = fase 2 (é servidor; é lá que
-   `api.devforge` entra).
+   `api.zavik` entra).
 
 ## 5. Fluxo por persona
 
@@ -151,11 +151,11 @@ CI (cron diário + dispatch manual)              CLI (offline-first)
   parse/schema versionado, casamento anti-typosquat (positivo + **FP**:
   nome parecido mas não-listado → NÃO sinaliza), exposição advisory
   (nome na janela → low com link; fora da janela → nada).
-- **Sem override de pubkey via env** (decisão de segurança: um `DF_*_PUBKEY`
+- **Sem override de pubkey via env** (decisão de segurança: um `ZV_*_PUBKEY`
   transformaria forjar em 2 env vars sem rebuild — pior que o patch que já
   aceitamos). Cobertura do caminho feliz: unitário com chaves de teste +
   **E2E manual com as chaves reais** (precedente do ciclo de licença).
-- **Integração** (binário real, tudo offline via `DF_DATASET_URL=file://`):
+- **Integração** (binário real, tudo offline via `ZV_DATASET_URL=file://`):
   `data status --json` sem dataset; `data update` sem licença → `no_license`
   exit 1; com licença + dataset assinado local → instala e `status` passa;
   dataset adulterado → recusa; `audit` com dataset → seção extra presente;
@@ -183,7 +183,7 @@ CI (cron diário + dispatch manual)              CLI (offline-first)
 2. [x] `data status` (sem rede, sem gate) (+ integração).
    — ausente / inválido / instalado com idade e staleness; `--json` com
    `tier:"free"` quando não há dataset.
-3. [x] `data update` com gate de licença + `DF_DATASET_URL` (+ integração).
+3. [x] `data update` com gate de licença + `ZV_DATASET_URL` (+ integração).
    — gate **antes** da rede; `--url` → env → const (vazia até o F0);
    `file://`/caminho local; teto de 32 MB; verificação → escrita atômica.
 4. [x] Workflow `dataset.yml` (cron diário 05:17 UTC + dispatch, assina e
@@ -194,7 +194,7 @@ CI (cron diário + dispatch manual)              CLI (offline-first)
    builder sobre os **36.885** GHSAs reviewed → 4.065 advisories + 61 kill
    list, 0 parse errado, 750 KB; assinado → verificado → `data update
    file://` → audit com `lodahs` real (GHSA link) e advisory real agrupado.
-   Só não RODA de verdade sem F0 (repo remoto + secret `DF_DATASET_KEY` +
+   Só não RODA de verdade sem F0 (repo remoto + secret `ZV_DATASET_KEY` +
    preencher `DEFAULT_DATASET_URL`).
 5. [x] Integração no `audit` (seção separada, invariante do tier grátis) (+ testes).
    — `dataset`/`dataset_findings` no JSON só quando há dataset válido;

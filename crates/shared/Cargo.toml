@@ -1,6 +1,6 @@
 [package]
-name = "devforge-shared"
-description = "Tipos de domínio universais do DevForge (sem lógica de negócio)."
+name = "zavik-shared"
+description = "Tipos de domínio universais do Zavik (sem lógica de negócio)."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

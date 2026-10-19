@@ -8,8 +8,8 @@
 //! returns the root cause, with the proof (the lines that matched) and the next
 //! step. It is local Rust, deterministic, zero tokens.
 
-use devforge_shared::i18n::{lang, t_fmt_in, translate, Lang};
-use devforge_shared::{Cause, Diagnosis};
+use zavik_shared::i18n::{lang, t_fmt_in, translate, Lang};
+use zavik_shared::{Cause, Diagnosis};
 use regex::Regex;
 use std::sync::OnceLock;
 
@@ -31,7 +31,7 @@ const RULES: &[Rule] = &[
         id: "command-not-found",
         patterns: &["command not found", "is not recognized as an internal", ": not found"],
         cause: "Uma ferramenta necessária não está instalada no PATH.",
-        fix: "instale a ferramenta (ou rode `devforge prepare` pra montar a toolchain).",
+        fix: "instale a ferramenta (ou rode `zavik prepare` pra montar a toolchain).",
         note: None,
         priority: 30,
     },
@@ -300,7 +300,7 @@ fn dynamic(lang: Lang, rule: &Rule, output: &str) -> (String, String) {
         "command-not-found" => extract_command(output).map(|c| {
             t_fmt_in(
                 lang,
-                "`{}` não está no PATH — instale ou rode `devforge prepare` pra toolchain",
+                "`{}` não está no PATH — instale ou rode `zavik prepare` pra toolchain",
                 &[&c],
             )
         }),

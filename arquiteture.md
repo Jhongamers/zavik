@@ -1,6 +1,6 @@
-# Especificação de Arquitetura: DevForge
+# Especificação de Arquitetura: Zavik
 
-Este documento documenta os fluxos internos de comunicação, regras de dependências físicas entre crates e o ciclo de vida operacional de plugins no **DevForge**.
+Este documento documenta os fluxos internos de comunicação, regras de dependências físicas entre crates e o ciclo de vida operacional de plugins no **Zavik**.
 
 ---
 
@@ -85,7 +85,7 @@ Os plugins são organizados por **Capabilities** (Capacidades) individuais para 
 ```
 
 1.  **Descoberta**: O Kernel solicita `plugin.capabilities()` para entender quais recursos o plugin provê.
-2.  **Cast Seguro**: O Kernel faz o cast do plugin para a respectiva capability (ex: `plugin.as_detector()`) apenas quando aquela fase do ciclo de análise do DevForge estiver ativa.
+2.  **Cast Seguro**: O Kernel faz o cast do plugin para a respectiva capability (ex: `plugin.as_detector()`) apenas quando aquela fase do ciclo de análise do Zavik estiver ativa.
 3.  **Execução**: A capability é chamada com argumentos estruturados (ex: caminhos de arquivo), retornando dados limpos em formato estruturado.
 
 ---

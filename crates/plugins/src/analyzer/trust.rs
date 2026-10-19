@@ -1,6 +1,6 @@
 //! Trust verification **before** installing (supply-chain pre-flight).
 //!
-//! The idea is exactly not to blindly trust the manifest: DevForge "does a
+//! The idea is exactly not to blindly trust the manifest: Zavik "does a
 //! look-up" and exposes what could execute arbitrary code or what does not match
 //! the registry. Each risk here becomes an **individual** confirmation — never
 //! covered by "yes to all" nor by `--yes`. It protects the case of an AI driving
@@ -14,7 +14,7 @@
 use super::registry::{self, Presence, MAX_CHECKS};
 use super::version::exact_version;
 use super::SourceKind;
-use devforge_shared::{Language, ProjectStack, TrustReport, TrustRisk};
+use zavik_shared::{Language, ProjectStack, TrustReport, TrustRisk};
 use std::collections::HashSet;
 
 /// npm hooks that run code when the project is installed.

@@ -4,7 +4,7 @@
 //! Elixir.
 
 use super::{dep_names, find_file, match_frameworks, read, MatchMode};
-use devforge_shared::{Dependency, DependencyKind, Error, Language, ProjectStack};
+use zavik_shared::{Dependency, DependencyKind, Error, Language, ProjectStack};
 use std::path::{Path, PathBuf};
 
 /// Runs all detectors in this module.

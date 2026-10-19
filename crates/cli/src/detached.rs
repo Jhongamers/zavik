@@ -20,9 +20,9 @@ pub fn spawn_detached(
     args: &[String],
     root: &Path,
     log_path: &Path,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Result<u32, String> {
-    use devforge_shared::i18n::t_fmt_in;
+    use zavik_shared::i18n::t_fmt_in;
     let log = std::fs::File::create(log_path).map_err(|error| {
         t_fmt_in(
             lang,
@@ -82,7 +82,7 @@ mod tests {
     /// Isolated per-test dir (tagged: tests run in parallel in one process).
     fn tmpdir(tag: &str) -> std::path::PathBuf {
         let dir =
-            std::env::temp_dir().join(format!("devforge-detached-{tag}-{}", std::process::id()));
+            std::env::temp_dir().join(format!("zavik-detached-{tag}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         dir
     }
@@ -91,7 +91,7 @@ mod tests {
     fn detached_process_lives_in_its_own_session_and_is_stoppable() {
         let dir = tmpdir("session");
         let log = dir.join("run.log");
-        let pid = spawn_detached("sleep", &["30".into()], &dir, &log, devforge_shared::i18n::Lang::PtBr).expect("spawn");
+        let pid = spawn_detached("sleep", &["30".into()], &dir, &log, zavik_shared::i18n::Lang::PtBr).expect("spawn");
         assert!(pid > 0, "PID devolvido: {pid}");
         unsafe {
             // Alive…
@@ -117,7 +117,7 @@ mod tests {
             &["-c".into(), "echo detach-marker".into()],
             &dir,
             &log,
-            devforge_shared::i18n::Lang::PtBr,
+            zavik_shared::i18n::Lang::PtBr,
         )
         .expect("spawn");
 
@@ -141,7 +141,7 @@ mod tests {
         let dir = tmpdir("fail");
         let log = dir.join("run.log");
         let error =
-            spawn_detached("definitely-not-a-real-binary-xyz", &[], &dir, &log, devforge_shared::i18n::Lang::PtBr).unwrap_err();
+            spawn_detached("definitely-not-a-real-binary-xyz", &[], &dir, &log, zavik_shared::i18n::Lang::PtBr).unwrap_err();
         assert!(
             error.contains("definitely-not-a-real-binary-xyz"),
             "erro nomeia o comando: {error}"

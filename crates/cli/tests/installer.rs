@@ -25,7 +25,7 @@ fn installer(dir: &TempDir) -> Command {
     let mut cmd = Command::new("sh");
     cmd.arg(install_sh())
         .env("HOME", dir.path())
-        .env("DEVFORGE_INSTALL_DIR", dir.path().join("bin"));
+        .env("ZAVIK_INSTALL_DIR", dir.path().join("bin"));
     cmd
 }
 
@@ -33,12 +33,12 @@ fn installer(dir: &TempDir) -> Command {
 /// `file://` (curl supports it) — same asset naming as release.yml.
 fn fake_release(dir: &TempDir, version: &str) -> String {
     let target = "x86_64-unknown-linux-gnu";
-    let asset = format!("devforge-{version}-{target}.tar.gz");
+    let asset = format!("zavik-{version}-{target}.tar.gz");
 
     let stage = dir.path().join("stage");
     fs::create_dir_all(&stage).unwrap();
-    let bin = stage.join("devforge");
-    fs::write(&bin, "#!/bin/sh\necho devforge test-binary\n").unwrap();
+    let bin = stage.join("zavik");
+    fs::write(&bin, "#!/bin/sh\necho zavik test-binary\n").unwrap();
     fs::set_permissions(&bin, fs::Permissions::from_mode(0o755)).unwrap();
 
     let tar = Command::new("tar")
@@ -47,7 +47,7 @@ fn fake_release(dir: &TempDir, version: &str) -> String {
             dir.path().join(&asset).to_str().unwrap(),
             "-C",
             stage.to_str().unwrap(),
-            "devforge",
+            "zavik",
         ])
         .status()
         .unwrap();
@@ -86,9 +86,9 @@ fn installer_downloads_verifies_and_installs_a_working_binary() {
     let home = TempDir::new().unwrap();
 
     let output = installer(&home)
-        .env("DEVFORGE_VERSION", "v0.0.0-test")
+        .env("ZAVIK_VERSION", "v0.0.0-test")
         .env(
-            "DEVFORGE_BASE_URL",
+            "ZAVIK_BASE_URL",
             format!("file://{}", release.path().display()),
         )
         .output()
@@ -105,8 +105,8 @@ fn installer_downloads_verifies_and_installs_a_working_binary() {
         "confirma a instalação: {stdout}"
     );
 
-    let installed = home.path().join("bin/devforge");
-    assert!(installed.is_file(), "binário instalado em bin/devforge");
+    let installed = home.path().join("bin/zavik");
+    assert!(installed.is_file(), "binário instalado em bin/zavik");
     let version = Command::new(&installed).output().unwrap();
     assert!(
         String::from_utf8_lossy(&version.stdout).contains("test-binary"),
@@ -129,9 +129,9 @@ fn installer_refuses_a_tampered_archive() {
 
     let home = TempDir::new().unwrap();
     let output = installer(&home)
-        .env("DEVFORGE_VERSION", "v0.0.0-test")
+        .env("ZAVIK_VERSION", "v0.0.0-test")
         .env(
-            "DEVFORGE_BASE_URL",
+            "ZAVIK_BASE_URL",
             format!("file://{}", release.path().display()),
         )
         .output()
@@ -148,7 +148,7 @@ fn installer_refuses_a_tampered_archive() {
         "a recusa fala de checksum: {combined}"
     );
     assert!(
-        !home.path().join("bin/devforge").exists(),
+        !home.path().join("bin/zavik").exists(),
         "nada instalado em caso de fraude"
     );
 }

@@ -4,7 +4,7 @@ Status: **fase 3 concluída (18/10)** — infra (fase 1), runtime (fase 2),
 reautoria de conteúdo em EN, sweep final (kernel/events/Display) e **flip do
 default `en`** fechados. Decisão do fundador atendida antes do launch do
 Product Hunt: `--lang` com catálogo **pt-BR + en** e **default `en`**; pt-BR
-segue disponível via `--lang pt-BR`, `DEVFORGE_LANG` ou locale BR — nenhuma
+segue disponível via `--lang pt-BR`, `ZAVIK_LANG` ou locale BR — nenhuma
 mensagem troca de idioma sem o usuário pedir.
 
 ## 1. O que traduz e o que NÃO traduz
@@ -39,7 +39,7 @@ plugins e core dependem dele; o `diagnose` em plugins entra na fase 2).
 
 ## 3. Resolução de idioma
 
-Ordem: **`--lang <pt-BR|en>` > env `DEVFORGE_LANG` > locale do sistema >
+Ordem: **`--lang <pt-BR|en>` > env `ZAVIK_LANG` > locale do sistema >
 `DEFAULT_LANG`**.
 
 - Locale (decisão registrada no ROADMAP §4): `LC_ALL` > `LC_MESSAGES` >
@@ -52,7 +52,7 @@ Ordem: **`--lang <pt-BR|en>` > env `DEVFORGE_LANG` > locale do sistema >
   `license`/`data`, que fazem parse próprio. O extractor respeita flags de
   valor (`--message`, `--url`, …) e para em `--` (args após `--` são do
   comando filho, não nossos). Aceita `--lang=x` e `--lang x`.
-- `DEVFORGE_LANG` existe para agentes/CI/testes (configurar sem tocar no
+- `ZAVIK_LANG` existe para agentes/CI/testes (configurar sem tocar no
   comando). Valor inválido em qualquer nível → erro com as opções válidas,
   exit 1 (nunca silencioso).
 - `DEFAULT_LANG` é **uma constante só** — o flip final `PtBr → En` é 1 linha

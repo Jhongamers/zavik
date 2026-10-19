@@ -2,7 +2,7 @@
 //!
 //! The [`StackDetector`] scans the project directory looking for known files
 //! (`Cargo.toml`, `package.json`, `requirements.txt`, `go.mod`,
-//! `pom.xml`, `composer.json`, ...) and returns a [`devforge_shared::ProjectStack`]
+//! `pom.xml`, `composer.json`, ...) and returns a [`zavik_shared::ProjectStack`]
 //! per ecosystem found.
 //!
 //! The per-language detectors are split into:
@@ -12,8 +12,8 @@
 mod compiled;
 mod scripting;
 
-use devforge_shared::{Context, Dependency, Error, ProjectStack};
-use devforge_sdk::{Capability, ProjectDetector};
+use zavik_shared::{Context, Dependency, Error, ProjectStack};
+use zavik_sdk::{Capability, ProjectDetector};
 use std::path::{Path, PathBuf};
 
 /// Plugin that recognizes the project's stack.
@@ -45,7 +45,7 @@ impl ProjectDetector for StackDetector {
     fn detect(&self, context: &Context) -> Result<Vec<ProjectStack>, Error> {
         let root = &context.project_root;
         if !root.is_dir() {
-            return Err(Error::IoError(devforge_shared::i18n::t_fmt(
+            return Err(Error::IoError(zavik_shared::i18n::t_fmt(
                 "diretório de projeto não encontrado: {}",
                 &[&root.display().to_string()],
             )));
@@ -273,8 +273,8 @@ pub(crate) fn read(path: &Path) -> Result<String, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use devforge_shared::Language;
-    use devforge_sdk::ProjectDetector;
+    use zavik_shared::Language;
+    use zavik_sdk::ProjectDetector;
 
     fn context(dir: &Path) -> Context {
         Context {

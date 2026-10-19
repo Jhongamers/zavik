@@ -8,7 +8,7 @@
 //! - same dependency declared with different versions in the same stack.
 
 use super::SourceKind;
-use devforge_shared::{AnalysisReport, Finding, Language, ProjectStack};
+use zavik_shared::{AnalysisReport, Finding, Language, ProjectStack};
 use std::collections::{BTreeSet, HashMap};
 use std::path::Path;
 
@@ -25,7 +25,7 @@ pub(crate) fn analyze(root: &Path, stacks: &[ProjectStack], report: &mut Analysi
 
 fn check_dependency(
     stack: &ProjectStack,
-    dependency: &devforge_shared::Dependency,
+    dependency: &zavik_shared::Dependency,
     report: &mut AnalysisReport,
 ) {
     let name = &dependency.name;

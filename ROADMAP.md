@@ -1,7 +1,7 @@
-# Roadmap — próximas tarefas (DevForge)
+# Roadmap — próximas tarefas (Zavik)
 
 > Anotado para implementação **futura**. Nada disso foi feito ainda.
-> Objetivo: transformar o DevForge num produto bom — ferramenta que uma IA
+> Objetivo: transformar o Zavik num produto bom — ferramenta que uma IA
 > orquestra gastando pouco token, com segurança de verdade.
 
 ---
@@ -87,13 +87,13 @@ determinístico = zero token de IA**. A peça que falta é saída **estruturada*
 - [x] Coberto por `prepare --json` (plano + trust estruturados, sem executar).
 - [ ] (Opcional) expor também `--dry-run` explicitamente igual ao `--json`.
 
-### 2.4 Resumo de erro / próximo passo — `devforge diagnose` ✅
-- [x] Um `devforge diagnose` que recebe uma saída que falhou e devolve
+### 2.4 Resumo de erro / próximo passo — `zavik diagnose` ✅
+- [x] Um `zavik diagnose` que recebe uma saída que falhou e devolve
       **diagnóstico curto**: causa provável **real** (não o sintoma), conserto
       sugerido, e as linhas que casaram (a "prova"). Economiza ler stack trace
       gigante — e resolve o caso em que o erro literal aponta pro lugar errado.
 - [x] Entrada por `--message "..."`, `--input <arquivo>` ou **pipe**
-      (`meu_comando 2>&1 | devforge diagnose`). Só lê stdin se não for terminal.
+      (`meu_comando 2>&1 | zavik diagnose`). Só lê stdin se não for terminal.
 - [x] ~16 regras de padrão conhecido (linguagem-agnósticas), Rust local e
       determinístico, zero token. Parte dinâmica extraída do próprio erro:
       `-lssl` → `libssl-dev`, `No module named 'requests'` → `pip install
@@ -103,15 +103,15 @@ determinístico = zero token de IA**. A peça que falta é saída **estruturada*
       de erro (resumo) em vez de fingir que entendeu.
 - [x] `--json` (schema 1, stdout puro).
 
-> Decisão: **`diagnose` sobre texto**, não `devforge run <comando>`. Assim o
-> DevForge não ganha uma superfície nova de execução arbitrária (coerente com o
+> Decisão: **`diagnose` sobre texto**, não `zavik run <comando>`. Assim o
+> Zavik não ganha uma superfície nova de execução arbitrária (coerente com o
 > postura de segurança); a IA/usuário já tem o erro e só quer a tradução.
 
 ### 2.5 Cache determinístico
 - [ ] Chamadas repetidas não re-detectam (detecção é pura e barata).
 
 ### 2.6 Briefing de uma chamada (`context`) — economizar exploração
-- [x] **Feito.** `devforge context [--json]` junta `detect` + `trust` + um
+- [x] **Feito.** `zavik context [--json]` junta `detect` + `trust` + um
       **runbook** (setup/build/test/run/lint, de `scripts` do `package.json`,
       alvos de `Makefile`/`justfile`, wrappers `mvnw`/`gradlew`, convenções por
       linguagem) + **entrypoints** + **arquivos-chave** (manifesto, lockfile,
@@ -151,8 +151,8 @@ swift-argument-parser, googletest). Achados:
 
 ## 3. Produto / monetização (a cunha: supply-chain audit)
 
-### 3.1 `devforge audit` — auditoria de supply-chain ✅
-- [x] **Feito.** `devforge audit [--online] [--fail-on sev] [--policy] [--ignore]
+### 3.1 `zavik audit` — auditoria de supply-chain ✅
+- [x] **Feito.** `zavik audit [--online] [--fail-on sev] [--policy] [--ignore]
       [--json]`. Padrão dos consolidados: **Socket.dev** (risk factors +
       confluência de score), **Snyk/cargo-audit** (policy + `fail_on` + exit
       code), **OWASP** (supressão de FP com motivo + expiry).
@@ -193,8 +193,8 @@ swift-argument-parser, googletest). Achados:
 - [x] **Modelo decidido**: open core + assinatura. CLI grátis (cunha de
       adoção + confiança); gate server-side só quando a receita da fase 1
       bancar o backend (fase 2). Dados frescos = moat (código a IA reescreve).
-- [x] **`devforge license status|install|remove`** (+ `--json`): token
-      `DF1` = payload (plan/holder/issued/expires) assinado **Ed25519**; o
+- [x] **`zavik license status|install|remove`** (+ `--json`): token
+      `ZV1` = payload (plan/holder/issued/expires) assinado **Ed25519**; o
       binário carrega só a pública; verificação 100% local (offline-first
       mantido). 5 testes de motor + E2E manual (válido/adulterado/expirado/
       chave-errada/lixo — todos rejeitados corretamente).
@@ -203,10 +203,10 @@ swift-argument-parser, googletest). Achados:
 - Limitações honestas: gate anti-honesto (patch burla), não defende relógio
   atrasado; hoje ela bloqueia **apenas** `data update` — o resto do CLI,
   incluindo `context`, segue 100% grátis.
-- [x] **Dataset de risco fase 1 — `devforge data status|update`** ✅
+- [x] **Dataset de risco fase 1 — `zavik data status|update`** ✅
       (design + amendments: `docs/design-data.md`; staging 1–3, 5, 6 feitos):
       envelope Ed25519 com **chave separada** da licença (privada em
-      `~/.devforge-dataset.key` + secret `DF_DATASET_KEY` — nunca no repo);
+      `~/.zavik-dataset.key` + secret `ZV_DATASET_KEY` — nunca no repo);
       `status` livre/offline (ausente / inválido / idade / stale >14d);
       `update` gate de licença **antes da rede** (`no_license`/
       `license_invalid`, exit 1), download `https`/`file://` com teto de
@@ -223,11 +223,11 @@ swift-argument-parser, googletest). Achados:
       kill list por 4 patterns de título medidos nos 389.683 arquivos
       reais → 61 nomes; exclui título version-scoped = anti-FP) +
       workflow `.github/workflows/dataset.yml` (cron diário + dispatch,
-      clone esparso, build → sign `DF_DATASET_KEY` → **verifica contra a
+      clone esparso, build → sign `ZV_DATASET_KEY` → **verifica contra a
       chave do binário antes de publicar** → asset `dataset-latest` via
       `gh`, sem action de terceiro). 11 testes + E2E real (36.885 GHSAs →
       750 KB → audit com kill list real). Ativação real pende do F0:
-      push+tag, secret `DF_DATASET_KEY` e preencher `DEFAULT_DATASET_URL`.
+      push+tag, secret `ZV_DATASET_KEY` e preencher `DEFAULT_DATASET_URL`.
       Upgrade opcional (founder): corpus OSV `ossf/malicious-packages`
       (238k nomes ≈ 28 MB/asset vs ~1 MB hoje) — ver design-data §2.
 - [ ] Action no GitHub Marketplace (billing deles, compute do cliente) —
@@ -257,7 +257,7 @@ swift-argument-parser, googletest). Achados:
       18/10 (fases 1–3)** — **FASE 1 ✅
       (17/10**, design `docs/design-i18n.md`): infra no shared (`Lang`,
       `t`/`t_fmt` — pt-BR é a chave, `EN` é o catálogo, fallback honesto =
-      identidade), resolução `--lang` > `DEVFORGE_LANG` > locale >
+      identidade), resolução `--lang` > `ZAVIK_LANG` > locale >
       default; `--lang` extraído **pré-dispatch** (vale pra `license`/
       `data`), respeita flags de valor e para em `--`; migrados na fase 1:
       `section()` (17 cabeçalhos), banner, saída humana do `env`, prompts
@@ -307,15 +307,15 @@ swift-argument-parser, googletest). Achados:
 - [ ] **Matriz de distribuição (F0–F3) — 3 portas: instalador, prompt
       (gerenciador), IA/Action**. Recomendado por público marcado ✅;
       página do Chocolatey olhada (convenção padrão `choco install
-      devforge` — sem inspiração extra necessária):
+      zavik` — sem inspiração extra necessária):
   - **F0 (founder — bloqueante de todas)**: `git push -u origin main` +
     `git tag v0.1.0 && git push origin v0.1.0` → `release.yml` publica
     binários (linux x64/arm64, macOS arm, windows) + `.sha256`.
   - **F1**: `install.sh` ✅ **recomendado (usuário final, inclui WSL e
     macOS)** — **FEITO** (17/10): detecta OS/arch, baixa da Release, confere
     sha256 (sem flag de pular — adulterado é recusado, com teste), não
-    interativo; overrides `DEVFORGE_VERSION`/`DEVFORGE_INSTALL_DIR`/
-    `DEVFORGE_BASE_URL`; 4 testes (sintaxe POSIX, E2E via `file://`
+    interativo; overrides `ZAVIK_VERSION`/`ZAVIK_INSTALL_DIR`/
+    `ZAVIK_BASE_URL`; 4 testes (sintaxe POSIX, E2E via `file://`
     instalando binário funcional, recusa de checksum divergente, SO
     desconhecido com mensagem clara). Versão manual de 2 linhas documentada
     ao lado (comemos o pastel: nosso próprio `audit` classifica `curl|sh`
@@ -326,9 +326,9 @@ swift-argument-parser, googletest). Achados:
     + testar `action.yml` no E2E do release — caminho zero-install de CI
     (é o que a IA escreve num workflow).
   - **F3** (conforme adoção): brew tap, `npx` (binário por plataforma),
-    winget/scoop, **`choco install devforge`** ✅ **recomendado (Windows
+    winget/scoop, **`choco install zavik`** ✅ **recomendado (Windows
     nativo)** — até lá o `.zip` da Release é a porta Windows.
-- [x] **5.1 `devforge run` v1 — FEITO**: resolve start (declarado > convenção >
+- [x] **5.1 `zavik run` v1 — FEITO**: resolve start (declarado > convenção >
       perguntar), readiness heurístico (heurística de porta + `/proc` com
       descendentes — pega o neto npm→node), SIGTERM→SIGKILL no **grupo**,
       Ctrl-C gracioso, crash cedo → `diagnose`, gate crítico (humano decide),
@@ -336,7 +336,7 @@ swift-argument-parser, googletest). Achados:
       (18 unit + 5 integração). Desenho: `docs/design-run.md`.
 - [x] **5.1.1 `run` v1.1 — `--detach` FEITO** (17/10): sobe em **sessão própria**
       (`setsid` — sobrevive ao terminal), devolve `pid` + `log`
-      (`.devforge/run.log`) + `stop_command` no `--json`; sem supervisão de
+      (`.zavik/run.log`) + `stop_command` no `--json`; sem supervisão de
       readiness (limitação honesta documentada); mesmo gate crítico (nem
       `--yes` cobre — teste trava o invariante); no Windows fica preso ao
       console (limitação conhecida). Testes: 3 unit (sessão própria provada
@@ -348,12 +348,12 @@ swift-argument-parser, googletest). Achados:
       `docs/design-up.md`). Clone seguro: sem hooks (`core.hooksPath=/dev/null`),
       `--depth 1`, sem submódulos, via CommandRunner (sem shell) + trust check
       antes de qualquer execução.
-- [ ] **5.3 `devforge why <pacote>`** (analisada, aguardando desenho/aprovação):
+- [ ] **5.3 `zavik why <pacote>`** (analisada, aguardando desenho/aprovação):
       árvore de dependências reversa + origem + fatores de risco do `audit` num
       JSON só. Existe demanda real (`npm why`, `cargo tree -i`,
       `why-is-installed`); humano debuga na mão, IA substitui 5 comandos por 1
       chamada. Read-only, zero execução, reforça o cunha de supply-chain.
-- [x] **5.4 `devforge env --json`** ✅ (16/10): fingerprint do ambiente numa
+- [x] **5.4 `zavik env --json`** ✅ (16/10): fingerprint do ambiente numa
       chamada — `os`/`arch` + toolchains por stack detectado com presença
       (PATH) e **versão real** (`<tool> --version`, argv sem shell; falha →
       `version: null`, nunca inventa) + lista `missing`. Mata "works on my

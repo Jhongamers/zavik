@@ -1,4 +1,4 @@
-//! Integration tests for `devforge env` (real binary).
+//! Integration tests for `zavik env` (real binary).
 //!
 //! `env` is a read-only environment fingerprint: OS/arch + each detected
 //! stack's tools with PATH presence and real version. No gates (nothing
@@ -11,8 +11,8 @@ use std::fs;
 use std::process::Command;
 use tempfile::TempDir;
 
-fn devforge() -> Command {
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_devforge"));
+fn zavik() -> Command {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_zavik"));
     // Locale must not flip the post-flip default (en) on any machine.
     cmd.env_remove("LC_ALL")
         .env_remove("LC_MESSAGES")
@@ -47,7 +47,7 @@ fn single_json(stdout: &[u8]) -> serde_json::Value {
 #[test]
 fn env_json_reports_os_stacks_and_tool_versions() {
     let project = js_project();
-    let output = devforge()
+    let output = zavik()
         .args(["env", "--json"])
         .arg(project.path())
         .output()
@@ -88,7 +88,7 @@ fn env_json_reports_os_stacks_and_tool_versions() {
 #[test]
 fn env_json_reports_missing_tools_when_path_is_empty() {
     let project = js_project();
-    let output = devforge()
+    let output = zavik()
         .env("PATH", "") // a máquina "sem nada instalado"
         .args(["env", "--json"])
         .arg(project.path())
@@ -137,7 +137,7 @@ fn env_never_reads_dotenv_files() {
     )
     .unwrap();
 
-    let output = devforge()
+    let output = zavik()
         .args(["env", "--json"])
         .arg(project.path())
         .output()
@@ -156,7 +156,7 @@ fn env_never_reads_dotenv_files() {
 #[test]
 fn env_human_prints_sections() {
     let project = js_project();
-    let output = devforge()
+    let output = zavik()
         .args(["env"])
         .arg(project.path())
         .output()

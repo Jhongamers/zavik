@@ -4,7 +4,7 @@
 Aprovado
 
 ## Contexto
-Para incentivar o ecossistema e garantir que desenvolvedores terceiros possam criar plugins para o DevForge sem expor o código do Kernel ou causar acoplamentos perigosos, precisamos de uma camada estável e isolada de definição de capacidades.
+Para incentivar o ecossistema e garantir que desenvolvedores terceiros possam criar plugins para o Zavik sem expor o código do Kernel ou causar acoplamentos perigosos, precisamos de uma camada estável e isolada de definição de capacidades.
 
 ## Decisão
 Criamos um sub-crate chamado `sdk` que hospeda apenas os tipos de dados e os contratos de **Capabilities** dos plugins. O SDK é independente do Kernel e de frameworks de terceiros. Os plugins dependem apenas do SDK. O Kernel, por sua vez, depende do SDK para instanciar e executar as capacidades dos plugins carregados.

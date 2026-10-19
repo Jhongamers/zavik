@@ -24,12 +24,12 @@ pub enum Lang {
 /// **Migration status (docs/design-i18n.md):** flipped to `En` in the
 /// pre-launch phase-3 commit — every human message goes through the catalog
 /// and the content class (evidence/finding/risk) is authored in EN, so no pt
-/// text leaks under the new default. `--lang pt-BR`, `DEVFORGE_LANG=pt-BR`
+/// text leaks under the new default. `--lang pt-BR`, `ZAVIK_LANG=pt-BR`
 /// and a BR system locale still select pt-BR.
 pub const DEFAULT_LANG: Lang = Lang::En;
 
 impl Lang {
-    /// Parses a user-supplied tag (`--lang`, `DEVFORGE_LANG`).
+    /// Parses a user-supplied tag (`--lang`, `ZAVIK_LANG`).
     pub fn parse(raw: &str) -> Option<Lang> {
         match raw.trim().to_ascii_lowercase().as_str() {
             "en" | "en-us" | "en-gb" => Some(Lang::En),
@@ -59,7 +59,7 @@ pub fn lang() -> Lang {
     *CURRENT.get().unwrap_or(&DEFAULT_LANG)
 }
 
-/// Resolves the language: `--lang` flag > `DEVFORGE_LANG` env > system
+/// Resolves the language: `--lang` flag > `ZAVIK_LANG` env > system
 /// locale (`LC_ALL`/`LC_MESSAGES`/`LANG`) > default.
 ///
 /// The locale can only opt **into** pt-BR (`pt`, `pt_BR`, `pt-BR`…); any
@@ -71,7 +71,7 @@ pub fn resolve(flag: Option<&str>) -> Result<Lang, String> {
     if let Some(raw) = flag {
         return Lang::parse(raw).ok_or_else(|| invalid_lang(raw));
     }
-    if let Ok(raw) = std::env::var("DEVFORGE_LANG") {
+    if let Ok(raw) = std::env::var("ZAVIK_LANG") {
         if !raw.trim().is_empty() {
             return Lang::parse(&raw).ok_or_else(|| invalid_lang(&raw));
         }
@@ -100,7 +100,7 @@ fn from_locale() -> Option<Lang> {
 }
 
 fn invalid_lang(raw: &str) -> String {
-    format!("idioma inválido: '{raw}' (aceita: pt-BR | en — flag --lang ou env DEVFORGE_LANG)")
+    format!("idioma inválido: '{raw}' (aceita: pt-BR | en — flag --lang ou env ZAVIK_LANG)")
 }
 
 /// Translates `msg` under `current` (pure core — unit-testable without the
@@ -148,36 +148,36 @@ pub fn t_en(msg: &str) -> &str {
 
 /// `--help` body (pt-BR source). Kept as a const so the catalog key can
 /// never drift from the emitted text (docs/design-i18n.md).
-pub const HELP_PT: &str = "DevForge - agente de preparação de ambientes\n\n\
+pub const HELP_PT: &str = "Zavik - agente de preparação de ambientes\n\n\
          USO:\n\
-         \x20 devforge [caminho]                    detecta a stack (padrão)\n\
-         \x20 devforge detect [caminho]             idem\n\
-         \x20 devforge analyze [caminho] [flags]    analisa dependências (lockfile, versões)\n\
-         \x20 devforge context [caminho] [flags]    briefing: runbook (build/test/run), entradas,\n\
+         \x20 zavik [caminho]                    detecta a stack (padrão)\n\
+         \x20 zavik detect [caminho]             idem\n\
+         \x20 zavik analyze [caminho] [flags]    analisa dependências (lockfile, versões)\n\
+         \x20 zavik context [caminho] [flags]    briefing: runbook (build/test/run), entradas,\n\
          \x20               arquivos-chave e riscos — numa chamada só (bom pra IA)\n\
-         \x20 devforge diagnose [flags]              resume um erro: causa real + conserto\n\
-         \x20               (aceita --message \"...\", --input <arq> ou pipe: cmd 2>&1 | devforge diagnose)\n\
-         \x20 devforge env [caminho] [flags]          fingerprint do ambiente: toolchains com versão,\n\
+         \x20 zavik diagnose [flags]              resume um erro: causa real + conserto\n\
+         \x20               (aceita --message \"...\", --input <arq> ou pipe: cmd 2>&1 | zavik diagnose)\n\
+         \x20 zavik env [caminho] [flags]          fingerprint do ambiente: toolchains com versão,\n\
          \x20               presença no PATH e o que falta — 1 chamada (bom pra IA)\n\
-         \x20 devforge run [caminho] [flags]         sobe o projeto: resolve o start (scripts.start,\n\
+         \x20 zavik run [caminho] [flags]         sobe o projeto: resolve o start (scripts.start,\n\
          \x20               Procfile, Makefile, convenção), espera ficar pronto e mostra o log;\n\
          \x20               ambiguidade pergunta; crash cedo vira diagnose; executa = pergunta\n\
          \x20               --detach: sobe em background e devolve o PID (sem supervisionar)\n\
-         \x20 devforge up [url|caminho] [flags]     pipeline completo: clone? → audit → prepare → run\n\
+         \x20 zavik up [url|caminho] [flags]     pipeline completo: clone? → audit → prepare → run\n\
          \x20               (mesmos gates de cada etapa isolada; --until/--skip controlam o corte;\n\
          \x20               url git é clonada com --depth 1 e sem hooks)\n\
-         \x20 devforge audit [caminho] [flags]        auditoria de supply-chain (Socket/Snyk/OWASP):\n\
+         \x20 zavik audit [caminho] [flags]        auditoria de supply-chain (Socket/Snyk/OWASP):\n\
          \x20               risco por confluência de fatores; --fail-on gateia o CI (exit 1);\n\
          \x20               --policy/--ignore (TOML), --online pra checar hooks/downloads do npm\n\
-         \x20 devforge license status               mostra a licença instalada (offline)\n\
-         \x20 devforge license install <chave|@arq> valida (Ed25519, local) e instala\n\
-         \x20 devforge license remove               remove a licença\n\
-         \x20 devforge data status                 estado do dataset Pro (livre e offline;\n\
+         \x20 zavik license status               mostra a licença instalada (offline)\n\
+         \x20 zavik license install <chave|@arq> valida (Ed25519, local) e instala\n\
+         \x20 zavik license remove               remove a licença\n\
+         \x20 zavik data status                 estado do dataset Pro (livre e offline;\n\
          \x20               sem dataset o audit segue igual — o tier grátis não muda)\n\
-         \x20 devforge data update [flags]         baixa + verifica o dataset de risco fresco\n\
+         \x20 zavik data update [flags]         baixa + verifica o dataset de risco fresco\n\
          \x20               (Pro: exige licença instalada e válida; recusa assinatura inválida)\n\
-         \x20 devforge prepare [caminho] [flags]    instala dependências (sem Docker)\n\
-         \x20 devforge docker  [caminho] [flags]    gera Dockerfile + build da imagem\n\n\
+         \x20 zavik prepare [caminho] [flags]    instala dependências (sem Docker)\n\
+         \x20 zavik docker  [caminho] [flags]    gera Dockerfile + build da imagem\n\n\
          FLAGS:\n\
          \x20 --dry-run    mostra o plano sem executar nada\n\
          \x20 --yes, -y    aprova tudo automaticamente\n\
@@ -194,45 +194,45 @@ pub const HELP_PT: &str = "DevForge - agente de preparação de ambientes\n\n\
          \x20 --ignore      (audit) supressões TOML com expiração obrigatória\n\
          \x20 --sarif       (audit) emite SARIF 2.1.0 (GitHub Code Scanning)\n\
          \x20 --url         (data) origem do dataset: https://... ou file://<caminho>\n\
-         \x20               (alternativa: env DF_DATASET_URL)\n\
+         \x20               (alternativa: env ZV_DATASET_URL)\n\
          \x20 --timeout     (run) segundos esperando ficar pronto (padrão 60)\n\
          \x20 --health      (run) readiness explícito: tcp:<porta> | http://...\n\
-         \x20 --detach      (run) sobe em background e devolve o PID (log: .devforge/run.log)\n\
+         \x20 --detach      (run) sobe em background e devolve o PID (log: .zavik/run.log)\n\
          \x20 --until etapa (up) para depois da etapa: clone|audit|prepare|run\n\
          \x20 --skip etapas (up) pula etapa(s), separadas por vírgula\n\
          \x20 --            (run) repassa o resto ao comando de start (ex.: -- --port 3001)\n";
 
 /// English twin of [`HELP_PT`] — catalog value, also never drifts.
-pub const HELP_EN: &str = "DevForge - environment preparation agent (for humans and AIs)\n\n\
+pub const HELP_EN: &str = "Zavik - environment preparation agent (for humans and AIs)\n\n\
          USAGE:\n\
-         \x20 devforge [path]                    detects the stack (default)\n\
-         \x20 devforge detect [path]             same as above\n\
-         \x20 devforge analyze [path] [flags]    analyzes dependencies (lockfile, versions)\n\
-         \x20 devforge context [path] [flags]    briefing: runbook (build/test/run), entrypoints,\n\
+         \x20 zavik [path]                    detects the stack (default)\n\
+         \x20 zavik detect [path]             same as above\n\
+         \x20 zavik analyze [path] [flags]    analyzes dependencies (lockfile, versions)\n\
+         \x20 zavik context [path] [flags]    briefing: runbook (build/test/run), entrypoints,\n\
          \x20               key files and risks — in a single call (AI-friendly)\n\
-         \x20 devforge diagnose [flags]          summarizes an error: real cause + fix\n\
-         \x20               (accepts --message \"...\", --input <file> or a pipe: cmd 2>&1 | devforge diagnose)\n\
-         \x20 devforge env [path] [flags]        environment fingerprint: toolchains with versions,\n\
+         \x20 zavik diagnose [flags]          summarizes an error: real cause + fix\n\
+         \x20               (accepts --message \"...\", --input <file> or a pipe: cmd 2>&1 | zavik diagnose)\n\
+         \x20 zavik env [path] [flags]        environment fingerprint: toolchains with versions,\n\
          \x20               PATH presence and what's missing — 1 call (AI-friendly)\n\
-         \x20 devforge run [path] [flags]        boots the project: resolves start (scripts.start,\n\
+         \x20 zavik run [path] [flags]        boots the project: resolves start (scripts.start,\n\
          \x20               Procfile, Makefile, convention), waits until ready and shows the log;\n\
          \x20               ambiguity asks; early crash becomes diagnose; execution asks first\n\
          \x20               --detach: boots in background and returns the PID (no supervision)\n\
-         \x20 devforge up [url|path] [flags]     full pipeline: clone? → audit → prepare → run\n\
+         \x20 zavik up [url|path] [flags]     full pipeline: clone? → audit → prepare → run\n\
          \x20               (same gates as each isolated step; --until/--skip control the cut;\n\
          \x20               git urls are cloned with --depth 1 and no hooks)\n\
-         \x20 devforge audit [path] [flags]      supply-chain audit (Socket/Snyk/OWASP):\n\
+         \x20 zavik audit [path] [flags]      supply-chain audit (Socket/Snyk/OWASP):\n\
          \x20               risk by factor confluence; --fail-on gates CI (exit 1);\n\
          \x20               --policy/--ignore (TOML), --online to check npm hooks/downloads\n\
-         \x20 devforge license status            shows the installed license (offline)\n\
-         \x20 devforge license install <key|@file> validates (Ed25519, local) and installs\n\
-         \x20 devforge license remove            removes the license\n\
-         \x20 devforge data status               state of the Pro dataset (free and offline;\n\
+         \x20 zavik license status            shows the installed license (offline)\n\
+         \x20 zavik license install <key|@file> validates (Ed25519, local) and installs\n\
+         \x20 zavik license remove            removes the license\n\
+         \x20 zavik data status               state of the Pro dataset (free and offline;\n\
          \x20               without a dataset the audit works the same — the free tier never changes)\n\
-         \x20 devforge data update [flags]       downloads + verifies the fresh risk dataset\n\
+         \x20 zavik data update [flags]       downloads + verifies the fresh risk dataset\n\
          \x20               (Pro: requires a valid installed license; refuses invalid signatures)\n\
-         \x20 devforge prepare [path] [flags]    installs dependencies (no Docker)\n\
-         \x20 devforge docker  [path] [flags]    generates a Dockerfile + builds the image\n\n\
+         \x20 zavik prepare [path] [flags]    installs dependencies (no Docker)\n\
+         \x20 zavik docker  [path] [flags]    generates a Dockerfile + builds the image\n\n\
          FLAGS:\n\
          \x20 --dry-run    shows the plan without executing anything\n\
          \x20 --yes, -y    approves everything automatically\n\
@@ -249,10 +249,10 @@ pub const HELP_EN: &str = "DevForge - environment preparation agent (for humans 
          \x20 --ignore      (audit) TOML suppressions with mandatory expiry\n\
          \x20 --sarif       (audit) emits SARIF 2.1.0 (GitHub Code Scanning)\n\
          \x20 --url         (data) dataset origin: https://... or file://<path>\n\
-         \x20               (alternative: env DF_DATASET_URL)\n\
+         \x20               (alternative: env ZV_DATASET_URL)\n\
          \x20 --timeout     (run) seconds to wait for readiness (default 60)\n\
          \x20 --health      (run) explicit readiness: tcp:<port> | http://...\n\
-         \x20 --detach      (run) boots in background and returns the PID (log: .devforge/run.log)\n\
+         \x20 --detach      (run) boots in background and returns the PID (log: .zavik/run.log)\n\
          \x20 --until step  (up) stops after the step: clone|audit|prepare|run\n\
          \x20 --skip steps (up) skips step(s), comma-separated\n\
          \x20 --            (run) passes the rest to the start command (e.g. -- --port 3001)\n";
@@ -339,16 +339,16 @@ static EN: &[(&str, &str)] = &[
         "git clone --depth 1 (no submodules, no hooks)",
     ),
     (
-        "devforge audit (relatório; não bloqueia o pipeline)",
-        "devforge audit (report; doesn't block the pipeline)",
+        "zavik audit (relatório; não bloqueia o pipeline)",
+        "zavik audit (report; doesn't block the pipeline)",
     ),
     (
-        "devforge prepare (confiança + toolchain + instalação, com gates)",
-        "devforge prepare (trust + toolchain + install, with gates)",
+        "zavik prepare (confiança + toolchain + instalação, com gates)",
+        "zavik prepare (trust + toolchain + install, with gates)",
     ),
     (
-        "devforge run (resolve o start; execução crítica, humano confirma)",
-        "devforge run (resolves start; critical execution, human confirms)",
+        "zavik run (resolve o start; execução crítica, humano confirma)",
+        "zavik run (resolves start; critical execution, human confirms)",
     ),
     // --- `audit` human output (main.rs: print_audit) ---
     ("Pacotes auditados: {}", "Packages audited: {}"),
@@ -361,8 +361,8 @@ static EN: &[(&str, &str)] = &[
         "   (manifest without declared dependencies — e.g. a new project, or point",
     ),
     (
-        "    o DevForge num crate/membro específico). O veredito NÃO atesta nada.",
-        "    DevForge at a specific crate/member). The verdict certifies NOTHING.",
+        "    o Zavik num crate/membro específico). O veredito NÃO atesta nada.",
+        "    Zavik at a specific crate/member). The verdict certifies NOTHING.",
     ),
     ("Score (pior pacote): {}/100", "Score (worst package): {}/100"),
     (
@@ -458,8 +458,8 @@ static EN: &[(&str, &str)] = &[
     ),
     // Rule fixes (the pure-code one, Debian/Ubuntu apt line, needs no entry).
     (
-        "instale a ferramenta (ou rode `devforge prepare` pra montar a toolchain).",
-        "install the tool (or run `devforge prepare` to set up the toolchain).",
+        "instale a ferramenta (ou rode `zavik prepare` pra montar a toolchain).",
+        "install the tool (or run `zavik prepare` to set up the toolchain).",
     ),
     (
         "instale o pacote -dev/-devel correspondente e rode de novo.",
@@ -544,8 +544,8 @@ static EN: &[(&str, &str)] = &[
         "pip install {} (in the project's same venv/environment)",
     ),
     (
-        "`{}` não está no PATH — instale ou rode `devforge prepare` pra toolchain",
-        "`{}` is not on the PATH — install it or run `devforge prepare` for the toolchain",
+        "`{}` não está no PATH — instale ou rode `zavik prepare` pra toolchain",
+        "`{}` is not on the PATH — install it or run `zavik prepare` for the toolchain",
     ),
     // Summaries (composed: translate first, then fill in order).
     (
@@ -566,8 +566,8 @@ static EN: &[(&str, &str)] = &[
     ),
     // --- `diagnose` input error (main.rs: read_error_input) ---
     (
-        "cole a saída do erro, ou use --message \"...\", --input <arquivo> (ou pipe: `meu_comando 2>&1 | devforge diagnose`)",
-        "paste the error output, or use --message \"...\", --input <file> (or pipe: `my_command 2>&1 | devforge diagnose`)",
+        "cole a saída do erro, ou use --message \"...\", --input <arquivo> (ou pipe: `meu_comando 2>&1 | zavik diagnose`)",
+        "paste the error output, or use --message \"...\", --input <file> (or pipe: `my_command 2>&1 | zavik diagnose`)",
     ),
     // --- `run` human output (main.rs: run_run + helpers) ---
     ("Não achei como iniciar este projeto.", "I couldn't find how to start this project."),
@@ -624,8 +624,8 @@ static EN: &[(&str, &str)] = &[
         "\n   (detached doesn't wait for readiness nor supervises — for that",
     ),
     (
-        "    rode `devforge run` sem --detach, com health check e diagnose)",
-        "    run `devforge run` without --detach, with health check and diagnose)",
+        "    rode `zavik run` sem --detach, com health check e diagnose)",
+        "    run `zavik run` without --detach, with health check and diagnose)",
     ),
     (
         "    no Windows o processo continua ligado ao console (limitação conhecida)",
@@ -673,8 +673,8 @@ static EN: &[(&str, &str)] = &[
         "dataset {} of {} (age: {} day(s); {} advisories in the window, {} on the kill list)",
     ),
     (
-        "⚠ atrasado (>{} dias) — rode: devforge data update",
-        "⚠ stale (>{} days) — run: devforge data update",
+        "⚠ atrasado (>{} dias) — rode: zavik data update",
+        "⚠ stale (>{} days) — run: zavik data update",
     ),
     (
         "\nNenhum achado novo nas dependências deste projeto.",
@@ -698,8 +698,8 @@ static EN: &[(&str, &str)] = &[
         "--url requires a value (<https://...> or file://<path>)",
     ),
     (
-        "opção desconhecida: {} (uso: devforge data status|update [--json] [--url <url>])",
-        "unknown option: {} (usage: devforge data status|update [--json] [--url <url>])",
+        "opção desconhecida: {} (uso: zavik data status|update [--json] [--url <url>])",
+        "unknown option: {} (usage: zavik data status|update [--json] [--url <url>])",
     ),
     (
         "subcomando desconhecido: {} (use: status | update)",
@@ -716,8 +716,8 @@ static EN: &[(&str, &str)] = &[
     ),
     ("\n(fresco)", "\n(fresh)"),
     (
-        "audit segue offline com o motor embutido; dados frescos são Pro (devforge data update)",
-        "audit keeps running offline with the built-in engine; fresh data is Pro (devforge data update)",
+        "audit segue offline com o motor embutido; dados frescos são Pro (zavik data update)",
+        "audit keeps running offline with the built-in engine; fresh data is Pro (zavik data update)",
     ),
     (
         "nenhum dataset instalado ({})",
@@ -728,16 +728,16 @@ static EN: &[(&str, &str)] = &[
         "   free: audit uses the offline engine — nothing changes in the free tier.",
     ),
     (
-        "   Pro:    devforge data update (dados de risco frescos, exige licença).",
-        "   Pro:    devforge data update (fresh risk data, requires a license).",
+        "   Pro:    zavik data update (dados de risco frescos, exige licença).",
+        "   Pro:    zavik data update (fresh risk data, requires a license).",
     ),
     (
         "dataset instalado, mas INVÁLIDO: {}",
         "dataset installed, but INVALID: {}",
     ),
     (
-        "   nada é usado sem assinatura válida — rode devforge data update.",
-        "   nothing is used without a valid signature — run devforge data update.",
+        "   nada é usado sem assinatura válida — rode zavik data update.",
+        "   nothing is used without a valid signature — run zavik data update.",
     ),
     (
         "(dataset instalado INVÁLIDO — ignorado: {})",
@@ -752,20 +752,20 @@ static EN: &[(&str, &str)] = &[
         "⛔ Pro feature (fresh risk dataset): {}.",
     ),
     (
-        "   Instale sua licença:  devforge license install <token>",
-        "   Install your license:  devforge license install <token>",
+        "   Instale sua licença:  zavik license install <token>",
+        "   Install your license:  zavik license install <token>",
     ),
     (
-        "   (confira:             devforge license status)",
-        "   (check:               devforge license status)",
+        "   (confira:             zavik license status)",
+        "   (check:               zavik license status)",
     ),
     (
         "   Sem licença o audit segue grátis e offline — o tier gratuito não muda.",
         "   Without a license audit stays free and offline — the free tier doesn't change.",
     ),
     (
-        "URL do dataset não configurada nesta build (use --url <url> ou env DF_DATASET_URL)",
-        "dataset URL not configured in this build (use --url <url> or env DF_DATASET_URL)",
+        "URL do dataset não configurada nesta build (use --url <url> ou env ZV_DATASET_URL)",
+        "dataset URL not configured in this build (use --url <url> or env ZV_DATASET_URL)",
     ),
     ("baixando dataset de {} ...", "downloading dataset from {} ..."),
     (
@@ -813,8 +813,8 @@ static EN: &[(&str, &str)] = &[
         "license installed, but INVALID: {}",
     ),
     (
-        "uso: devforge license install <chave|@arquivo>",
-        "usage: devforge license install <key|@file>",
+        "uso: zavik license install <chave|@arquivo>",
+        "usage: zavik license install <key|@file>",
     ),
     ("licença rejeitada: {}", "license rejected: {}"),
     (
@@ -831,8 +831,8 @@ static EN: &[(&str, &str)] = &[
         "unknown subcommand: {} (status|install|remove)",
     ),
     (
-        "formato inválido (esperado DF1.<payload>.<assinatura>)",
-        "invalid format (expected DF1.<payload>.<signature>)",
+        "formato inválido (esperado ZV1.<payload>.<assinatura>)",
+        "invalid format (expected ZV1.<payload>.<signature>)",
     ),
     ("base64 inválido", "invalid base64"),
     ("payload não é JSON válido", "payload is not valid JSON"),
@@ -1164,8 +1164,8 @@ static EN: &[(&str, &str)] = &[
         "\n✅ Trust verification: no risk detected.",
     ),
     (
-        "O DevForge não confia cegamente no manifest. Riscos encontrados:\n",
-        "DevForge doesn't trust the manifest blindly. Risks found:\n",
+        "O Zavik não confia cegamente no manifest. Riscos encontrados:\n",
+        "Zavik doesn't trust the manifest blindly. Risks found:\n",
     ),
     (
         "\n(Só avisos informativos — seguindo.)",
@@ -1345,8 +1345,8 @@ static EN: &[(&str, &str)] = &[
         "KERNEL: registering plugin '{}'",
     ),
     (
-        "KERNEL: DevForge inicializado.",
-        "KERNEL: DevForge initialized.",
+        "KERNEL: Zavik inicializado.",
+        "KERNEL: Zavik initialized.",
     ),
     (
         "EVENTBUS: publicando '{}' para {} assinante(s)",
@@ -1437,9 +1437,9 @@ mod tests {
 
         // Env var next (set here, removed after — this test owns the env
         // vars on purpose so the sub-asserts cannot race each other).
-        std::env::set_var("DEVFORGE_LANG", "en");
+        std::env::set_var("ZAVIK_LANG", "en");
         assert_eq!(resolve(None).unwrap(), Lang::En);
-        std::env::remove_var("DEVFORGE_LANG");
+        std::env::remove_var("ZAVIK_LANG");
 
         // Locale: `pt*` opts into pt-BR; a non-pt locale falls to the
         // default (already `en` since the pre-launch flip).

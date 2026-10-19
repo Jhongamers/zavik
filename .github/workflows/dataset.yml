@@ -2,7 +2,7 @@
 # Output: Release tag `dataset-latest` → `dataset.json` (Ed25519 envelope).
 #
 # After the repo exists (ROADMAP F0): fill `DEFAULT_DATASET_URL` in
-# crates/cli/src/dataset.rs with this release URL, add the `DF_DATASET_KEY`
+# crates/cli/src/dataset.rs with this release URL, add the `ZV_DATASET_KEY`
 # secret, push, and trigger this workflow once to publish the first asset.
 #
 # Supply-chain stance: GitHub-official `actions/checkout` + the runner's
@@ -48,9 +48,9 @@ jobs:
 
       - name: Sign with the dataset key (separate from the license key)
         env:
-          DF_DATASET_KEY: ${{ secrets.DF_DATASET_KEY }}
+          ZV_DATASET_KEY: ${{ secrets.ZV_DATASET_KEY }}
         run: |
-          test -n "$DF_DATASET_KEY" || { echo "secret DF_DATASET_KEY ausente" >&2; exit 1; }
+          test -n "$ZV_DATASET_KEY" || { echo "secret ZV_DATASET_KEY ausente" >&2; exit 1; }
           cargo run --quiet --example license_tool -- sign-dataset \
             --in "$RUNNER_TEMP/payload.json" --out "$RUNNER_TEMP/dataset.json"
 
@@ -74,4 +74,4 @@ jobs:
               --notes "dataset de risco assinado (ver docs/design-data.md)"
           fi
           gh release edit dataset-latest \
-            --notes "dataset gerado em ${generated} — atualize com: devforge data update"
+            --notes "dataset gerado em ${generated} — atualize com: zavik data update"

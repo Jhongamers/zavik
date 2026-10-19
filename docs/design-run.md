@@ -1,6 +1,6 @@
-# Design — `devforge run`
+# Design — `zavik run`
 
-> Desenho (out/2026). Status: **v1 IMPLEMENTADO** (`devforge run`); pendências
+> Desenho (out/2026). Status: **v1 IMPLEMENTADO** (`zavik run`); pendências
 > em staging (v1.1: `--detach`; health https). Contexto: análise 5.1 do
 > `docs/plano-lancamento.md`; princípio 5.0 (etapa isolada E composta no `up`).
 
@@ -13,7 +13,7 @@ em silêncio, permissão de execução individual, saída honesta.
 ## 2. Superfície do comando
 
 ```bash
-devforge run [caminho] [flags] [-- args...]   # args vão pro comando de start
+zavik run [caminho] [flags] [-- args...]   # args vão pro comando de start
   --dry-run          mostra o comando resolvido, sem executar
   --timeout <secs>   quanto tempo esperar "pronto" (padrão: 60)
   --health <spec>    override do readiness: "tcp:3000" | "http://localhost:8000/health"
@@ -101,7 +101,7 @@ Ordem estrita — **declarado > convenção > perguntar**. Nunca adivinhar.
 
 ## 7. Composição (`up`) — 5.0
 
-`devforge up` = `clone? → audit → prepare → run`, orquestrado pelo
+`zavik up` = `clone? → audit → prepare → run`, orquestrado pelo
 `WorkflowEngine`; `--until/--skip/--only`; cada etapa com **seu próprio gate**
 (`run` continua perguntando mesmo dentro do `up`).
 

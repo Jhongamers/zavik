@@ -1,12 +1,12 @@
 [package]
-name = "devforge"
-description = "Ponto de entrada (CLI) do agente DevForge."
+name = "zavik"
+description = "Ponto de entrada (CLI) do agente Zavik."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "devforge"
+name = "zavik"
 path = "src/main.rs"
 
 # The vendor tool's unit tests run with `cargo test` (builder = staged
@@ -17,12 +17,12 @@ path = "examples/license_tool.rs"
 test = true
 
 [dependencies]
-devforge-shared.workspace = true
-devforge-events.workspace = true
-devforge-sdk.workspace = true
-devforge-plugins.workspace = true
-devforge-core.workspace = true
-devforge-kernel.workspace = true
+zavik-shared.workspace = true
+zavik-events.workspace = true
+zavik-sdk.workspace = true
+zavik-plugins.workspace = true
+zavik-core.workspace = true
+zavik-kernel.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true

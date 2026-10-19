@@ -1,6 +1,6 @@
 <div align="center">
 
-# DevForge
+# Zavik
 
 **Motor de dev CLI & orquestração por IA** de código aberto — detecta sua
 stack, audita a **supply-chain** das suas dependências, entrega a qualquer
@@ -14,7 +14,7 @@ agente de IA um briefing de uma chamada.
 </div>
 
 **Funciona com qualquer agente** — Claude Code, Codex, OpenCode, Cursor,
-Antigravity, aider, Copilot — ou sem agente nenhum. O DevForge é uma CLI pura:
+Antigravity, aider, Copilot — ou sem agente nenhum. O Zavik é uma CLI pura:
 saída `--json` estável e exit codes *são* a interface; não existe plugin de
 vendor pra instalar. *(Compatibilidade, não filiação.)*
 
@@ -32,7 +32,7 @@ flag de pular) e instala em `~/.local/bin`. De preferência baixe o script,
 leia e rode — o nosso próprio `audit` classifica `curl | sh` como risco.
 Windows: pegue o `.zip` em
 [Releases](https://github.com/Jhongamers/devforge/releases). Overrides:
-`DEVFORGE_VERSION`, `DEVFORGE_INSTALL_DIR`, `DEVFORGE_BASE_URL` (espelhos,
+`ZAVIK_VERSION`, `ZAVIK_INSTALL_DIR`, `ZAVIK_BASE_URL` (espelhos,
 ambiente air-gapped, testes).
 
 **Da fonte** (sempre funciona):
@@ -43,24 +43,24 @@ cargo test             # roda todos os testes
 cargo run              # analisa o diretório atual (detect)
 ```
 
-O binário fica em `target/debug/devforge`.
+O binário fica em `target/debug/zavik`.
 
 ## Comandos
 
 ```bash
-devforge [caminho]                     # detecta a stack (padrão)
-devforge detect [caminho]              # idem
-devforge analyze [caminho] [flags]     # analisa as dependências do projeto
-devforge context [caminho] [flags]     # briefing: runbook + entradas + riscos (1 chamada)
-devforge diagnose [flags]              # resume um erro: causa real + conserto
-devforge env [caminho] [flags]         # fingerprint do ambiente: versões das toolchains + o que falta
-devforge run [caminho] [--detach]  # sobe o projeto (--detach: background + PID)
-devforge up [url|caminho] [flags]      # pipeline: clone? → audit → prepare → run (mesmos gates)
-devforge audit [caminho] [flags]       # auditoria de supply-chain (--fail-on gateia CI)
-devforge license status|install|remove # licença offline (assinatura Ed25519, local)
-devforge data status|update            # dataset de risco (grátis: status; Pro: update)
-devforge prepare [caminho] [flags]     # instala dependências (SEM Docker)
-devforge docker  [caminho] [flags]     # gera Dockerfile + build da imagem
+zavik [caminho]                     # detecta a stack (padrão)
+zavik detect [caminho]              # idem
+zavik analyze [caminho] [flags]     # analisa as dependências do projeto
+zavik context [caminho] [flags]     # briefing: runbook + entradas + riscos (1 chamada)
+zavik diagnose [flags]              # resume um erro: causa real + conserto
+zavik env [caminho] [flags]         # fingerprint do ambiente: versões das toolchains + o que falta
+zavik run [caminho] [--detach]  # sobe o projeto (--detach: background + PID)
+zavik up [url|caminho] [flags]      # pipeline: clone? → audit → prepare → run (mesmos gates)
+zavik audit [caminho] [flags]       # auditoria de supply-chain (--fail-on gateia CI)
+zavik license status|install|remove # licença offline (assinatura Ed25519, local)
+zavik data status|update            # dataset de risco (grátis: status; Pro: update)
+zavik prepare [caminho] [flags]     # instala dependências (SEM Docker)
+zavik docker  [caminho] [flags]     # gera Dockerfile + build da imagem
 ```
 
 Flags:
@@ -78,7 +78,7 @@ Flags:
 | `--ignore`  | (`audit`) Supressões TOML com **expiração obrigatória**.           |
 | `--sarif`   | (`audit`) Emite SARIF 2.1.0 (GitHub Code Scanning).                |
 | `--url`     | (`data`) Origem do dataset: `https://...` ou `file://<caminho>`    |
-|             | (alternativa: env `DF_DATASET_URL`).                               |
+|             | (alternativa: env `ZV_DATASET_URL`).                               |
 | `--message` | (`diagnose`) Texto de erro inline.                                  |
 | `--input`   | (`diagnose`) Arquivo com a saída de erro.                           |
 | `--timeout` | (`run`) Segundos esperando ficar pronto (padrão 60).                |
@@ -94,22 +94,22 @@ pros humanos obriga o modelo a interpretar e gasta token; JSON entrega o fato
 pronto. Todo documento tem `"schema": 1`.
 
 ```bash
-devforge detect  --json          # o que é este projeto (ground truth)
-devforge context --json          # briefing: runbook + entradas + riscos (1 chamada)
-devforge analyze --json          # dependências doentes
-devforge diagnose --json         # causa real de um erro (+ conserto)
-devforge env --json              # fingerprint do ambiente: OS/arch, versões, o que falta
-devforge run --dry-run --json    # comando de start resolvido + de onde veio
-devforge run --json              # plano sem executar (modo IA) ou resultado final
-devforge run --detach --json     # background: pid + log + stop_command (sem supervisionar)
-devforge up --dry-run --json     # plano do pipeline (etapa a etapa, sem executar)
-devforge up --json               # JSON Lines: 1 objeto por etapa + resumo final
-devforge audit --json            # relatório de supply-chain (score, fatores, veredito)
-devforge license status --json   # licença instalada (plan, holder, expires, valid)
-devforge data status --json      # dataset instalado? versão, idade, staleness (livre)
-devforge data update --json      # Pro: baixa+verifica; sem licença → no_license, exit 1
-devforge prepare --json          # plano + verificação de confiança (não executa)
-devforge docker  --json          # idem, modo Docker
+zavik detect  --json          # o que é este projeto (ground truth)
+zavik context --json          # briefing: runbook + entradas + riscos (1 chamada)
+zavik analyze --json          # dependências doentes
+zavik diagnose --json         # causa real de um erro (+ conserto)
+zavik env --json              # fingerprint do ambiente: OS/arch, versões, o que falta
+zavik run --dry-run --json    # comando de start resolvido + de onde veio
+zavik run --json              # plano sem executar (modo IA) ou resultado final
+zavik run --detach --json     # background: pid + log + stop_command (sem supervisionar)
+zavik up --dry-run --json     # plano do pipeline (etapa a etapa, sem executar)
+zavik up --json               # JSON Lines: 1 objeto por etapa + resumo final
+zavik audit --json            # relatório de supply-chain (score, fatores, veredito)
+zavik license status --json   # licença instalada (plan, holder, expires, valid)
+zavik data status --json      # dataset instalado? versão, idade, staleness (livre)
+zavik data update --json      # Pro: baixa+verifica; sem licença → no_license, exit 1
+zavik prepare --json          # plano + verificação de confiança (não executa)
+zavik docker  --json          # idem, modo Docker
 ```
 
 > `prepare`/`docker` com `--json` entregam o **plano** e os **riscos** de forma
@@ -130,14 +130,14 @@ Exemplo (`detect --json`, enxugado):
 
 Texto humano da CLI: **inglês por padrão** (default virado no i18n de
 pré-lançamento); `--lang pt-BR` (também `--lang=pt-BR` e
-`DEVFORGE_LANG=pt-BR`, ou locale BR do sistema `LC_ALL`/`LANG=pt_BR…`)
+`ZAVIK_LANG=pt-BR`, ou locale BR do sistema `LC_ALL`/`LANG=pt_BR…`)
 troca as mensagens pro português, `--lang en` volta pro inglês. **Saída de
 máquina nunca troca**: chaves/valores de JSON, SARIF e exit codes são
 sempre inglês. Design e status da migração: `docs/design-i18n.md`.
 
 ```bash
-devforge env --lang en            # seções humanas em inglês
-DEVFORGE_LANG=en devforge audit   # idem, via env (agentes/CI)
+zavik env --lang en            # seções humanas em inglês
+ZAVIK_LANG=en zavik audit   # idem, via env (agentes/CI)
 ```
 
 ### Briefing de uma chamada (`context`)
@@ -147,7 +147,7 @@ README pra descobrir "como buildo/testo/rodo?"). O `context` responde tudo isso
 **numa chamada só**:
 
 ```bash
-devforge context --json
+zavik context --json
 ```
 
 ```json
@@ -184,19 +184,19 @@ a causa **real** + o conserto, com a "prova" (as linhas que casaram):
 
 ```bash
 # 1) cola o erro direto
-devforge diagnose --message "sh: 1: cargo: not found"
-#   → conserto: `cargo` não está no PATH — rode `devforge prepare` pra toolchain
+zavik diagnose --message "sh: 1: cargo: not found"
+#   → conserto: `cargo` não está no PATH — rode `zavik prepare` pra toolchain
 
 # 2) ou pipe (sem nem sair do fluxo de build)
-meu_build 2>&1 | devforge diagnose
+meu_build 2>&1 | zavik diagnose
 
 # 3) ou de um arquivo
-devforge diagnose --input build.log --json
+zavik diagnose --input build.log --json
 ```
 
 É Rust local e determinístico (zero token). Se **nenhuma** regra casa, ele é
 honesto e devolve as linhas com mais cara de erro (resumo) em vez de fingir que
-entendeu. Por quê não `devforge run <comando>`? Pra não criar uma superfície
+entendeu. Por quê não `zavik run <comando>`? Pra não criar uma superfície
 nova de execução arbitrária — você/IA já tem o erro, falta só a tradução.
 
 ### Executar o projeto (`run`)
@@ -211,18 +211,18 @@ sobe** e sobe — nunca adivinha em silêncio:
 3. **Ambíguo? Pergunta.** Nada achou? diz honestamente (não roda nada no chute).
 
 ```bash
-devforge run                      # resolve, PERGUNTA se pode executar, e sobe
-devforge run --detach             # background: devolve pid + log (sem esperar readiness)
-devforge run --dry-run            # só mostra o comando resolvido (sem executar)
-devforge run --timeout 90         # espera ficar pronto por até 90s (padrão 60)
-devforge run --health http://localhost:3000/health   # readiness explícito
-devforge run . -- --port 3001     # args após -- vão pro comando de start
-devforge run --json               # plano/resultado estruturado (modo IA)
+zavik run                      # resolve, PERGUNTA se pode executar, e sobe
+zavik run --detach             # background: devolve pid + log (sem esperar readiness)
+zavik run --dry-run            # só mostra o comando resolvido (sem executar)
+zavik run --timeout 90         # espera ficar pronto por até 90s (padrão 60)
+zavik run --health http://localhost:3000/health   # readiness explícito
+zavik run . -- --port 3001     # args após -- vão pro comando de start
+zavik run --json               # plano/resultado estruturado (modo IA)
 ```
 
 **Detached:** `--detach` sobe o projeto na **própria sessão** — fechar o
 terminal não derruba o dev server — e devolve `pid`, `log`
-(`.devforge/run.log`, acompanhe com `tail -f`) e `stop_command` (ex.:
+(`.zavik/run.log`, acompanhe com `tail -f`) e `stop_command` (ex.:
 `kill 1234`). O trato é honesto: **não** espera readiness nem supervisiona;
 rode sem `--detach` pra ter health check + crash→diagnose. Mesmo gate:
 executar é risco crítico, `--yes` não cobre. *(No Windows o processo
@@ -249,14 +249,14 @@ composta**. O `up` encadeia o pipeline usando **literalmente os mesmos caminhos
 de código** dos comandos isolados — compor não enfraquece segurança:
 
 ```bash
-devforge up                        # audit → prepare → run no diretório atual
-devforge up ./meu-projeto          # idem em outro caminho
-devforge up https://github.com/x/y # clone seguro (--depth 1, sem submódulos,
+zavik up                        # audit → prepare → run no diretório atual
+zavik up ./meu-projeto          # idem em outro caminho
+zavik up https://github.com/x/y # clone seguro (--depth 1, sem submódulos,
                                    # sem hooks; destino = ./y — nunca sobrescreve)
-devforge up --until audit          # para depois do audit (útil em CI)
-devforge up --skip run             # só prepara, não sobe
-devforge up --dry-run              # mostra o plano de etapas; não executa nada
-devforge up --json                 # JSON Lines: 1 objeto por etapa + resumo final
+zavik up --until audit          # para depois do audit (útil em CI)
+zavik up --skip run             # só prepara, não sobe
+zavik up --dry-run              # mostra o plano de etapas; não executa nada
+zavik up --json                 # JSON Lines: 1 objeto por etapa + resumo final
 ```
 
 **Gates por etapa, intactos:** confiança/toolchain/instalação e a execução do
@@ -289,19 +289,19 @@ confluência), **Snyk/cargo-audit** (policy + `fail_on` + exit code) e **OWASP**
    alerta e é listada pra re-triagem.
 
 ```bash
-devforge audit                      # offline: origem (registro/git/path) + pin
-devforge audit --online             # + hooks de instalação e downloads do npm
-devforge audit --fail-on high       # exit 1 se achar high/critical (gateia CI)
-devforge audit --sarif > results.sarif   # SARIF 2.1.0 p/ GitHub Code Scanning
-devforge audit --policy .devforge/policy.toml --ignore .devforge/ignore.toml
+zavik audit                      # offline: origem (registro/git/path) + pin
+zavik audit --online             # + hooks de instalação e downloads do npm
+zavik audit --fail-on high       # exit 1 se achar high/critical (gateia CI)
+zavik audit --sarif > results.sarif   # SARIF 2.1.0 p/ GitHub Code Scanning
+zavik audit --policy .zavik/policy.toml --ignore .zavik/ignore.toml
 ```
 
-Política (`.devforge/policy.toml`, versionada):
+Política (`.zavik/policy.toml`, versionada):
 ```toml
 fail_on = "high"
 allowlist = ["meu-pacote-interno"]   # git interno esperado → não alerta
 ```
-Supressão (`.devforge/ignore.toml` — `expires` é **obrigatório**):
+Supressão (`.zavik/ignore.toml` — `expires` é **obrigatório**):
 ```toml
 [[ignore]]
 package = "algum-pacote"
@@ -367,13 +367,13 @@ Modelo escolhido: **open core + assinatura**. O CLI é grátis; a licença é a
 chave que destrava (e destravará) o que é pago — sem nenhuma chamada de rede.
 
 ```bash
-devforge license install <chave|@arquivo>   # valida localmente (Ed25519) e instala
-devforge license status [--json]            # plano, titular, expiração, validade
-devforge license remove
+zavik license install <chave|@arquivo>   # valida localmente (Ed25519) e instala
+zavik license status [--json]            # plano, titular, expiração, validade
+zavik license remove
 ```
 
-- **Formato:** token `DF1.<payload-b64url>.<assinatura>`; o binário carrega só
-  a chave **pública**. Verificação 100% local, em `~/.config/devforge/license.key`.
+- **Formato:** token `ZV1.<payload-b64url>.<assinatura>`; o binário carrega só
+  a chave **pública**. Verificação 100% local, em `~/.config/zavik/license.key`.
 - **Honestidade:** é um gate **anti-honesto**, não anti-atacante — patchear o
   binário burla (é o mesmo trato de TablePlus/Transmit). Também não defende
   relógio do sistema atrasado. A proteção de verdade chega na fase server-side.
@@ -394,8 +394,8 @@ precisos de título medidos no banco real — sem fuzzy), baixados daqui da
 Release e verificados com a chave pública embutida.
 
 ```bash
-devforge data status [--json]              # livre, offline: versão, idade, staleness
-devforge data update [--json] [--url <url>]# Pro: baixa, VERIFICA e instala (exige licença)
+zavik data status [--json]              # livre, offline: versão, idade, staleness
+zavik data update [--json] [--url <url>]# Pro: baixa, VERIFICA e instala (exige licença)
 ```
 
 | | Grátis (hoje) | Pro (licença + `data update`) |
@@ -445,7 +445,7 @@ camadas:
 
 ### Permissões
 
-Por padrão o DevForge **não faz nada sozinho**: antes de cada ação sensível
+Por padrão o Zavik **não faz nada sozinho**: antes de cada ação sensível
 (instalar, gerar/sobrescrever arquivo, rodar `docker build`) ele pergunta:
 
 ```
@@ -462,7 +462,7 @@ Por padrão o DevForge **não faz nada sozinho**: antes de cada ação sensível
 ### Segurança e supply-chain (verificação automática)
 
 Um manifesto (`package.json`, `Cargo.toml`, ...) é **input não confiável**: um
-projeto malicioso (ou uma IA dirigindo o DevForge sem perceber) pode mandar
+projeto malicioso (ou uma IA dirigindo o Zavik sem perceber) pode mandar
 instalar código arbitrário. Por isso, **antes** de qualquer `prepare`/`docker`
 roda um **pré-flight de confiança** que não confia cegamente no manifest:
 
@@ -512,7 +512,7 @@ Uma chamada read-only que substitui ~10 sondagens de um agente por *"essa
 máquina sequer funciona?"*:
 
 ```bash
-devforge env --json
+zavik env --json
 ```
 
 ```json
@@ -561,7 +561,7 @@ FERRAMENTAS FALTANDO
 
 ## Arquitetura
 
-O DevForge segue **Clean Architecture** e o padrão **Microkernel**, garantindo
+O Zavik segue **Clean Architecture** e o padrão **Microkernel**, garantindo
 modularidade, testabilidade e extensibilidade. Os componentes críticos são:
 
 - **EventBus:** comunicação reativa e desacoplada entre módulos.
@@ -579,13 +579,13 @@ shared  ->  events  ->  sdk  ->  { core, kernel } / plugins
 
 | Crate              | Papel                                                             | Depende de                     |
 | ------------------ | ----------------------------------------------------------------- | ------------------------------ |
-| `devforge-shared`  | Domínio: tipos universais (`Context`, `ProjectStack`, `Language`). | —                              |
-| `devforge-events`  | Barramento de eventos (`EventBus`, `EventEnvelope`).               | `shared`                       |
-| `devforge-sdk`     | Contratos: `Capability`, `FileSystemAccess`, `ProjectDetector`, `CommandRunner` e a porta `PermissionGate`. | `shared`, `events` |
-| `devforge-plugins` | Plugins V1: `LocalFileSystem`, `StackDetector`, `LocalCommandRunner`. | `shared`, `sdk`             |
-| `devforge-core`    | Casos de uso: `WorkflowEngine` e `Provisioner` (preparar projeto).  | `shared`, `sdk`                |
-| `devforge-kernel`  | Microkernel: registry de plugins e ciclo de vida.                  | `shared`, `events`, `sdk`      |
-| `devforge` (CLI)   | Ponto de entrada + `PermissionGate` interativo.                    | todos                          |
+| `zavik-shared`  | Domínio: tipos universais (`Context`, `ProjectStack`, `Language`). | —                              |
+| `zavik-events`  | Barramento de eventos (`EventBus`, `EventEnvelope`).               | `shared`                       |
+| `zavik-sdk`     | Contratos: `Capability`, `FileSystemAccess`, `ProjectDetector`, `CommandRunner` e a porta `PermissionGate`. | `shared`, `events` |
+| `zavik-plugins` | Plugins V1: `LocalFileSystem`, `StackDetector`, `LocalCommandRunner`. | `shared`, `sdk`             |
+| `zavik-core`    | Casos de uso: `WorkflowEngine` e `Provisioner` (preparar projeto).  | `shared`, `sdk`                |
+| `zavik-kernel`  | Microkernel: registry de plugins e ciclo de vida.                  | `shared`, `events`, `sdk`      |
+| `zavik` (CLI)   | Ponto de entrada + `PermissionGate` interativo.                    | todos                          |
 
 ## Detecção de stack
 

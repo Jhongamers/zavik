@@ -1,15 +1,15 @@
-//! DevForge agent entry point (CLI).
+//! Zavik agent entry point (CLI).
 //!
 //! Commands:
-//!     devforge [path]                          # detects the stack (default)
-//!     devforge detect [path]
-//!     devforge analyze [path] [flags]          # analyzes dependencies (lockfile, versions)
-//!     devforge context [path] [flags]          # briefing: runbook/entrypoints/risks (good for AI)
-//!     devforge diagnose [flags]                # summarizes an error: root cause + fix
-//!     devforge env [path] [flags]              # environment fingerprint: tool versions + what's missing
-//!     devforge audit [path] [flags]            # supply-chain audit (--fail-on gates CI)
-//!     devforge prepare [path] [flags]          # installs dependencies (no Docker)
-//!     devforge docker  [path] [flags]          # generates Dockerfile + builds the image
+//!     zavik [path]                          # detects the stack (default)
+//!     zavik detect [path]
+//!     zavik analyze [path] [flags]          # analyzes dependencies (lockfile, versions)
+//!     zavik context [path] [flags]          # briefing: runbook/entrypoints/risks (good for AI)
+//!     zavik diagnose [flags]                # summarizes an error: root cause + fix
+//!     zavik env [path] [flags]              # environment fingerprint: tool versions + what's missing
+//!     zavik audit [path] [flags]            # supply-chain audit (--fail-on gates CI)
+//!     zavik prepare [path] [flags]          # installs dependencies (no Docker)
+//!     zavik docker  [path] [flags]          # generates Dockerfile + builds the image
 //!
 //! Flags:
 //!     --dry-run   shows the plan without executing anything
@@ -26,22 +26,22 @@ mod output;
 mod permission;
 mod up;
 
-use devforge_core::provision::{ExecuteOptions, PrepareMode, PrepareReport, Provisioner};
-use devforge_core::toolchain::{
+use zavik_core::provision::{ExecuteOptions, PrepareMode, PrepareReport, Provisioner};
+use zavik_core::toolchain::{
     env_snapshot, install_command, install_hint, missing_tools, MissingTool, ToolStatus,
 };
-use devforge_core::WorkflowEngine;
-use devforge_kernel::Kernel;
-use devforge_plugins::{
+use zavik_core::WorkflowEngine;
+use zavik_kernel::Kernel;
+use zavik_plugins::{
     diagnose, extract_briefing, npm_audit_signals, parse_health, resolve_run, supervise,
     DependencyAnalyzer, LocalCommandRunner, LocalFileSystem, NpmAuditSignal, RunCandidate, RunPlan,
     RunResolution, RunState, StackDetector, SuperviseOptions, SupervisedOutcome,
 };
-use devforge_shared::{
+use zavik_shared::{
     AnalysisReport, AuditPolicy, AuditReport, AuditSeverity, Context, Language, PackageOrigin,
     PackageSnapshot, ProjectStack, RiskFactor, Severity, Suppression, TrustReport,
 };
-use devforge_sdk::{AnalysisOptions, CommandSpec, Decision, PermissionGate, PermissionRequest, PluginContext};
+use zavik_sdk::{AnalysisOptions, CommandSpec, Decision, PermissionGate, PermissionRequest, PluginContext};
 use permission::{AutoApprovePermissionGate, InteractivePermissionGate};
 use serde_json::json;
 use detached::spawn_detached;
@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // including `license`/`data`, which parse their own flags. Values after
     // `--` belong to the child command and are left alone.
     let lang_flag = extract_lang(&mut args)?;
-    devforge_shared::i18n::set_lang(devforge_shared::i18n::resolve(lang_flag.as_deref())?);
+    zavik_shared::i18n::set_lang(zavik_shared::i18n::resolve(lang_flag.as_deref())?);
 
     let (command, rest): (&str, &[String]) = match args.first().map(String::as_str) {
         Some("prepare") => ("prepare", &args[1..]),
@@ -83,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     if command == "version" {
-        println!("devforge {}", env!("CARGO_PKG_VERSION"));
+        println!("zavik {}", env!("CARGO_PKG_VERSION"));
         return Ok(());
     }
     // The license needs neither kernel nor banner — it is purely local verification.
@@ -115,7 +115,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if !options.json && !options.sarif {
-        banner(&format!("DEVFORGE — {command}"), &project_root);
+        banner(&format!("ZAVIK — {command}"), &project_root);
     }
     let kernel = build_kernel(&context, options.all)?;
 
@@ -151,7 +151,7 @@ fn build_kernel(
     kernel.event_bus().subscribe(|event| {
         eprintln!(
             "{}",
-            devforge_shared::i18n::t_fmt(
+            zavik_shared::i18n::t_fmt(
                 "   [logger] evento de domínio: '{}'",
                 &[&event.event_type.to_string()],
             )
@@ -183,7 +183,7 @@ fn run_detect(
     }
     // Demonstrates the WorkflowEngine (the original use case).
     section("Workflow de detecção (dependency_scan)");
-    let detector = kernel.detector().ok_or(devforge_shared::i18n::t(
+    let detector = kernel.detector().ok_or(zavik_shared::i18n::t(
         "plugin 'stack_detector' não registrado",
     ))?;
     let steps = vec!["step_1_setup".to_string(), "dependency_scan".to_string()];
@@ -204,7 +204,7 @@ fn run_env(
     let stacks = kernel.detect_stacks(context)?;
     let Some(runner) = kernel.command_runner() else {
         return Err(
-            devforge_shared::i18n::t("plugin 'local_command_runner' não registrado").into(),
+            zavik_shared::i18n::t("plugin 'local_command_runner' não registrado").into(),
         );
     };
     let tools = env_snapshot(runner, &stacks, &context.project_root)?;
@@ -214,7 +214,7 @@ fn run_env(
         return Ok(());
     }
 
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
     section("AMBIENTE");
     println!(
         "  os: {} ({})\n",
@@ -244,7 +244,7 @@ fn run_env(
                         "    • {} ❌ fora do PATH — sugestão: {}",
                         &[
                             &tool.tool,
-                            &install_hint(&tool.tool, devforge_shared::i18n::lang())
+                            &install_hint(&tool.tool, zavik_shared::i18n::lang())
                         ]
                     )
                 );
@@ -273,7 +273,7 @@ fn run_analyze(
     let stacks = kernel.detect_stacks(context)?;
     let analyzer = kernel
         .analyzer()
-        .ok_or(devforge_shared::i18n::t(
+        .ok_or(zavik_shared::i18n::t(
             "plugin 'dependency_analyzer' não registrado",
         ))?;
     let analysis_options = AnalysisOptions {
@@ -293,7 +293,7 @@ fn run_analyze(
     if options.online {
         println!(
             "{}",
-            devforge_shared::i18n::t(
+            zavik_shared::i18n::t(
                 "\nConsultando registries (crates.io / npm / PyPI)… isso pode demorar."
             )
         );
@@ -321,7 +321,7 @@ fn run_context(
 
     print_stacks(&stacks);
     if stacks.is_empty() {
-        println!("{}", devforge_shared::i18n::t("Nenhum stack reconhecido."));
+        println!("{}", zavik_shared::i18n::t("Nenhum stack reconhecido."));
         return Ok(());
     }
 
@@ -367,16 +367,16 @@ fn print_bucket(label: &str, cmds: &[String]) {
 }
 
 fn run_diagnose(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
-    use devforge_shared::i18n::Lang;
+    use zavik_shared::i18n::Lang;
     let text = read_error_input(options)?;
     // JSON prose is always English (dogfooding #6); human output follows
     // the current language. The texts are composed ONCE, in that language.
     let target = if options.json {
         Lang::En
     } else {
-        devforge_shared::i18n::lang()
+        zavik_shared::i18n::lang()
     };
-    let diagnosis = devforge_plugins::diagnose_in(target, &text);
+    let diagnosis = zavik_plugins::diagnose_in(target, &text);
 
     if options.json {
         output::diagnose(&diagnosis);
@@ -388,11 +388,11 @@ fn run_diagnose(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Human-readable printing of a [`devforge_shared::Diagnosis`] (reused by `run`).
+/// Human-readable printing of a [`zavik_shared::Diagnosis`] (reused by `run`).
 /// The body texts are already in the current language (composed at
 /// construction); only the labels translate here.
-fn print_diagnosis(diagnosis: &devforge_shared::Diagnosis) {
-    use devforge_shared::i18n::{t, t_fmt};
+fn print_diagnosis(diagnosis: &zavik_shared::Diagnosis) {
+    use zavik_shared::i18n::{t, t_fmt};
     println!("{}", diagnosis.summary);
     for cause in &diagnosis.causes {
         println!("\n• {}", cause.cause);
@@ -416,7 +416,7 @@ fn print_diagnosis(diagnosis: &devforge_shared::Diagnosis) {
 }
 
 /// Where the error text comes from: `--message`, `--input <file>`, or stdin
-/// (e.g., `meu_build 2>&1 | devforge diagnose`).
+/// (e.g., `meu_build 2>&1 | zavik diagnose`).
 fn read_error_input(options: &Options) -> Result<String, Box<dyn std::error::Error>> {
     if let Some(message) = &options.message {
         return Ok(message.clone());
@@ -428,9 +428,9 @@ fn read_error_input(options: &Options) -> Result<String, Box<dyn std::error::Err
     // Only read stdin if it is NOT a terminal (otherwise it would block waiting for input).
     if std::io::stdin().is_terminal() {
         return Err(
-            devforge_shared::i18n::t(
+            zavik_shared::i18n::t(
                 "cole a saída do erro, ou use --message \"...\", --input <arquivo> \
-                 (ou pipe: `meu_comando 2>&1 | devforge diagnose`)",
+                 (ou pipe: `meu_comando 2>&1 | zavik diagnose`)",
             )
             .into(),
         );
@@ -451,14 +451,14 @@ fn run_audit(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let stacks = kernel.detect_stacks(context)?;
     if stacks.is_empty() {
-        return Err(devforge_shared::i18n::t("nenhuma stack detectada pra auditar").into());
+        return Err(zavik_shared::i18n::t("nenhuma stack detectada pra auditar").into());
     }
 
     // Policy + suppressions (versioned TOML) + override via --fail-on.
     let mut policy = load_policy(options.policy.as_deref())?;
     if let Some(fail_on) = &options.fail_on {
         policy.fail_on = AuditSeverity::parse(fail_on).ok_or_else(|| {
-            devforge_shared::i18n::t_fmt(
+            zavik_shared::i18n::t_fmt(
                 "--fail-on inválido: {} (use low|medium|high|critical)",
                 &[fail_on],
             )
@@ -481,7 +481,7 @@ fn run_audit(
 
     let snapshots = build_snapshots(&stacks, &signals);
     let report =
-        devforge_plugins::audit_packages(&snapshots, &policy, &suppressions, &today_iso());
+        zavik_plugins::audit_packages(&snapshots, &policy, &suppressions, &today_iso());
 
     // Pro: a valid signed LOCAL dataset adds an advisory section. Absent →
     // output stays byte-identical to the free tier (design-data §6 invariant).
@@ -491,7 +491,7 @@ fn run_audit(
         Err(error) => {
             eprintln!(
                 "{}",
-                devforge_shared::i18n::t_fmt(
+                zavik_shared::i18n::t_fmt(
                     "(dataset instalado INVÁLIDO — ignorado: {})",
                     &[&error.to_string()],
                 )
@@ -502,9 +502,9 @@ fn run_audit(
     // Dataset findings are composed for the output language: JSON/SARIF =
     // English, human = current (construction-lang — details reach JSON).
     let dataset_lang = if options.json || options.sarif {
-        devforge_shared::i18n::Lang::En
+        zavik_shared::i18n::Lang::En
     } else {
-        devforge_shared::i18n::lang()
+        zavik_shared::i18n::lang()
     };
     let dataset_report = installed
         .as_ref()
@@ -600,7 +600,7 @@ fn load_policy(path: Option<&Path>) -> Result<AuditPolicy, Box<dyn std::error::E
     let mut policy = AuditPolicy::default();
     if let Some(fail_on) = value.get("fail_on").and_then(|v| v.as_str()) {
         policy.fail_on = AuditSeverity::parse(fail_on).ok_or_else(|| {
-            devforge_shared::i18n::t_fmt("fail_on inválido no policy: {}", &[fail_on])
+            zavik_shared::i18n::t_fmt("fail_on inválido no policy: {}", &[fail_on])
         })?;
     }
     if let Some(list) = value.get("allowlist").and_then(|v| v.as_array()) {
@@ -638,7 +638,7 @@ fn load_suppressions(path: Option<&Path>) -> Result<Vec<Suppression>, Box<dyn st
                 .unwrap_or_default()
                 .to_string();
             let Some(factor) = RiskFactor::from_id(factor_id) else {
-                return Err(devforge_shared::i18n::t_fmt(
+                return Err(zavik_shared::i18n::t_fmt(
                     "factor desconhecido na supressão: {}",
                     &[factor_id],
                 )
@@ -646,7 +646,7 @@ fn load_suppressions(path: Option<&Path>) -> Result<Vec<Suppression>, Box<dyn st
             };
             // Expiration is MANDATORY — an ignore never becomes an eternal shield.
             if expires.is_empty() {
-                return Err(devforge_shared::i18n::t_fmt(
+                return Err(zavik_shared::i18n::t_fmt(
                     "supressão de '{}' sem 'expires' (expiração é obrigatória)",
                     &[&package],
                 )
@@ -664,7 +664,7 @@ fn load_suppressions(path: Option<&Path>) -> Result<Vec<Suppression>, Box<dyn st
 }
 
 fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::DatasetReport>) {
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
 
     section("AUDITORIA DE SUPPLY-CHAIN");
     let packages = report.packages_audited.to_string();
@@ -678,7 +678,7 @@ fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::Dat
         );
         println!(
             "{}",
-            t("    o DevForge num crate/membro específico). O veredito NÃO atesta nada.")
+            t("    o Zavik num crate/membro específico). O veredito NÃO atesta nada.")
         );
     }
     let score = report.score.to_string();
@@ -768,7 +768,7 @@ fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::Dat
 /// Pro section of `audit`: findings from the signed local dataset. Advisory
 /// only — never touches score, `passed` or `--fail-on` (design-data §2.1).
 fn print_dataset_section(report: &dataset::DatasetReport) {
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
     section(t("DADOS FRESCOS (Pro — dataset assinado)"));
     println!(
         "{}",
@@ -787,7 +787,7 @@ fn print_dataset_section(report: &dataset::DatasetReport) {
         println!(
             "{}",
             t_fmt(
-                "⚠ atrasado (>{} dias) — rode: devforge data update",
+                "⚠ atrasado (>{} dias) — rode: zavik data update",
                 &[&dataset::STALE_AFTER_DAYS.to_string()]
             )
         );
@@ -838,7 +838,7 @@ fn print_dataset_section(report: &dataset::DatasetReport) {
     );
 }
 
-/// `devforge run` — resolves how the project starts and runs (foreground, v1).
+/// `zavik run` — resolves how the project starts and runs (foreground, v1).
 ///
 /// Ladder: declared (scripts.start/Procfile/Makefile/compose) > convention >
 /// ask. Readiness = port heuristic (stated as a heuristic). Early crash
@@ -848,7 +848,7 @@ fn run_run(
     context: &Context,
     options: &Options,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use devforge_shared::i18n::{t_fmt_in, translate, Lang};
+    use zavik_shared::i18n::{t_fmt_in, translate, Lang};
     let health = options.health.as_deref().map(parse_health).transpose()?;
     let timeout_secs = options.timeout.unwrap_or(60);
     // One target language per invocation: JSON prose is always English,
@@ -858,7 +858,7 @@ fn run_run(
     let lang = if options.json {
         Lang::En
     } else {
-        devforge_shared::i18n::lang()
+        zavik_shared::i18n::lang()
     };
 
     let mut plan = match resolve_run(&context.project_root) {
@@ -982,10 +982,10 @@ fn run_run(
 
     // Detached mode: start in the background and return the PID immediately
     // (an AI must never wait). Honest limitation: no readiness supervision
-    // here — the log goes to `.devforge/run.log`; `run` without `--detach`
+    // here — the log goes to `.zavik/run.log`; `run` without `--detach`
     // keeps the health check + crash→diagnose.
     if options.detach {
-        let log_dir = context.project_root.join(".devforge");
+        let log_dir = context.project_root.join(".zavik");
         let log_path = log_dir.join("run.log");
         // These error strings can land in JSON (`error`) too: compose them
         // in the target language, not the current one.
@@ -1056,7 +1056,7 @@ fn run_run(
                         "{}",
                         translate(
                             lang,
-                            "    rode `devforge run` sem --detach, com health check e diagnose)"
+                            "    rode `zavik run` sem --detach, com health check e diagnose)"
                         )
                     );
                     #[cfg(windows)]
@@ -1170,26 +1170,26 @@ fn run_run(
             // JSON prose is always English; human output follows the current
             // language (the diagnosis is composed once, in that language).
             let target = if options.json {
-                devforge_shared::i18n::Lang::En
+                zavik_shared::i18n::Lang::En
             } else {
-                devforge_shared::i18n::lang()
+                zavik_shared::i18n::lang()
             };
-            let diagnosis = devforge_plugins::diagnose_in(target, &combined);
+            let diagnosis = zavik_plugins::diagnose_in(target, &combined);
             if options.json {
                 let causes: Vec<serde_json::Value> = diagnosis
                     .causes
                     .iter()
                     .map(|cause| {
                         json!({"id": cause.id,
-                               "cause": devforge_shared::i18n::t_en(&cause.cause),
-                               "fix": devforge_shared::i18n::t_en(&cause.fix)})
+                               "cause": zavik_shared::i18n::t_en(&cause.cause),
+                               "fix": zavik_shared::i18n::t_en(&cause.fix)})
                     })
                     .collect();
                 println!(
                     "{}",
                     json!({"schema": 1, "command": "run", "status": "failed",
                            "exit_code": outcome.exit_code, "duration_ms": outcome.duration_ms,
-                           "summary": devforge_shared::i18n::t_en(&diagnosis.summary),
+                           "summary": zavik_shared::i18n::t_en(&diagnosis.summary),
                            "causes": causes})
                 );
             } else {
@@ -1268,7 +1268,7 @@ fn run_run(
 }
 
 fn readiness_note(outcome: &SupervisedOutcome) -> String {
-    use devforge_shared::i18n::t_fmt;
+    use zavik_shared::i18n::t_fmt;
     match (outcome.ready, outcome.port) {
         (true, Some(port)) => t_fmt(" (pronto na porta {})", &[&port.to_string()]),
         _ => String::new(),
@@ -1281,7 +1281,7 @@ fn combine_output(stdout: &[String], stderr: &[String]) -> String {
 
 /// Interactive choice among ambiguous entrypoints — we never decide on our own.
 fn pick_start_candidate(candidates: &[RunCandidate]) -> Option<RunPlan> {
-    use devforge_shared::i18n::t;
+    use zavik_shared::i18n::t;
     println!("{}", t("   Vários pontos de entrada — escolha um:"));
     for (index, item) in candidates.iter().enumerate() {
         // The list line has no translatable words (numbers + labels + command).
@@ -1320,15 +1320,15 @@ fn pick_start_candidate(candidates: &[RunCandidate]) -> Option<RunPlan> {
     }
 }
 
-/// `devforge license status|install|remove` — offline license (Ed25519).
+/// `zavik license status|install|remove` — offline license (Ed25519).
 /// 100% local verification: no network calls.
-/// `devforge data status|update` — the Pro risk dataset.
+/// `zavik data status|update` — the Pro risk dataset.
 ///
 /// `status` is always free and never touches the network; `update` is the
 /// only network command and the only one gated by a valid license.
 /// Refusals print their JSON line on stdout and exit 1 (design §4.2).
 fn run_data(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
     let mut as_json = false;
     let mut url: Option<String> = None;
     let mut positional: Vec<&String> = Vec::new();
@@ -1346,7 +1346,7 @@ fn run_data(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         } else if arg.starts_with("--") {
             return Err(
                 t_fmt(
-                    "opção desconhecida: {} (uso: devforge data status|update [--json] [--url <url>])",
+                    "opção desconhecida: {} (uso: zavik data status|update [--json] [--url <url>])",
                     &[arg],
                 )
                 .into(),
@@ -1367,7 +1367,7 @@ fn run_data(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
 /// `data status` — local, free, offline. Distinguishes absent / invalid /
 /// installed (an installed-but-invalid dataset is never silently ignored).
 fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
-    use devforge_shared::i18n::{t, t_fmt, Lang};
+    use zavik_shared::i18n::{t, t_fmt, Lang};
     let file = dataset::dataset_file();
     match dataset::load_installed() {
         Ok(Some(ds)) => {
@@ -1409,7 +1409,7 @@ fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
                     println!(
                         "\n{}",
                         t_fmt(
-                            "⚠ atrasado (>{} dias) — rode: devforge data update",
+                            "⚠ atrasado (>{} dias) — rode: zavik data update",
                             &[&dataset::STALE_AFTER_DAYS.to_string()],
                         )
                     );
@@ -1427,8 +1427,8 @@ fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
                            "installed": false,
                            "file": file.display().to_string(),
                            "tier": "free",
-                           "hint": devforge_shared::i18n::t_en(
-                               "audit segue offline com o motor embutido; dados frescos são Pro (devforge data update)"
+                           "hint": zavik_shared::i18n::t_en(
+                               "audit segue offline com o motor embutido; dados frescos são Pro (zavik data update)"
                            )})
                 );
             } else {
@@ -1445,7 +1445,7 @@ fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
                 );
                 println!(
                     "{}",
-                    t("   Pro:    devforge data update (dados de risco frescos, exige licença).")
+                    t("   Pro:    zavik data update (dados de risco frescos, exige licença).")
                 );
             }
             Ok(())
@@ -1466,7 +1466,7 @@ fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
                 );
                 println!(
                     "{}",
-                    t("   nada é usado sem assinatura válida — rode devforge data update.")
+                    t("   nada é usado sem assinatura válida — rode zavik data update.")
                 );
             }
             Ok(())
@@ -1480,13 +1480,13 @@ fn data_update(
     url: Option<String>,
     as_json: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use devforge_shared::i18n::{t, t_fmt, translate, Lang};
+    use zavik_shared::i18n::{t, t_fmt, translate, Lang};
     // Composed strings can land in JSON (`error`): build them in the target
     // language — JSON prose is always English (docs/design-i18n.md).
     let lang = if as_json {
         Lang::En
     } else {
-        devforge_shared::i18n::lang()
+        zavik_shared::i18n::lang()
     };
     let license_problem: Option<(&'static str, String)> = match license::load_installed() {
         None => Some((
@@ -1511,9 +1511,9 @@ fn data_update(
             );
             println!(
                 "{}",
-                t("   Instale sua licença:  devforge license install <token>")
+                t("   Instale sua licença:  zavik license install <token>")
             );
-            println!("{}", t("   (confira:             devforge license status)"));
+            println!("{}", t("   (confira:             zavik license status)"));
             println!(
                 "{}",
                 t("   Sem licença o audit segue grátis e offline — o tier gratuito não muda.")
@@ -1523,7 +1523,7 @@ fn data_update(
     }
 
     let target = url.or_else(|| {
-        std::env::var("DF_DATASET_URL")
+        std::env::var("ZV_DATASET_URL")
             .ok()
             .filter(|value| !value.trim().is_empty())
     });
@@ -1534,7 +1534,7 @@ fn data_update(
         }
         None => {
             return Err(
-                t("URL do dataset não configurada nesta build (use --url <url> ou env DF_DATASET_URL)")
+                t("URL do dataset não configurada nesta build (use --url <url> ou env ZV_DATASET_URL)")
                     .into(),
             )
         }
@@ -1609,7 +1609,7 @@ fn data_update(
 /// Fetches the dataset bytes: `file://`/local for tests and air-gapped
 /// mirrors, HTTPS for the Release. Size-capped (`MAX + 1` to detect overflow).
 fn fetch_dataset(target: &str, max_bytes: usize) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    use devforge_shared::i18n::t_fmt;
+    use zavik_shared::i18n::t_fmt;
     use std::io::Read;
     if let Some(path) = target.strip_prefix("file://") {
         return std::fs::read(path).map_err(|error| {
@@ -1642,7 +1642,7 @@ fn fetch_dataset(target: &str, max_bytes: usize) -> Result<Vec<u8>, Box<dyn std:
 }
 
 fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    use devforge_shared::i18n::{t, t_fmt, Lang};
+    use zavik_shared::i18n::{t, t_fmt, Lang};
     let as_json = args.iter().any(|a| a == "--json");
     let positional: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
     let sub = positional.first().map(|s| s.as_str()).unwrap_or("status");
@@ -1702,7 +1702,7 @@ fn run_license(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         "install" => {
             let arg = positional
                 .get(1)
-                .ok_or(t("uso: devforge license install <chave|@arquivo>"))?;
+                .ok_or(t("uso: zavik license install <chave|@arquivo>"))?;
             let token = if let Some(path) = arg.strip_prefix('@') {
                 std::fs::read_to_string(path)?
             } else {
@@ -1806,8 +1806,8 @@ fn build_sarif(
             }
 
             // SARIF is machine output: always English (docs/design-i18n.md).
-            let message = devforge_shared::i18n::t_fmt_in(
-                devforge_shared::i18n::Lang::En,
+            let message = zavik_shared::i18n::t_fmt_in(
+                zavik_shared::i18n::Lang::En,
                 "{} — score {} (confiança {}). Fatores: {}. {}",
                 &[
                     &finding.package,
@@ -1837,7 +1837,7 @@ fn build_sarif(
         "version": "2.1.0",
         "runs": [{
             "tool": { "driver": {
-                "name": "devforge",
+                "name": "zavik",
                 "version": env!("CARGO_PKG_VERSION"),
                 "rules": rules,
             }},
@@ -1857,7 +1857,7 @@ fn sarif_level(severity: AuditSeverity) -> &'static str {
 /// SARIF short descriptions: machine output → always English
 /// (docs/design-i18n.md). Never used by human output.
 fn factor_label(factor: &RiskFactor) -> &'static str {
-    use devforge_shared::i18n::t_en;
+    use zavik_shared::i18n::t_en;
     match factor {
         RiskFactor::InstallScript => t_en("Script de instalação (executa código no install)"),
         RiskFactor::NetworkAccess => t_en("Acesso à rede no install"),
@@ -1924,7 +1924,7 @@ fn civil_from_days(z: i64) -> String {
 }
 
 fn print_findings(report: &AnalysisReport) {
-    use devforge_shared::i18n::t;
+    use zavik_shared::i18n::t;
     section("ANÁLISE DE DEPENDÊNCIAS");
     if report.is_empty() {
         println!("{}", t("✅ Nada a reportar: dependências e lockfiles parecem saudáveis."));
@@ -1942,7 +1942,7 @@ fn print_findings(report: &AnalysisReport) {
 
     println!(
         "{}",
-        devforge_shared::i18n::t_fmt(
+        zavik_shared::i18n::t_fmt(
             "\nResumo: {} crítico(s), {} aviso(s), {} informação(ões).",
             &[
                 &report.count(Severity::Critical).to_string(),
@@ -1965,7 +1965,7 @@ fn pre_flight_trust(
     gate: &dyn PermissionGate,
     require_confirmation: bool,
 ) -> bool {
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
     let Some(analyzer) = kernel.analyzer() else {
         return true;
     };
@@ -1991,7 +1991,7 @@ fn pre_flight_trust(
     section("VERIFICAÇÃO DE CONFIANÇA (pré-instalação)");
     println!(
         "{}",
-        t("O DevForge não confia cegamente no manifest. Riscos encontrados:\n")
+        t("O Zavik não confia cegamente no manifest. Riscos encontrados:\n")
     );
     for risk in report.sorted() {
         let icon = match risk.severity {
@@ -2047,7 +2047,7 @@ fn local_missing_tools(
     mode: PrepareMode,
     context: &Context,
     stacks: &[ProjectStack],
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Result<Vec<MissingTool>, Box<dyn std::error::Error>> {
     if mode != PrepareMode::Local {
         return Ok(Vec::new());
@@ -2059,7 +2059,7 @@ fn local_missing_tools(
 }
 
 fn print_missing_tools(missing: &[MissingTool]) {
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
     section("FERRAMENTAS FALTANDO");
     println!(
         "{}",
@@ -2087,7 +2087,7 @@ fn offer_toolchain_install(
     gate: &dyn PermissionGate,
     missing: &[MissingTool],
 ) {
-    use devforge_shared::i18n::t_fmt;
+    use zavik_shared::i18n::t_fmt;
     let Some(runner) = kernel.command_runner() else {
         return;
     };
@@ -2153,7 +2153,7 @@ fn offer_toolchain_install(
     }
 }
 
-/// `devforge up` — composed pipeline: [secure clone?] → audit → prepare → run.
+/// `zavik up` — composed pipeline: [secure clone?] → audit → prepare → run.
 ///
 /// Every step is literally the isolated command (same code, same gates, same
 /// output); composing never weakens security. A [`PrepareOutcome::Aborted`]
@@ -2205,7 +2205,7 @@ fn run_up(
                        "target": target, "steps": steps})
             );
         } else {
-            use devforge_shared::i18n::{t, t_fmt};
+            use zavik_shared::i18n::{t, t_fmt};
             section("PLANO DO UP");
             println!("{}", t_fmt("Alvo: {}\n", &[&target]));
             for (index, step) in all_steps.iter().enumerate() {
@@ -2233,7 +2233,7 @@ fn run_up(
 
     for (position, step) in plan.iter().enumerate() {
         if !options.json {
-            section(&devforge_shared::i18n::t_fmt(
+            section(&zavik_shared::i18n::t_fmt(
                 "UP — ETAPA {} DE {}: {}",
                 &[
                     &(position + 1).to_string(),
@@ -2244,16 +2244,16 @@ fn run_up(
         }
         match step {
             UpStep::Clone => {
-                let url = url.ok_or(devforge_shared::i18n::t(
+                let url = url.ok_or(zavik_shared::i18n::t(
                     "clone sem URL (inconsistência interna do plano)",
                 ))?;
                 let destination = env::current_dir()?.join(up::repo_name(url)?);
                 // Clone errors are composed AND reach the JSON `"error"`
                 // field: build them in the target language (construction-lang).
                 let lang = if options.json {
-                    devforge_shared::i18n::Lang::En
+                    zavik_shared::i18n::Lang::En
                 } else {
-                    devforge_shared::i18n::lang()
+                    zavik_shared::i18n::lang()
                 };
                 if let Err(error) = clone_repo(url, &destination, lang) {
                     let diagnosis = diagnose(&error);
@@ -2276,7 +2276,7 @@ fn run_up(
                     let cloned_into = active_context.project_root.display().to_string();
                     println!(
                         "{}",
-                        devforge_shared::i18n::t_fmt("✅ clonado em {}", &[&cloned_into])
+                        zavik_shared::i18n::t_fmt("✅ clonado em {}", &[&cloned_into])
                     );
                 }
                 cloned_kernel = Some(build_kernel(&active_context, options.all)?);
@@ -2339,7 +2339,7 @@ fn emit_up_summary(
                    "steps": steps, "exit_code": exit_code})
         );
     } else {
-        use devforge_shared::i18n::t;
+        use zavik_shared::i18n::t;
         section("RESULTADO DO UP");
         for step in all_steps {
             match statuses.iter().find(|(name, _)| *name == step.name()) {
@@ -2366,9 +2366,9 @@ fn emit_up_summary(
 fn clone_repo(
     url: &str,
     destination: &Path,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Result<(), String> {
-    use devforge_shared::i18n::t_fmt_in;
+    use zavik_shared::i18n::t_fmt_in;
     if destination.exists() {
         return Err(t_fmt_in(
             lang,
@@ -2421,7 +2421,7 @@ fn run_prepare(
             mode,
             &stacks,
             &context.project_root,
-            devforge_shared::i18n::Lang::En,
+            zavik_shared::i18n::Lang::En,
         );
         // JSON prose is always English (docs/design-i18n.md).
         let missing_tools = local_missing_tools(
@@ -2429,7 +2429,7 @@ fn run_prepare(
             mode,
             context,
             &stacks,
-            devforge_shared::i18n::Lang::En,
+            zavik_shared::i18n::Lang::En,
         )?;
         output::prepare_plan(
             context,
@@ -2447,7 +2447,7 @@ fn run_prepare(
     if stacks.is_empty() {
         println!(
             "{}",
-            devforge_shared::i18n::t("Nenhum stack reconhecido — nada a preparar.")
+            zavik_shared::i18n::t("Nenhum stack reconhecido — nada a preparar.")
         );
         return Ok(PrepareOutcome::Completed);
     }
@@ -2461,7 +2461,7 @@ fn run_prepare(
     // possible, offers to install with explicit permission (Phase 2, curated). Without
     // the toolchain prepare cannot run — but with --dry-run we still show the plan.
     if mode == PrepareMode::Local {
-        let lang = devforge_shared::i18n::lang();
+        let lang = zavik_shared::i18n::lang();
         let missing = local_missing_tools(kernel, mode, context, &stacks, lang)?;
         if !missing.is_empty() {
             if options.dry_run {
@@ -2479,7 +2479,7 @@ fn run_prepare(
                 }
                 println!(
                     "{}",
-                    devforge_shared::i18n::t("\n✅ Toolchain instalada — seguindo.")
+                    zavik_shared::i18n::t("\n✅ Toolchain instalada — seguindo.")
                 );
             }
         }
@@ -2490,7 +2490,7 @@ fn run_prepare(
     if !pre_flight_trust(kernel, context, &stacks, gate, !options.dry_run) {
         println!(
             "{}",
-            devforge_shared::i18n::t(
+            zavik_shared::i18n::t(
                 "\n⏹️  Abortado por risco de segurança. Nada foi instalado nem buildado."
             )
         );
@@ -2502,10 +2502,13 @@ fn run_prepare(
         mode,
         &stacks,
         &context.project_root,
-        devforge_shared::i18n::lang(),
+        zavik_shared::i18n::lang(),
     );
 
-    section(&devforge_shared::i18n::t_fmt("PLANO ({})", &[mode_label(mode)]));
+    section(&zavik_shared::i18n::t_fmt(
+        "PLANO ({})",
+        &[mode_label(mode)],
+    ));
     for (index, step) in plan.steps.iter().enumerate() {
         println!("{:>2}. {}", index + 1, step.title);
         println!("      {}", step.detail);
@@ -2513,29 +2516,29 @@ fn run_prepare(
     if !plan.run_hints.is_empty() {
         println!(
             "{}",
-            devforge_shared::i18n::t("\nPara rodar depois de preparado:")
+            zavik_shared::i18n::t("\nPara rodar depois de preparado:")
         );
         for hint in &plan.run_hints {
-            println!("   $ {}", devforge_shared::i18n::t(hint));
+            println!("   $ {}", zavik_shared::i18n::t(hint));
         }
     }
 
     if options.dry_run {
         println!(
             "{}",
-            devforge_shared::i18n::t("\n(--dry-run: nada foi executado.)")
+            zavik_shared::i18n::t("\n(--dry-run: nada foi executado.)")
         );
         return Ok(PrepareOutcome::Completed);
     }
 
-    let files = kernel.file_system().ok_or(devforge_shared::i18n::t(
+    let files = kernel.file_system().ok_or(zavik_shared::i18n::t(
         "plugin 'file_system_access' não registrado",
     ))?;
-    let runner = kernel.command_runner().ok_or(devforge_shared::i18n::t(
+    let runner = kernel.command_runner().ok_or(zavik_shared::i18n::t(
         "plugin 'command_runner' não registrado",
     ))?;
 
-    section(devforge_shared::i18n::t(if options.yes {
+    section(zavik_shared::i18n::t(if options.yes {
         "EXECUÇÃO (aprovação automática)"
     } else {
         "EXECUÇÃO (você será perguntado a cada passo)"
@@ -2556,7 +2559,7 @@ fn run_prepare(
 }
 
 fn print_stacks(stacks: &[ProjectStack]) {
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
     section("STACKS DETECTADOS");
     if stacks.is_empty() {
         println!("{}", t("Nenhum manifesto reconhecido neste diretório."));
@@ -2586,7 +2589,7 @@ fn print_stacks(stacks: &[ProjectStack]) {
 }
 
 fn print_execution(report: &PrepareReport) {
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
     section("RESULTADO");
     for title in &report.executed {
         println!("✅ {title}");
@@ -2614,7 +2617,7 @@ fn print_execution(report: &PrepareReport) {
 }
 
 fn mode_label(mode: PrepareMode) -> &'static str {
-    use devforge_shared::i18n::t;
+    use zavik_shared::i18n::t;
     match mode {
         PrepareMode::Local => t("sem Docker"),
         PrepareMode::Docker => t("com Docker"),
@@ -2664,7 +2667,7 @@ struct Options {
     /// (`run`) arguments after `--`, passed through to the start command.
     extra_args: Vec<String>,
     /// (`run`) start in the background and return the PID immediately — no
-    /// readiness supervision; the log goes to `.devforge/run.log`.
+    /// readiness supervision; the log goes to `.zavik/run.log`.
     detach: bool,
     /// (`up`) stop after this step (`clone|audit|prepare|run`).
     until: Option<String>,
@@ -2712,7 +2715,7 @@ fn extract_lang(args: &mut Vec<String>) -> Result<Option<String>, String> {
         if arg == "--lang" {
             let value = args
                 .get(index + 1)
-                .ok_or(devforge_shared::i18n::t("--lang exige um valor (pt-BR | en)"))?
+                .ok_or(zavik_shared::i18n::t("--lang exige um valor (pt-BR | en)"))?
                 .clone();
             lang = Some(value);
             args.drain(index..=index + 1);
@@ -2753,7 +2756,7 @@ fn parse_options(args: &[String]) -> Result<(Option<PathBuf>, Options), String> 
                     "--ignore" => options.ignore = Some(PathBuf::from(value)),
                     "--timeout" => {
                         options.timeout = Some(value.parse().map_err(|_| {
-                            devforge_shared::i18n::t_fmt(
+                            zavik_shared::i18n::t_fmt(
                                 "--timeout exige um número de segundos: {}",
                                 &[value],
                             )
@@ -2772,11 +2775,11 @@ fn parse_options(args: &[String]) -> Result<(Option<PathBuf>, Options), String> 
                 break;
             }
             other if other.starts_with('-') => {
-                return Err(devforge_shared::i18n::t_fmt("opção desconhecida: {}", &[other]));
+                return Err(zavik_shared::i18n::t_fmt("opção desconhecida: {}", &[other]));
             }
             other => {
                 if path.is_some() {
-                    return Err(devforge_shared::i18n::t_fmt(
+                    return Err(zavik_shared::i18n::t_fmt(
                         "caminho informado mais de uma vez: {}",
                         &[other],
                     ));
@@ -2791,12 +2794,12 @@ fn parse_options(args: &[String]) -> Result<(Option<PathBuf>, Options), String> 
 }
 
 fn print_help() {
-    use devforge_shared::i18n::{t, HELP_PT};
+    use zavik_shared::i18n::{t, HELP_PT};
     println!("{}", t(HELP_PT));
 }
 
 fn banner(title: &str, project_root: &std::path::Path) {
-    use devforge_shared::i18n::t_fmt;
+    use zavik_shared::i18n::t_fmt;
     println!("=============================================");
     println!("✨ {title} ✨");
     println!(
@@ -2808,6 +2811,6 @@ fn banner(title: &str, project_root: &std::path::Path) {
 
 fn section(title: &str) {
     println!("\n---------------------------------------------");
-    println!("{}", devforge_shared::i18n::t(title));
+    println!("{}", zavik_shared::i18n::t(title));
     println!("---------------------------------------------");
 }

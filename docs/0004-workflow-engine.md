@@ -4,7 +4,7 @@
 Aprovado
 
 ## Contexto
-Diferente de scripts simples, a automação de correção de ambientes pode falhar em estágios intermediários (ex: baixar pacote com sucesso, mas falhar ao compilar). O DevForge precisa de resiliência para não deixar o ambiente do desenvolvedor quebrado ou inconsistente.
+Diferente de scripts simples, a automação de correção de ambientes pode falhar em estágios intermediários (ex: baixar pacote com sucesso, mas falhar ao compilar). O Zavik precisa de resiliência para não deixar o ambiente do desenvolvedor quebrado ou inconsistente.
 
 ## Decisão
 Implementamos uma **Workflow Engine** estruturada no modelo hierárquico **Workflow -> Step -> Action**. Cada **Step** gerencia uma etapa lógica do fluxo de automação e deve conter:

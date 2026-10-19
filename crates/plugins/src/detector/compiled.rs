@@ -3,7 +3,7 @@
 //! Covers: Rust, Go, JVM (Java/Kotlin), .NET (C#), Swift and native C/C++.
 
 use super::{dep_names, find_file, find_file_with_ext, match_frameworks, read, MatchMode};
-use devforge_shared::{Dependency, DependencyKind, Error, Language, ProjectStack};
+use zavik_shared::{Dependency, DependencyKind, Error, Language, ProjectStack};
 use std::path::{Path, PathBuf};
 
 /// Runs all detectors in this module.
@@ -47,7 +47,7 @@ const RUST_FRAMEWORKS: &[(&str, &[&str])] = &[
 ///
 /// A **virtual workspace root** (no `[package]`, has `[workspace].members`)
 /// expands into one stack per member — discovered by dogfooding this repo:
-/// pointing `devforge` at the workspace root saw "0 dependencies" and the
+/// pointing `zavik` at the workspace root saw "0 dependencies" and the
 /// `audit` approved nothing (docs/dogfooding.md). Member dependencies
 /// declared with `workspace = true` resolve their version from the nearest
 /// `[workspace.dependencies]` (manifest's own file first, then ancestors).

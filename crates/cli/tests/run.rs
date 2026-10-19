@@ -1,4 +1,4 @@
-//! Integration tests for `devforge run` (real binary).
+//! Integration tests for `zavik run` (real binary).
 //!
 //! Cover the paths that do NOT execute code (dry-run, ambiguity, not
 //! found) — so the permission gate is never hit in tests and the `--json`
@@ -9,8 +9,8 @@
 use std::process::Command;
 use tempfile::TempDir;
 
-fn devforge() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_devforge"))
+fn zavik() -> Command {
+    Command::new(env!("CARGO_BIN_EXE_zavik"))
 }
 
 #[test]
@@ -22,7 +22,7 @@ fn dry_run_resolves_npm_start_and_returns_json_plan() {
     )
     .unwrap();
 
-    let output = devforge()
+    let output = zavik()
         .args(["run", dir.path().to_str().unwrap(), "--dry-run", "--json"])
         .output()
         .unwrap();
@@ -41,7 +41,7 @@ fn human_dry_run_shows_command_and_source() {
     let dir = TempDir::new().unwrap();
     std::fs::write(dir.path().join("Makefile"), "run:\n\t./app\n").unwrap();
 
-    let output = devforge()
+    let output = zavik()
         .args(["run", dir.path().to_str().unwrap(), "--dry-run"])
         .output()
         .unwrap();
@@ -57,7 +57,7 @@ fn ambiguous_procfile_lists_candidates_and_does_not_execute() {
     let dir = TempDir::new().unwrap();
     std::fs::write(dir.path().join("Procfile"), "worker: node w.js\nclock: node c.js\n").unwrap();
 
-    let output = devforge()
+    let output = zavik()
         .args(["run", dir.path().to_str().unwrap(), "--json"])
         .output()
         .unwrap();
@@ -74,7 +74,7 @@ fn project_without_entrypoint_is_not_found() {
     let dir = TempDir::new().unwrap();
     std::fs::write(dir.path().join("README.md"), "oi").unwrap();
 
-    let output = devforge()
+    let output = zavik()
         .args(["run", dir.path().to_str().unwrap(), "--json"])
         .output()
         .unwrap();
@@ -93,7 +93,7 @@ fn flags_after_separator_go_to_the_command() {
     )
     .unwrap();
 
-    let output = devforge()
+    let output = zavik()
         .args([
             "run",
             dir.path().to_str().unwrap(),

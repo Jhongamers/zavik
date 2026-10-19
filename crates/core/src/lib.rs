@@ -1,14 +1,14 @@
-//! Crate `devforge-core` — the **use cases**.
+//! Crate `zavik-core` — the **use cases**.
 //!
 //! Contains the `WorkflowEngine`, which runs a workflow in the
 //! **Workflow -> Step -> Action** model (ADR 0004), with retries and
 //! exponential backoff for transient failures.
 //!
 //! The `core` knows neither the Kernel nor the UI: it receives a `Context` and
-//! the capabilities (via `devforge-sdk`) it needs.
+//! the capabilities (via `zavik-sdk`) it needs.
 
-use devforge_shared::{Context, Error, ProjectStack};
-use devforge_sdk::ProjectDetector;
+use zavik_shared::{Context, Error, ProjectStack};
+use zavik_sdk::ProjectDetector;
 use std::time::Duration;
 
 pub mod provision;
@@ -56,7 +56,7 @@ impl WorkflowEngine {
         context: &Context,
         detector: &dyn ProjectDetector,
     ) -> Result<WorkflowReport, String> {
-        use devforge_shared::i18n::t_fmt;
+        use zavik_shared::i18n::t_fmt;
         let steps_dbg = format!("{steps:?}");
         for attempt in 1..=self.max_retries {
             println!(
@@ -116,7 +116,7 @@ impl WorkflowEngine {
         for step in steps {
             println!(
                 "{}",
-                devforge_shared::i18n::t_fmt("CORE: -> executando passo '{}'", &[step])
+                zavik_shared::i18n::t_fmt("CORE: -> executando passo '{}'", &[step])
             );
             if step == STEP_DEPENDENCY_SCAN {
                 let stacks = detector.detect(context).map_err(|e: Error| e.to_string())?;

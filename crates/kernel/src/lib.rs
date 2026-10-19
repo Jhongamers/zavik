@@ -1,4 +1,4 @@
-//! Crate `devforge-kernel` — the **Microkernel** (ADR 0001).
+//! Crate `zavik-kernel` — the **Microkernel** (ADR 0001).
 //!
 //! Responsibilities (and nothing beyond them):
 //! 1. Manage the plugin lifecycle (registration/discovery).
@@ -8,9 +8,9 @@
 //!
 //! The Kernel holds no business rules and knows nothing about UI/frameworks.
 
-use devforge_events::{EventBus, EventEnvelope};
-use devforge_shared::{Context, Error, ProjectStack};
-use devforge_sdk::{
+use zavik_events::{EventBus, EventEnvelope};
+use zavik_shared::{Context, Error, ProjectStack};
+use zavik_sdk::{
     Capability, CommandRunner, FileSystemAccess, PluginContext, ProjectAnalyzer, ProjectDetector,
 };
 use std::collections::HashMap;
@@ -52,7 +52,7 @@ impl Kernel {
         let name = plugin.name().to_string();
         eprintln!(
             "{}",
-            devforge_shared::i18n::t_fmt("KERNEL: registrando plugin '{}'", &[&name])
+            zavik_shared::i18n::t_fmt("KERNEL: registrando plugin '{}'", &[&name])
         );
         self.plugins.insert(name, plugin);
         Ok(())
@@ -60,7 +60,7 @@ impl Kernel {
 
     /// Starts the Kernel by publishing the first system event.
     pub fn run_initialization(&self) {
-        eprintln!("{}", devforge_shared::i18n::t("KERNEL: DevForge inicializado."));
+        eprintln!("{}", zavik_shared::i18n::t("KERNEL: Zavik inicializado."));
         self.event_bus.publish(EventEnvelope::new("system_ready"));
     }
 

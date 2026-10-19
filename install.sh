@@ -1,26 +1,26 @@
 #!/bin/sh
-# DevForge installer — https://github.com/Jhongamers/devforge
+# Zavik installer — https://github.com/Jhongamers/devforge
 #
 # Detects your OS/arch, downloads the release tarball, verifies its sha256
-# and installs the `devforge` binary. Non-interactive, POSIX sh.
+# and installs the `zavik` binary. Non-interactive, POSIX sh.
 #
 # Honest notes:
 #   - Binaries exist from release v0.1.0 on (see the Releases page).
 #   - `curl | sh` is a risk class our own `audit` flags: prefer downloading
 #     this script, reading it, then running it.
 #   - Windows is not supported by this script: use the .zip from Releases.
-#   - The script pins a release version; bump via DEVFORGE_VERSION.
+#   - The script pins a release version; bump via ZAVIK_VERSION.
 #
 # Overrides (mirrors, air-gapped, tests):
-#   DEVFORGE_VERSION       release tag to install (default: v0.1.0)
-#   DEVFORGE_INSTALL_DIR   install dir (default: $HOME/.local/bin)
-#   DEVFORGE_BASE_URL      download base (default: GitHub release download URL)
+#   ZAVIK_VERSION       release tag to install (default: v0.1.0)
+#   ZAVIK_INSTALL_DIR   install dir (default: $HOME/.local/bin)
+#   ZAVIK_BASE_URL      download base (default: GitHub release download URL)
 set -eu
 
 REPO="Jhongamers/devforge"
-VERSION="${DEVFORGE_VERSION:-v0.1.0}"
-INSTALL_DIR="${DEVFORGE_INSTALL_DIR:-${HOME}/.local/bin}"
-BASE_URL="${DEVFORGE_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
+VERSION="${ZAVIK_VERSION:-v0.1.0}"
+INSTALL_DIR="${ZAVIK_INSTALL_DIR:-${HOME}/.local/bin}"
+BASE_URL="${ZAVIK_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -43,7 +43,7 @@ case "$os" in
     ;;
 esac
 
-asset="devforge-${VERSION}-${target}.tar.gz"
+asset="zavik-${VERSION}-${target}.tar.gz"
 url="${BASE_URL}/${asset}"
 
 # --- downloader --------------------------------------------------------------
@@ -78,14 +78,14 @@ fi
 
 # --- extract + install -------------------------------------------------------
 tar -xzf "${tmp}/${asset}" -C "$tmp" || die "could not extract ${asset}"
-[ -f "${tmp}/devforge" ] || die "archive did not contain a 'devforge' binary"
+[ -f "${tmp}/zavik" ] || die "archive did not contain a 'zavik' binary"
 
 mkdir -p "$INSTALL_DIR"
-mv "${tmp}/devforge" "${INSTALL_DIR}/devforge"
-chmod +x "${INSTALL_DIR}/devforge"
+mv "${tmp}/zavik" "${INSTALL_DIR}/zavik"
+chmod +x "${INSTALL_DIR}/zavik"
 
 say ""
-say "installed: ${INSTALL_DIR}/devforge ($("${INSTALL_DIR}/devforge" --version 2>/dev/null || echo "${VERSION}"))"
+say "installed: ${INSTALL_DIR}/zavik ($("${INSTALL_DIR}/zavik" --version 2>/dev/null || echo "${VERSION}"))"
 case ":${PATH}:" in
   *":${INSTALL_DIR}:"*) ;;
   *)
@@ -93,4 +93,4 @@ case ":${PATH}:" in
     say "  export PATH=\"${INSTALL_DIR}:\$PATH\""
     ;;
 esac
-say "next: cd your-project && devforge audit"
+say "next: cd your-project && zavik audit"

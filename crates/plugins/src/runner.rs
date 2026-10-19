@@ -1,4 +1,4 @@
-//! `devforge run` (v1) — start command resolution + supervision.
+//! `zavik run` (v1) — start command resolution + supervision.
 //!
 //! Two halves, both tested without external network:
 //!
@@ -913,7 +913,7 @@ mod tests {
 
     #[test]
     fn rust_virtual_workspace_with_one_member_bin_runs() {
-        // The DevForge repo shape: virtual root + exactly one member bin
+        // The Zavik repo shape: virtual root + exactly one member bin
         // is genuinely runnable — `cargo run` at the root works there.
         let dir = TempDir::new().unwrap();
         std::fs::write(

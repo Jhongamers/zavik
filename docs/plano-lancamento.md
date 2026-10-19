@@ -1,4 +1,4 @@
-# Plano de Lançamento & Monetização — DevForge
+# Plano de Lançamento & Monetização — Zavik
 
 > Registro das decisões de produto/lançamento (out/2026). Status: **plano** —
 > nada aqui é implementado sem decisão explícita. A base técnica que já existe
@@ -44,14 +44,14 @@ cliente paga no checkout (MoR: Paddle/Lemon Squeezy global, ou Kiwify/PIX Brasil
 webhook do MoR (ou entrega manual no começo)
    ↓
 vendor emite a chave:
-   DF_SIGNING_KEY=$(cat ~/.devforge-signing.key) \
+   ZV_SIGNING_KEY=$(cat ~/.zavik-signing.key) \
    license_tool mint --plan team --holder "Acme" --expires 2027-10-15
    ↓
 chave entregue por e-mail / link do checkout
    ↓
-cliente:  devforge license install DF1....
+cliente:  zavik license install ZV1....
    ↓
-dataset:  devforge data update   ← só baixa com licença válida
+dataset:  zavik data update   ← só baixa com licença válida
 ```
 
 - **Renovação = expiry da chave** (12 meses): expirou → `data update` recusa →
@@ -99,7 +99,7 @@ fluxo completo** — "os 3 juntos":
 - **Isolado:** `detect` / `audit` / `prepare` / `run` continuam comandos
   independentes — é o modo **IA** (o agente chama só o passo que precisa,
   com `--json`, economizando token) e o modo script/CI.
-- **Composto:** um comando sugar tipo `devforge up <url|caminho>` roda o
+- **Composto:** um comando sugar tipo `zavik up <url|caminho>` roda o
   pipeline `clone? → audit → prepare → run`, orquestrado pelo
   **`WorkflowEngine` que já existe no kernel** (não é máquina nova).
 - **Controle parcial no composto:** `--until <etapa>`, `--skip <etapa>`,
@@ -108,10 +108,10 @@ fluxo completo** — "os 3 juntos":
   permissão individual; o `up` nunca engole confirmações (`--yes` continua
   não cobrindo execução de código).
 
-### 5.1 Execução pós-instalação (`devforge run`) — v1 IMPLEMENTADO ✅
+### 5.1 Execução pós-instalação (`zavik run`) — v1 IMPLEMENTADO ✅
 Ideia do founder: após `prepare` dar certo (ex.: `npm install` sem erro), a CLI
 dispara o comando de start do projeto — **em qualquer linguagem**.
-**→ v1 em `devforge run`** (desenho: `docs/design-run.md`). Pendências: v1.1
+**→ v1 em `zavik run`** (desenho: `docs/design-run.md`). Pendências: v1.1
 (`--detach`), health https, macOS com descoberta de porta.
 
 Análise honesta:
@@ -138,7 +138,7 @@ Análise honesta:
 Ideia do founder: a CLI cuidar também do clone do repositório.
 
 Análise honesta:
-- **Faz sentido como porta de entrada**: `devforge from <url>` → clone
+- **Faz sentido como porta de entrada**: `zavik from <url>` → clone
   (--depth 1) → `detect` → `context`/`audit` → `prepare` → (5.1) `run`. Vira
   "cole o link e receba o runbook" — ótima cunha demo-ável no PH.
 - **Riscos a tratar (não ignorar):** repositório malicioso pode trazer

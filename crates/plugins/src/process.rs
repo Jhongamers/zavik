@@ -3,8 +3,8 @@
 //! Uses `std::process::Command`. Nothing here decides **what** to run: the `core`
 //! builds the [`CommandSpec`] and the presentation layer asks permission first.
 
-use devforge_shared::Error;
-use devforge_sdk::{Capability, CommandOutput, CommandRunner, CommandSpec};
+use zavik_shared::Error;
+use zavik_sdk::{Capability, CommandOutput, CommandRunner, CommandSpec};
 
 /// Real implementation via `std::process::Command`.
 #[derive(Debug, Default)]
@@ -66,7 +66,7 @@ impl CommandRunner for LocalCommandRunner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use devforge_sdk::CommandSpec;
+    use zavik_sdk::CommandSpec;
     use std::path::PathBuf;
 
     #[cfg(unix)]

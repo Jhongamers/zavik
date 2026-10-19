@@ -5,7 +5,7 @@
 //! ton of `glob`/`grep`/README reading to figure out "how do I run this".
 //! It is pure reading — nothing is executed.
 
-use devforge_shared::{Briefing, KeyFile, Language, ProjectStack, Runbook};
+use zavik_shared::{Briefing, KeyFile, Language, ProjectStack, Runbook};
 use std::path::{Path, PathBuf};
 
 /// Builds the briefing from the already-detected stacks.
@@ -369,7 +369,7 @@ fn rel(root: &Path, path: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use devforge_shared::Dependency;
+    use zavik_shared::Dependency;
 
     #[test]
     fn parse_makefile_targets() {
@@ -396,7 +396,7 @@ mod tests {
             manifest,
             Some("npm".to_string()),
         )
-        .with_dependencies(vec![Dependency::new("react", Some("^18".into()), devforge_shared::DependencyKind::Runtime)]);
+        .with_dependencies(vec![Dependency::new("react", Some("^18".into()), zavik_shared::DependencyKind::Runtime)]);
 
         let briefing = extract_briefing(dir.path(), &[stack]);
         assert!(briefing.runbook.setup.contains(&"npm install".to_string()));

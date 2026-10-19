@@ -1,7 +1,7 @@
 //! Offline license (Ed25519 signature) — foundation of the monetization.
 //!
 //! Model: the binary carries only the vendor's PUBLIC KEY. A license is
-//! a token `DF1.<payload-b64url>.<assinatura-b64url>`, where the signature
+//! a token `ZV1.<payload-b64url>.<assinatura-b64url>`, where the signature
 //! covers the EXACT bytes of the payload. Verification is 100% local — no
 //! network calls (the "offline-first CLI" promise survives intact).
 //!
@@ -22,7 +22,7 @@ use std::path::PathBuf;
 const PUBLIC_KEY_B64: &str = "7hOXAKsC-3Jw9_HyJuWD6TSaiZqthHpIekrwqFsc96Q";
 
 /// Token prefix — versions the format for future migration without breaking it.
-const TOKEN_PREFIX: &str = "DF1";
+const TOKEN_PREFIX: &str = "ZV1";
 
 /// Semantic content of the license (this is what the JSON payload carries).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -35,7 +35,7 @@ pub struct LicensePayload {
 
 #[derive(Debug, PartialEq)]
 pub enum LicenseError {
-    /// Token outside the `DF1.<payload>.<assinatura>` format.
+    /// Token outside the `ZV1.<payload>.<assinatura>` format.
     Format,
     /// Invalid base64.
     Encoding,
@@ -51,12 +51,12 @@ impl LicenseError {
     /// Message in the target language: JSON prose is always English
     /// (docs/design-i18n.md); human output goes through `Display`, which
     /// renders in the current language.
-    pub(crate) fn message_in(&self, lang: devforge_shared::i18n::Lang) -> String {
-        use devforge_shared::i18n::{t_fmt_in, translate};
+    pub(crate) fn message_in(&self, lang: zavik_shared::i18n::Lang) -> String {
+        use zavik_shared::i18n::{t_fmt_in, translate};
         match self {
             LicenseError::Format => translate(
                 lang,
-                "formato inválido (esperado DF1.<payload>.<assinatura>)",
+                "formato inválido (esperado ZV1.<payload>.<assinatura>)",
             )
             .to_string(),
             LicenseError::Encoding => translate(lang, "base64 inválido").to_string(),
@@ -71,7 +71,7 @@ impl std::fmt::Display for LicenseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Human path: renders in the CURRENT language; JSON sites call
         // `message_in(Lang::En)` instead.
-        f.write_str(&self.message_in(devforge_shared::i18n::lang()))
+        f.write_str(&self.message_in(zavik_shared::i18n::lang()))
     }
 }
 
@@ -128,7 +128,7 @@ pub fn license_file() -> PathBuf {
     let base = std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".config"));
-    base.join("devforge").join("license.key")
+    base.join("zavik").join("license.key")
 }
 
 /// Reads the installed license (if any), without verifying.
@@ -165,7 +165,7 @@ mod tests {
         let bytes = serde_json::to_vec(payload).unwrap();
         let signature = signing.sign(&bytes);
         format!(
-            "DF1.{}.{}",
+            "ZV1.{}.{}",
             URL_SAFE_NO_PAD.encode(&bytes),
             URL_SAFE_NO_PAD.encode(signature.to_bytes())
         )
@@ -199,7 +199,7 @@ mod tests {
         let forged = serde_json::to_vec(&payload("2999-12-31")).unwrap();
         let parts: Vec<&str> = token.split('.').collect();
         let tampered = format!(
-            "DF1.{}.{}",
+            "ZV1.{}.{}",
             URL_SAFE_NO_PAD.encode(&forged),
             parts[2]
         );
@@ -231,6 +231,6 @@ mod tests {
         let pk = [0u8; 32];
         assert_eq!(verify_token_with("qualquer coisa", &pk), Err(LicenseError::Format));
         assert_eq!(verify_token_with("XX1.a.b", &pk), Err(LicenseError::Format));
-        assert_eq!(verify_token_with("DF1.a.b", &pk), Err(LicenseError::Encoding));
+        assert_eq!(verify_token_with("ZV1.a.b", &pk), Err(LicenseError::Encoding));
     }
 }

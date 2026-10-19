@@ -1,4 +1,4 @@
-//! `devforge up` — step planning for the composed pipeline.
+//! `zavik up` — step planning for the composed pipeline.
 //!
 //! Pure logic (no I/O): whether the target is a URL, which steps run, what
 //! `--until`/`--skip` cut. The orchestration itself lives in `main.rs` and is
@@ -25,12 +25,12 @@ impl UpStep {
 
     /// One-line description for `--dry-run` (translated: human surface).
     pub fn description(self) -> &'static str {
-        use devforge_shared::i18n::t;
+        use zavik_shared::i18n::t;
         match self {
             UpStep::Clone => t("git clone --depth 1 (sem submódulos, sem hooks)"),
-            UpStep::Audit => t("devforge audit (relatório; não bloqueia o pipeline)"),
-            UpStep::Prepare => t("devforge prepare (confiança + toolchain + instalação, com gates)"),
-            UpStep::Run => t("devforge run (resolve o start; execução crítica, humano confirma)"),
+            UpStep::Audit => t("zavik audit (relatório; não bloqueia o pipeline)"),
+            UpStep::Prepare => t("zavik prepare (confiança + toolchain + instalação, com gates)"),
+            UpStep::Run => t("zavik run (resolve o start; execução crítica, humano confirma)"),
         }
     }
 }
@@ -56,7 +56,7 @@ pub fn is_git_url(target: &str) -> bool {
 /// Derives the clone destination directory name from the URL
 /// (`git@host:org/repo.git` → `repo`), sanitized to `[A-Za-z0-9._-]`.
 pub fn repo_name(url: &str) -> Result<String, String> {
-    use devforge_shared::i18n::t_fmt;
+    use zavik_shared::i18n::t_fmt;
     let trimmed = url.strip_suffix(".git").unwrap_or(url);
     let last = trimmed.rsplit(['/', ':']).next().unwrap_or("");
     let sanitized: String = last
@@ -79,7 +79,7 @@ pub fn up_plan(
     until: Option<&str>,
     skip: &[&str],
 ) -> Result<Vec<UpStep>, String> {
-    use devforge_shared::i18n::{t, t_fmt};
+    use zavik_shared::i18n::{t, t_fmt};
     for value in skip {
         step_for(value).ok_or_else(|| {
             t_fmt(

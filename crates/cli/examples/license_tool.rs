@@ -1,17 +1,17 @@
 //! VENDOR tool — generates the signing key pair and mints
-//! licenses. It is an `example`: it is NOT part of the shipped `devforge` binary.
+//! licenses. It is an `example`: it is NOT part of the shipped `zavik` binary.
 //!
 //! Usage:
-//!   DF_SIGNING_KEY=<seed> cargo run --example license_tool -- \
+//!   ZV_SIGNING_KEY=<seed> cargo run --example license_tool -- \
 //!       mint --plan team --holder "Acme" --expires 2027-01-01
 //!
 //!   cargo run --example license_tool -- genkey     # generates a new pair
 //!
 //!   cargo run --example license_tool -- genkey-dataset  # dataset pair (separate key)
-//!   DF_DATASET_KEY=<seed> cargo run --example license_tool -- \
+//!   ZV_DATASET_KEY=<seed> cargo run --example license_tool -- \
 //!       sign-dataset --in payload.json --out dataset.json
 //!
-//! The private key (seed) lives in `DF_SIGNING_KEY`/`DF_DATASET_KEY` and NEVER
+//! The private key (seed) lives in `ZV_SIGNING_KEY`/`ZV_DATASET_KEY` and NEVER
 //! goes to the repo.
 
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
@@ -41,18 +41,18 @@ fn main() {
         Some("genkey") => {
             let mut rng = rand::rngs::OsRng;
             let signing = SigningKey::generate(&mut rng);
-            println!("DF_SIGNING_KEY={}", b64u(&signing.to_bytes()));
+            println!("ZV_SIGNING_KEY={}", b64u(&signing.to_bytes()));
             println!("PUBLIC_KEY_B64={}", b64u(signing.verifying_key().as_bytes()));
         }
 
-        // Mints a license from the seed in DF_SIGNING_KEY.
+        // Mints a license from the seed in ZV_SIGNING_KEY.
         Some("mint") => {
             let plan = flag(&args, "--plan").unwrap_or("team");
             let holder = flag(&args, "--holder").unwrap_or("unknown");
             let expires = flag(&args, "--expires").unwrap_or("2027-01-01");
 
-            let seed_b64 = env::var("DF_SIGNING_KEY")
-                .expect("exporte DF_SIGNING_KEY=<seed b64url> antes de cunhar");
+            let seed_b64 = env::var("ZV_SIGNING_KEY")
+                .expect("exporte ZV_SIGNING_KEY=<seed b64url> antes de cunhar");
             let seed: [u8; 32] = URL_SAFE_NO_PAD
                 .decode(seed_b64.trim())
                 .expect("seed em base64url inválido")
@@ -71,7 +71,7 @@ fn main() {
             let signature = signing.sign(&payload_bytes);
 
             println!(
-                "DF1.{}.{}",
+                "ZV1.{}.{}",
                 b64u(&payload_bytes),
                 b64u(&signature.to_bytes())
             );
@@ -79,22 +79,22 @@ fn main() {
 
         // Generates the DATASET signing pair — deliberately SEPARATE from the
         // license key (a leaked dataset key cannot mint licenses). The seed
-        // goes to `~/.devforge-dataset.key` + the GitHub Actions secret
-        // `DF_DATASET_KEY`; the public half is pasted into `dataset.rs`.
+        // goes to `~/.zavik-dataset.key` + the GitHub Actions secret
+        // `ZV_DATASET_KEY`; the public half is pasted into `dataset.rs`.
         Some("genkey-dataset") => {
             let mut rng = rand::rngs::OsRng;
             let signing = SigningKey::generate(&mut rng);
-            println!("DF_DATASET_KEY={}", b64u(&signing.to_bytes()));
+            println!("ZV_DATASET_KEY={}", b64u(&signing.to_bytes()));
             println!("DATASET_PUBLIC_KEY_B64={}", b64u(signing.verifying_key().as_bytes()));
         }
 
         // Signs a dataset payload (`--in <file>` or stdin) into the envelope
         // that ships as the Release asset. CI usage:
-        //   DF_DATASET_KEY=<seed> license_tool sign-dataset \
+        //   ZV_DATASET_KEY=<seed> license_tool sign-dataset \
         //       --in payload.json --out dataset.json
         Some("sign-dataset") => {
-            let seed_b64 = env::var("DF_DATASET_KEY")
-                .expect("exporte DF_DATASET_KEY=<seed b64url> antes de assinar");
+            let seed_b64 = env::var("ZV_DATASET_KEY")
+                .expect("exporte ZV_DATASET_KEY=<seed b64url> antes de assinar");
             let seed: [u8; 32] = URL_SAFE_NO_PAD
                 .decode(seed_b64.trim())
                 .expect("seed em base64url inválido")
@@ -211,7 +211,7 @@ fn main() {
             eprintln!(
                 "uso: license_tool genkey | genkey-dataset | mint --plan <p> --holder <h> --expires <YYYY-MM-DD>\n\
                  \x20    license_tool build-dataset --src <dir> --out <payload> [--window-days N] [--date D] [--bad-list <f>]\n\
-                 \x20    license_tool sign-dataset [--in <f>|-] [--out <f>]   (env DF_DATASET_KEY)\n\
+                 \x20    license_tool sign-dataset [--in <f>|-] [--out <f>]   (env ZV_DATASET_KEY)\n\
                  \x20    license_tool verify-dataset --in <f> [--pubkey <b64u>]"
             );
             std::process::exit(2);

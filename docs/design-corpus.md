@@ -13,7 +13,7 @@ O método já se pagou **duas vezes**:
   dart-lang/args, sinatra, swift-argument-parser, polyfill-mbstring,
   Newtonsoft.Json…) acharam o bug "Makefile sozinho virava falso C/C++"
   (um **falso positivo** de detecção) e originaram o `--all`.
-- **Dogfooding (docs/dogfooding.md)**: rodar o DevForge no próprio DevForge
+- **Dogfooding (docs/dogfooding.md)**: rodar o Zavik no próprio Zavik
   achou 4 problemas que **165+ testes verdes não pegaram** (workspace
   invisível, `workspace = true` sem versão, `diagnose` sem E0308, "APROVADO"
   com 0 pacotes).
@@ -60,12 +60,12 @@ Toda entrada do corpus carrega **duas asserções** — uma sem a outra é
 meio teste:
 
 - **Anti-FP** ("não pode acusar X"): ground truth limpo/esperado — se o
-  DevForge acusar (linguagem errada, finding sem base, sugerir comando que
+  Zavik acusar (linguagem errada, finding sem base, sugerir comando que
   falharia), **o teste falha**. Exemplos reais já vistos: Makefile de
   projeto Go acusado como C/C++ (§1.5); `cargo run` sugerido em projeto
   só-lib (corpus Fase A, NOVO-1).
 - **Anti-FN** ("tem que acusar Y"): entrada onde o problema é **real e
-  conhecido** — se o DevForge passar limpo, **o teste falha**. Exemplos:
+  conhecido** — se o Zavik passar limpo, **o teste falha**. Exemplos:
   manifesto sintético declarando pacote da kill list (**só declarado,
   nunca executado**), manifest com fatores de risco reais (install script,
   shell access), stderr real de erro pro `diagnose` (Fase C).
@@ -95,13 +95,13 @@ fundador na hora da fase — sugestões de classe, não commit de nome.
 ## 5. Como roda (decisões de implementação)
 
 - Testes do corpus ficam **fora do `cargo test` padrão** (`#[ignore]` +
-  gate por env, ex.: `DF_CORPUS=1`) — `cargo test` continua 100% offline e
+  gate por env, ex.: `ZV_CORPUS=1`) — `cargo test` continua 100% offline e
   determinístico (invariante de sempre).
 - Job dedicado no CI (não no `ci.yml` de sempre): fetch com cache → roda os
   ignorados. Custo honesto: KBs de blob + ~minutos; se estourar quota do
   Actions privado, o corpus roda manual/atualizado — nunca em cima do gate
   de merge.
-- Harness é nosso (shell/Rust), comandos do DevForge via binário compilado
+- Harness é nosso (shell/Rust), comandos do Zavik via binário compilado
   (`CARGO_BIN_EXE_*`), saídas `--json` conferidas contra metadados.
 
 ## 6. Limitações honestas (e o que NÃO é este design)
@@ -118,4 +118,4 @@ fundador na hora da fase — sugestões de classe, não commit de nome.
   é linha separada, design-data §9). As **sondas sintéticas** anti-FP/anti-FN
   do §3.1 (kill list, fatores reais) valem e entram sim no corpus.
 - Fora de escopo por ora: executar projetos no corpus, rede fora do fetch,
-  comparação entre versões antigas do DevForge (regressão temporal).
+  comparação entre versões antigas do Zavik (regressão temporal).

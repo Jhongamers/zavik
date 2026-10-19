@@ -1,13 +1,13 @@
 [package]
-name = "devforge-core"
+name = "zavik-core"
 description = "Casos de uso: Workflow Engine (Workflow -> Step -> Action)."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
-devforge-shared.workspace = true
-devforge-sdk.workspace = true
+zavik-shared.workspace = true
+zavik-sdk.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

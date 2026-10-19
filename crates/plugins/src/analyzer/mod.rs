@@ -9,8 +9,8 @@ mod registry;
 mod trust;
 mod version;
 
-use devforge_shared::{AnalysisReport, Context, Error, ProjectStack, TrustReport};
-use devforge_sdk::{AnalysisOptions, Capability, ProjectAnalyzer};
+use zavik_shared::{AnalysisReport, Context, Error, ProjectStack, TrustReport};
+use zavik_sdk::{AnalysisOptions, Capability, ProjectAnalyzer};
 use std::any::Any;
 
 /// Plugin that analyzes dependencies.
@@ -147,8 +147,8 @@ pub fn npm_audit_signals(deps: &[(String, Option<String>)]) -> std::collections:
 mod tests {
     use super::*;
     use crate::StackDetector;
-    use devforge_shared::Severity;
-    use devforge_sdk::{AnalysisOptions, ProjectAnalyzer, ProjectDetector};
+    use zavik_shared::Severity;
+    use zavik_sdk::{AnalysisOptions, ProjectAnalyzer, ProjectDetector};
     use std::path::Path;
 
     fn context(dir: &Path) -> Context {

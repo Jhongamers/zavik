@@ -1,4 +1,4 @@
-//! Integration tests for `devforge data` (real binary).
+//! Integration tests for `zavik data` (real binary).
 //!
 //! Covers everything reachable WITHOUT a real license key (the happy path —
 //! valid license + valid signature — is the manual E2E with the production
@@ -11,8 +11,8 @@
 use std::process::Command;
 use tempfile::TempDir;
 
-fn devforge() -> Command {
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_devforge"));
+fn zavik() -> Command {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_zavik"));
     // Locale must not flip the post-flip default (en) on any machine.
     cmd.env_remove("LC_ALL")
         .env_remove("LC_MESSAGES")
@@ -31,8 +31,8 @@ fn with_xdg<'a>(cmd: &'a mut Command, xdg: &'a TempDir) -> &'a mut Command {
     cmd.env("XDG_CONFIG_HOME", xdg.path())
 }
 
-fn devforge_dir(xdg: &TempDir) -> std::path::PathBuf {
-    xdg.path().join("devforge")
+fn zavik_dir(xdg: &TempDir) -> std::path::PathBuf {
+    xdg.path().join("zavik")
 }
 
 /// One JSON object on stdout (commands here emit a single line).
@@ -51,7 +51,7 @@ fn single_json(stdout: &[u8]) -> serde_json::Value {
 fn status_without_dataset_is_free_and_offline() {
     let xdg = isolated_xdg();
     let output = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "status", "--json"]).output().unwrap()
     };
@@ -68,7 +68,7 @@ fn status_without_dataset_is_free_and_offline() {
 fn status_human_explains_the_free_tier_honestly() {
     let xdg = isolated_xdg();
     let output = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "status"]).output().unwrap()
     };
@@ -82,11 +82,11 @@ fn status_human_explains_the_free_tier_honestly() {
 #[test]
 fn status_with_corrupt_dataset_reports_invalid_never_silently() {
     let xdg = isolated_xdg();
-    std::fs::create_dir_all(devforge_dir(&xdg)).unwrap();
-    std::fs::write(devforge_dir(&xdg).join("dataset.json"), b"lixo sem assinatura").unwrap();
+    std::fs::create_dir_all(zavik_dir(&xdg)).unwrap();
+    std::fs::write(zavik_dir(&xdg).join("dataset.json"), b"lixo sem assinatura").unwrap();
 
     let output = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "status", "--json"]).output().unwrap()
     };
@@ -110,7 +110,7 @@ fn status_with_corrupt_dataset_reports_invalid_never_silently() {
 fn update_without_license_denies_with_json_line_and_exit_1() {
     let xdg = isolated_xdg();
     let output = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "update", "--json"]).output().unwrap()
     };
@@ -131,7 +131,7 @@ fn update_without_license_denies_with_json_line_and_exit_1() {
 fn update_without_license_denies_in_human_message_that_keeps_free_intact() {
     let xdg = isolated_xdg();
     let output = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "update"]).output().unwrap()
     };
@@ -151,11 +151,11 @@ fn update_without_license_denies_in_human_message_that_keeps_free_intact() {
 #[test]
 fn update_with_garbage_license_denies_as_invalid_not_as_missing() {
     let xdg = isolated_xdg();
-    std::fs::create_dir_all(devforge_dir(&xdg)).unwrap();
-    std::fs::write(devforge_dir(&xdg).join("license.key"), "token-forjado").unwrap();
+    std::fs::create_dir_all(zavik_dir(&xdg)).unwrap();
+    std::fs::write(zavik_dir(&xdg).join("license.key"), "token-forjado").unwrap();
 
     let output = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "update", "--json"]).output().unwrap()
     };
@@ -171,7 +171,7 @@ fn unknown_subcommand_and_flag_are_rejected() {
     let xdg = isolated_xdg();
 
     let unknown = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "banana"]).output().unwrap()
     };
@@ -183,14 +183,14 @@ fn unknown_subcommand_and_flag_are_rejected() {
     );
 
     let unknown_flag = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "status", "--bogus"]).output().unwrap()
     };
     assert_eq!(unknown_flag.status.code(), Some(1));
 
     let url_without_value = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["data", "update", "--url"]).output().unwrap()
     };
@@ -219,7 +219,7 @@ fn audit_without_dataset_has_no_dataset_keys() {
     let xdg = isolated_xdg();
     let project = fixture_npm();
     let output = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["audit", project.path().to_str().unwrap(), "--json"])
             .output()
@@ -239,12 +239,12 @@ fn audit_without_dataset_has_no_dataset_keys() {
 #[test]
 fn audit_with_corrupt_dataset_warns_on_stderr_and_keeps_stdout_clean() {
     let xdg = isolated_xdg();
-    std::fs::create_dir_all(devforge_dir(&xdg)).unwrap();
-    std::fs::write(devforge_dir(&xdg).join("dataset.json"), b"adulterado").unwrap();
+    std::fs::create_dir_all(zavik_dir(&xdg)).unwrap();
+    std::fs::write(zavik_dir(&xdg).join("dataset.json"), b"adulterado").unwrap();
 
     let project = fixture_npm();
     let output = {
-        let mut cmd = devforge();
+        let mut cmd = zavik();
         with_xdg(&mut cmd, &xdg);
         cmd.args(["audit", project.path().to_str().unwrap(), "--json"])
             .output()

@@ -11,8 +11,8 @@
 //! Honest limitation: the suggestion is a reasonable guess (apt/brew/winget),
 //! not a guarantee. Each machine may differ.
 
-use devforge_sdk::{CommandRunner, CommandSpec};
-use devforge_shared::{Error, Language, ProjectStack};
+use zavik_sdk::{CommandRunner, CommandSpec};
+use zavik_shared::{Error, Language, ProjectStack};
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -32,7 +32,7 @@ pub fn missing_tools(
     runner: &dyn CommandRunner,
     stacks: &[ProjectStack],
     root: &Path,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Result<Vec<MissingTool>, Error> {
     let mut missing = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
@@ -95,7 +95,7 @@ fn required_tools(stack: &ProjectStack) -> Vec<String> {
     }
 }
 
-// --- env snapshot (`devforge env`) ------------------------------------------
+// --- env snapshot (`zavik env`) ------------------------------------------
 
 /// One tool of the project's toolchain: on the PATH? which version?
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,7 +107,7 @@ pub struct ToolStatus {
 }
 
 /// Snapshot of the toolchain the detected stacks need — the ground truth
-/// behind `devforge env`. Pure read: `which`/`where` for presence and
+/// behind `zavik env`. Pure read: `which`/`where` for presence and
 /// `<tool> --version` (argv, no shell) for the version of tools already
 /// installed. Never installs, never probes project code.
 pub fn env_snapshot(
@@ -161,14 +161,14 @@ fn tool_version(runner: &dyn CommandRunner, root: &Path, tool: &str) -> Option<S
 
 /// Install suggestion for the current OS family — a reasonable guess per OS,
 /// not a guarantee (see module docs).
-pub fn install_hint(tool: &str, lang: devforge_shared::i18n::Lang) -> String {
+pub fn install_hint(tool: &str, lang: zavik_shared::i18n::Lang) -> String {
     match std::env::consts::OS {
         "macos" => format!("brew install {}", brew_formula(tool)),
         "windows" => format!("winget install {}", winget_id(tool)),
         _ => match linux_install_cmd() {
             Some(cmd) => format!("{cmd} {}", linux_pkg(tool)),
             // Composed prose: translate BEFORE formatting (docs/design-i18n.md).
-            None => devforge_shared::i18n::t_fmt_in(
+            None => zavik_shared::i18n::t_fmt_in(
                 lang,
                 "instale '{}' (pacote sugerido: {})",
                 &[tool, linux_pkg(tool)],
@@ -340,7 +340,7 @@ fn linux_pm_argv() -> Option<(String, Vec<String>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use devforge_sdk::{Capability, CommandOutput, CommandSpec};
+    use zavik_sdk::{Capability, CommandOutput, CommandSpec};
     use std::path::PathBuf;
     use std::sync::Mutex;
 
@@ -400,7 +400,7 @@ mod tests {
 
     #[test]
     fn reports_missing_tools() {
-        use devforge_shared::i18n::Lang;
+        use zavik_shared::i18n::Lang;
         // `node` present, `npm` missing.
         let runner = FakeRunner {
             present: vec!["node".into()],
@@ -416,7 +416,7 @@ mod tests {
 
     #[test]
     fn nothing_missing_when_everything_present() {
-        use devforge_shared::i18n::Lang;
+        use zavik_shared::i18n::Lang;
         let runner = FakeRunner {
             present: vec!["node".into(), "npm".into()],
             asked: Mutex::new(Vec::new()),

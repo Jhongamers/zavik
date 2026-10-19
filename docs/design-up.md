@@ -1,4 +1,4 @@
-# Design — `devforge up`
+# Design — `zavik up`
 
 > Desenho (out/2026). Status: **IMPLEMENTADO** (v1 — 17 testes novos, E2E real).
 > Contexto: princípio 5.0 do `docs/plano-lancamento.md` (toda etapa funciona
@@ -7,7 +7,7 @@
 
 ## 1. Objetivo
 
-`devforge up [url|path]` = o pipeline inteiro numa comando só, com os **mesmos
+`zavik up [url|path]` = o pipeline inteiro numa comando só, com os **mesmos
 gates das versões isoladas** (nada de porta dos fundos):
 
 ```
@@ -20,9 +20,9 @@ segurança.
 
 ## 2. Alvo
 
-- `devforge up` → pipeline no diretório atual (começa no audit).
-- `devforge up <path>` → idem em outro diretório.
-- `devforge up <url>` → clone (passo 0) e pipeline no clone.
+- `zavik up` → pipeline no diretório atual (começa no audit).
+- `zavik up <path>` → idem em outro diretório.
+- `zavik up <url>` → clone (passo 0) e pipeline no clone.
   - Detecção de URL: prefixos `http://`, `https://`, `git@`, `ssh://`, `file://`
     (testável offline), ou terminando em `.git`. Qualquer outra coisa é path.
 

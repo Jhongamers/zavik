@@ -158,82 +158,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "devforge"
-version = "0.1.0"
-dependencies = [
- "base64",
- "ctrlc",
- "devforge-core",
- "devforge-events",
- "devforge-kernel",
- "devforge-plugins",
- "devforge-sdk",
- "devforge-shared",
- "ed25519-dalek",
- "libc",
- "rand",
- "serde",
- "serde_json",
- "tempfile",
- "toml",
- "ureq",
-]
-
-[[package]]
-name = "devforge-core"
-version = "0.1.0"
-dependencies = [
- "devforge-sdk",
- "devforge-shared",
- "tempfile",
-]
-
-[[package]]
-name = "devforge-events"
-version = "0.1.0"
-dependencies = [
- "devforge-shared",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "devforge-kernel"
-version = "0.1.0"
-dependencies = [
- "devforge-events",
- "devforge-sdk",
- "devforge-shared",
- "tempfile",
-]
-
-[[package]]
-name = "devforge-plugins"
-version = "0.1.0"
-dependencies = [
- "devforge-sdk",
- "devforge-shared",
- "libc",
- "regex",
- "serde_json",
- "tempfile",
- "toml",
- "ureq",
-]
-
-[[package]]
-name = "devforge-sdk"
-version = "0.1.0"
-dependencies = [
- "devforge-events",
- "devforge-shared",
-]
-
-[[package]]
-name = "devforge-shared"
-version = "0.1.0"
-
-[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1188,6 +1112,82 @@ dependencies = [
  "syn 3.0.9",
  "synstructure",
 ]
+
+[[package]]
+name = "zavik"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "ctrlc",
+ "ed25519-dalek",
+ "libc",
+ "rand",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "toml",
+ "ureq",
+ "zavik-core",
+ "zavik-events",
+ "zavik-kernel",
+ "zavik-plugins",
+ "zavik-sdk",
+ "zavik-shared",
+]
+
+[[package]]
+name = "zavik-core"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
+ "zavik-sdk",
+ "zavik-shared",
+]
+
+[[package]]
+name = "zavik-events"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "zavik-shared",
+]
+
+[[package]]
+name = "zavik-kernel"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
+ "zavik-events",
+ "zavik-sdk",
+ "zavik-shared",
+]
+
+[[package]]
+name = "zavik-plugins"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "regex",
+ "serde_json",
+ "tempfile",
+ "toml",
+ "ureq",
+ "zavik-sdk",
+ "zavik-shared",
+]
+
+[[package]]
+name = "zavik-sdk"
+version = "0.1.0"
+dependencies = [
+ "zavik-events",
+ "zavik-shared",
+]
+
+[[package]]
+name = "zavik-shared"
+version = "0.1.0"
 
 [[package]]
 name = "zerocopy"

@@ -19,7 +19,7 @@
 //! testable offline with real cases. The CLI only populates the snapshots (and
 //! optionally queries the registry).
 
-use devforge_shared::{
+use zavik_shared::{
     AuditFinding, AuditPolicy, AuditReport, AuditSeverity, Confidence, PackageOrigin,
     PackageSnapshot, RiskFactor, Suppression,
 };
@@ -327,7 +327,7 @@ fn find_suppression<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use devforge_shared::PackageOrigin;
+    use zavik_shared::PackageOrigin;
 
     fn snapshot(name: &str) -> PackageSnapshot {
         PackageSnapshot {

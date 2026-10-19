@@ -1,5 +1,5 @@
-//! Integration tests for `devforge audit` on real project shapes — born
-//! from dogfooding DevForge with itself (docs/dogfooding.md):
+//! Integration tests for `zavik audit` on real project shapes — born
+//! from dogfooding Zavik with itself (docs/dogfooding.md):
 //!
 //! - a virtual workspace root must audit its **members' dependencies**
 //!   (used to see 0 packages and approve nothing);
@@ -12,8 +12,8 @@
 use std::process::Command;
 use tempfile::TempDir;
 
-fn devforge() -> Command {
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_devforge"));
+fn zavik() -> Command {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_zavik"));
     // Locale must not flip the post-flip default (en) on any machine.
     cmd.env_remove("LC_ALL")
         .env_remove("LC_MESSAGES")
@@ -41,7 +41,7 @@ fn workspace_fixture() -> TempDir {
 #[test]
 fn workspace_root_audits_member_dependencies_not_zero() {
     let dir = workspace_fixture();
-    let output = devforge()
+    let output = zavik()
         .args(["audit", "--json"])
         .arg(dir.path())
         .output()
@@ -59,7 +59,7 @@ fn workspace_root_audits_member_dependencies_not_zero() {
 #[test]
 fn workspace_root_human_audit_reports_real_packages() {
     let dir = workspace_fixture();
-    let output = devforge().arg("audit").arg(dir.path()).output().unwrap();
+    let output = zavik().arg("audit").arg(dir.path()).output().unwrap();
 
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -79,7 +79,7 @@ fn zero_packages_is_no_data_in_human_and_zero_in_json() {
     )
     .unwrap();
 
-    let human = devforge().arg("audit").arg(dir.path()).output().unwrap();
+    let human = zavik().arg("audit").arg(dir.path()).output().unwrap();
     assert!(human.status.success());
     let stdout = String::from_utf8_lossy(&human.stdout);
     assert!(
@@ -92,7 +92,7 @@ fn zero_packages_is_no_data_in_human_and_zero_in_json() {
     );
 
     // Machine contract untouched: JSON still reports the numbers as-is.
-    let json_out = devforge()
+    let json_out = zavik()
         .args(["audit", "--json"])
         .arg(dir.path())
         .output()
@@ -106,7 +106,7 @@ fn zero_packages_is_no_data_in_human_and_zero_in_json() {
 fn audit_human_output_translates_to_english() {
     // i18n phase 2: the wedge command body must follow `--lang`.
     let dir = workspace_fixture();
-    let output = devforge()
+    let output = zavik()
         .args(["audit", "--lang", "en"])
         .arg(dir.path())
         .output()
@@ -133,7 +133,7 @@ fn audit_human_output_translates_to_english() {
         r#"{"name":"sem-deps","version":"1.0.0"}"#,
     )
     .unwrap();
-    let zero = devforge()
+    let zero = zavik()
         .args(["audit", "--lang", "en"])
         .arg(empty.path())
         .output()

@@ -1,4 +1,4 @@
-//! Integration tests for `devforge up` (real binary).
+//! Integration tests for `zavik up` (real binary).
 //!
 //! These cover the pipeline paths that do NOT execute project code (plan,
 //! `--until audit`, denials), so the permission gates behave deterministically
@@ -9,8 +9,8 @@
 use std::process::Command;
 use tempfile::TempDir;
 
-fn devforge() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_devforge"))
+fn zavik() -> Command {
+    Command::new(env!("CARGO_BIN_EXE_zavik"))
 }
 
 fn fixture_npm() -> TempDir {
@@ -37,8 +37,8 @@ fn fixture_python() -> TempDir {
 #[test]
 fn prepare_run_hints_json_is_english_even_under_default_pt() {
     let dir = fixture_python();
-    let output = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let output = zavik()
+        .env_remove("ZAVIK_LANG")
         .args(["prepare", dir.path().to_str().unwrap(), "--json"])
         .output()
         .unwrap();
@@ -69,8 +69,8 @@ fn prepare_run_hints_json_is_english_even_under_default_pt() {
 #[test]
 fn prepare_run_hints_human_follows_lang_flag() {
     let dir = fixture_python();
-    let output = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let output = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "prepare",
             dir.path().to_str().unwrap(),
@@ -99,7 +99,7 @@ fn json_lines(stdout: &[u8]) -> Vec<serde_json::Value> {
 #[test]
 fn dry_run_json_lists_full_plan() {
     let dir = fixture_npm();
-    let output = devforge()
+    let output = zavik()
         .args(["up", dir.path().to_str().unwrap(), "--dry-run", "--json"])
         .output()
         .unwrap();
@@ -127,7 +127,7 @@ fn dry_run_json_lists_full_plan() {
 
 #[test]
 fn url_dry_run_includes_clone_step() {
-    let output = devforge()
+    let output = zavik()
         .args(["up", "https://example.com/x/y.git", "--dry-run", "--json"])
         .output()
         .unwrap();
@@ -148,7 +148,7 @@ fn url_dry_run_includes_clone_step() {
 #[test]
 fn until_audit_runs_audit_only_and_summarizes() {
     let dir = fixture_npm();
-    let output = devforge()
+    let output = zavik()
         .args(["up", dir.path().to_str().unwrap(), "--until", "audit", "--json"])
         .output()
         .unwrap();
@@ -180,7 +180,7 @@ fn human_non_tty_denies_and_executes_nothing() {
     let dir = fixture_npm();
     // stdin is null in `output()` → the interactive gate denies (EOF): the
     // pipeline must stop and run NOTHING of the project.
-    let output = devforge()
+    let output = zavik()
         .args(["up", dir.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -196,8 +196,8 @@ fn human_non_tty_denies_and_executes_nothing() {
 
 #[test]
 fn nonexistent_path_fails_honest() {
-    let output = devforge()
-        .args(["up", "/tmp/devforge-path-that-does-not-exist-xyz", "--json"])
+    let output = zavik()
+        .args(["up", "/tmp/zavik-path-that-does-not-exist-xyz", "--json"])
         .output()
         .unwrap();
 
@@ -209,7 +209,7 @@ fn nonexistent_path_fails_honest() {
 #[test]
 fn invalid_until_is_rejected() {
     let dir = fixture_npm();
-    let output = devforge()
+    let output = zavik()
         .args(["up", dir.path().to_str().unwrap(), "--until", "banana", "--json"])
         .output()
         .unwrap();
@@ -221,7 +221,7 @@ fn invalid_until_is_rejected() {
 
 #[test]
 fn url_with_skip_clone_is_rejected() {
-    let output = devforge()
+    let output = zavik()
         .args(["up", "https://example.com/x/y.git", "--skip", "clone", "--dry-run", "--json"])
         .output()
         .unwrap();
@@ -239,8 +239,8 @@ fn up_clone_failure_json_error_is_english() {
     let sandbox = TempDir::new().unwrap();
     let missing = sandbox.path().join("nope-clone-src.git");
     let url = format!("file://{}", missing.display());
-    let output = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let output = zavik()
+        .env_remove("ZAVIK_LANG")
         .current_dir(sandbox.path())
         .args(["up", &url, "--json", "--until", "clone"])
         .output()

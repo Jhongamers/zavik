@@ -1,4 +1,4 @@
-# Cargo.toml — DevForge workspace root.
+# Cargo.toml — Zavik workspace root.
 #
 # The project is split into independent crates following the dependency
 # direction described in `arquiteture.md` (Clean Architecture):
@@ -22,16 +22,16 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-authors = ["DevForge"]
+authors = ["Zavik"]
 
 [workspace.dependencies]
 # --- Internal workspace crates ---
-devforge-shared = { path = "crates/shared" }
-devforge-events = { path = "crates/events" }
-devforge-sdk = { path = "crates/sdk" }
-devforge-plugins = { path = "crates/plugins" }
-devforge-core = { path = "crates/core" }
-devforge-kernel = { path = "crates/kernel" }
+zavik-shared = { path = "crates/shared" }
+zavik-events = { path = "crates/events" }
+zavik-sdk = { path = "crates/sdk" }
+zavik-plugins = { path = "crates/plugins" }
+zavik-core = { path = "crates/core" }
+zavik-kernel = { path = "crates/kernel" }
 
 # --- External dependencies (centralized to standardize versions) ---
 serde = { version = "1", features = ["derive"] }

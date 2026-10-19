@@ -8,10 +8,10 @@
 //! Contract: every document has `"schema": 1`. If we break compatibility,
 //! we bump that number.
 
-use devforge_core::provision::PreparePlan;
-use devforge_core::toolchain::{MissingTool, ToolStatus};
-use devforge_shared::i18n::t_en;
-use devforge_shared::{
+use zavik_core::provision::PreparePlan;
+use zavik_core::toolchain::{MissingTool, ToolStatus};
+use zavik_shared::i18n::t_en;
+use zavik_shared::{
     AnalysisReport, AuditReport, Briefing, Context, Diagnosis, ProjectStack, Severity, TrustReport,
 };
 use serde_json::{json, Value};
@@ -46,7 +46,7 @@ fn emit(value: &Value) {
     println!("{value}");
 }
 
-/// `devforge detect --json`
+/// `zavik detect --json`
 pub fn detect(context: &Context, stacks: &[ProjectStack]) {
     emit(&json!({
         "schema": 1,
@@ -56,7 +56,7 @@ pub fn detect(context: &Context, stacks: &[ProjectStack]) {
     }));
 }
 
-/// `devforge analyze [--online] --json`
+/// `zavik analyze [--online] --json`
 pub fn analyze(context: &Context, stacks: &[ProjectStack], report: &AnalysisReport) {
     emit(&json!({
         "schema": 1,
@@ -76,7 +76,7 @@ pub fn analyze(context: &Context, stacks: &[ProjectStack], report: &AnalysisRepo
     }));
 }
 
-/// `devforge context --json` — full briefing in a single call: stack,
+/// `zavik context --json` — full briefing in a single call: stack,
 /// trust, runbook (setup/build/test/run/lint), entrypoints and key files.
 /// Made for an AI to "understand" the project in one shot, without exploration
 /// (glob/grep/reading the README), saving tokens.
@@ -115,7 +115,7 @@ pub fn context(
     }));
 }
 
-/// `devforge diagnose --json` — probable cause + fix for an error, so the AI
+/// `zavik diagnose --json` — probable cause + fix for an error, so the AI
 /// does not have to read a giant stack trace (nor guess that the literal error is
 /// just a symptom).
 pub fn diagnose(diagnosis: &Diagnosis) {
@@ -137,14 +137,14 @@ pub fn diagnose(diagnosis: &Diagnosis) {
     }));
 }
 
-/// `devforge audit --json` — supply-chain report (schema 1). One finding
+/// `zavik audit --json` — supply-chain report (schema 1). One finding
 /// per package, with factors, score, confidence and the evidence; plus the CI verdict.
 ///
 /// `dataset` = Pro: when a valid signed local dataset exists, its advisory
 /// section is appended (`dataset` + `dataset_findings`). Absent (free tier)
 /// → keys are omitted entirely: output stays byte-identical (design §6).
 pub fn audit(report: &AuditReport, dataset: Option<&crate::dataset::DatasetReport>) {
-    let suppression_json = |s: &devforge_shared::Suppression| {
+    let suppression_json = |s: &zavik_shared::Suppression| {
         json!({
             "package": s.package,
             "factor": s.factor.id(),
@@ -195,7 +195,7 @@ pub fn audit(report: &AuditReport, dataset: Option<&crate::dataset::DatasetRepor
     emit(&value);
 }
 
-/// `devforge prepare|docker --json` — delivers the **plan**, the **trust
+/// `zavik prepare|docker --json` — delivers the **plan**, the **trust
 /// check** and the **missing tools** structured, without executing anything
 /// (execution is human/interactive).
 pub fn prepare_plan(
@@ -241,7 +241,7 @@ pub fn prepare_plan(
     }));
 }
 
-/// `devforge env --json`: environment fingerprint for agents — OS/arch plus
+/// `zavik env --json`: environment fingerprint for agents — OS/arch plus
 /// each stack's tools with presence + version, and a flat `missing` list.
 pub fn env(stacks: &[ProjectStack], tools: &[ToolStatus]) {
     let stacks_json: Vec<Value> = stacks

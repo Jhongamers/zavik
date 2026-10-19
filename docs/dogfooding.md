@@ -1,6 +1,6 @@
-# Dogfooding — DevForge no DevForge (17/10/2026)
+# Dogfooding — Zavik no Zavik (17/10/2026)
 
-Diretriz do fundador: usar o DevForge neste repositório (projeto real)
+Diretriz do fundador: usar o Zavik neste repositório (projeto real)
 "onde der" — antes de seguir a fase 2 do i18n. Este repo é um workspace
 virtual Cargo (7 crates), exatamente o formato que o produto precisa
 servir. Registro honesto: o que a sessão encontrou, o que foi corrigido
@@ -30,7 +30,7 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
    da raiz. **Correção:** resolução pelo `[workspace.dependencies]` mais
    próximo (o manifesto próprio primeiro, depois ancestrais). Sem raiz →
    `None` honesto (nunca inventa). Neste repo: **19/35 deps com versão**
-   (os path-deps internos `devforge-* = { path = … }` ficam `None` —
+   (os path-deps internos `zavik-* = { path = … }` ficam `None` —
    correto: pacote path não tem versão de registro).
 3. **`diagnose` não reconhecia `error[E0308]`** — o erro de compilação
    Rust mais comum — e caía no fallback genérico.
@@ -48,7 +48,7 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
 5. ~~`context --json` → `entrypoints: []`~~ **FECHADO (17/10, corpus
    Fase A)**: era artefato da raiz virtual **pré-expansão** (1 stack, sem
    `src/` na raiz). O detector já cobre `src/main.rs` (`briefing.rs`);
-   pós-fix o context do próprio DevForge lista 7 entrypoints incl.
+   pós-fix o context do próprio Zavik lista 7 entrypoints incl.
    `crates/cli/src/main.rs`. Verificado também em projeto externo: só
    lista o que existe (serde omitiu um layout fora do padrão, sem inventar).
 6. **Prose dentro de JSON está em pt-BR** (ex.: `diagnose.summary`).
@@ -72,7 +72,7 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
    workspace** (`[[bin]]`, `src/main.rs`, `src/bin/*`); zero → `NotFound`
    honesto ("Não achei como iniciar"), `runbook.run` e hint do prepare
    ficam em silêncio; workspace com **1 único bin** segue `cargo run` (o
-   caso do DevForge — verificado sem regressão). Testes: runner ×4,
+   caso do Zavik — verificado sem regressão). Testes: runner ×4,
    briefing ×1, provision ×2. Detalhes: `~/devforge-corpus/pagina-interna.md`.
 10. **Runbook Go prometia `go run .` sem `main.go` (NOVO-2)**: cobra (real,
     Fase B) é lib Go — o `run` já respondia NotFound, mas o

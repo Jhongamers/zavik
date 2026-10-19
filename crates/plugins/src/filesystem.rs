@@ -1,7 +1,7 @@
 //! Filesystem access plugin.
 
-use devforge_shared::Error;
-use devforge_sdk::{Capability, FileSystemAccess};
+use zavik_shared::Error;
+use zavik_sdk::{Capability, FileSystemAccess};
 use std::path::Path;
 
 /// Trivial [`FileSystemAccess`] implementation using `std::fs`.

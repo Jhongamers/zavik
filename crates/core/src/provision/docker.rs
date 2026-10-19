@@ -5,17 +5,17 @@
 //! comment warning that the `CMD`/variables may need adjustment.
 
 use super::{ProvisionAction, ProvisionStep};
-use devforge_shared::{Language, ProjectStack};
-use devforge_sdk::CommandSpec;
+use zavik_shared::{Language, ProjectStack};
+use zavik_sdk::CommandSpec;
 use std::path::Path;
 
 /// Steps for Docker mode: check docker, generate Dockerfile(s) and build.
 pub(crate) fn steps_for(
     stacks: &[ProjectStack],
     root: &Path,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Vec<ProvisionStep> {
-    use devforge_shared::i18n::{t_fmt_in, translate};
+    use zavik_shared::i18n::{t_fmt_in, translate};
     let mut steps = Vec::new();
 
     // 0. Check whether Docker is available (no permission required).
@@ -123,7 +123,7 @@ fn project_name(stacks: &[ProjectStack], root: &Path) -> String {
                 .and_then(|n| n.to_str())
                 .map(str::to_string)
         })
-        .unwrap_or_else(|| "devforge-app".to_string());
+        .unwrap_or_else(|| "zavik-app".to_string());
     sanitize(&raw)
 }
 
@@ -174,7 +174,7 @@ fn sanitize(input: &str) -> String {
     }
     let out = out.trim_matches(|c| c == '-' || c == '_' || c == '.').to_string();
     if out.is_empty() {
-        "devforge-app".to_string()
+        "zavik-app".to_string()
     } else {
         out
     }
@@ -184,7 +184,7 @@ fn sanitize(input: &str) -> String {
 fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
     let pm = stack.package_manager.as_deref().unwrap_or("npm");
     match stack.language {
-        Language::Rust => "# Gerado pelo DevForge. Ajuste o CMD/entrypoint conforme o seu binário.\n\
+        Language::Rust => "# Gerado pelo Zavik. Ajuste o CMD/entrypoint conforme o seu binário.\n\
              FROM rust:1-bookworm\n\
              WORKDIR /app\n\
              COPY . .\n\
@@ -192,7 +192,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
              CMD [\"cargo\", \"run\", \"--release\"]\n"
             .to_string(),
         Language::JavaScript | Language::TypeScript => format!(
-            "# Gerado pelo DevForge. Ajuste o CMD conforme o seu package.json.\n\
+            "# Gerado pelo Zavik. Ajuste o CMD conforme o seu package.json.\n\
              FROM node:20-alpine\n\
              WORKDIR /app\n\
              COPY package*.json ./\n\
@@ -207,7 +207,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
                 "pip install --no-cache-dir ."
             };
             format!(
-                "# Gerado pelo DevForge. Ajuste o CMD para o seu entrypoint.\n\
+                "# Gerado pelo Zavik. Ajuste o CMD para o seu entrypoint.\n\
                  FROM python:3.12-slim\n\
                  WORKDIR /app\n\
                  COPY . .\n\
@@ -215,7 +215,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
                  CMD [\"python\", \"main.py\"]\n"
             )
         }
-        Language::Go => "# Gerado pelo DevForge (build multi-stage).\n\
+        Language::Go => "# Gerado pelo Zavik (build multi-stage).\n\
              FROM golang:1.22-alpine AS builder\n\
              WORKDIR /app\n\
              COPY . .\n\
@@ -227,7 +227,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
             .to_string(),
         Language::Java | Language::Kotlin => {
             if pm == "gradle" {
-                "# Gerado pelo DevForge. Ajuste o CMD conforme seu build Gradle.\n\
+                "# Gerado pelo Zavik. Ajuste o CMD conforme seu build Gradle.\n\
                  FROM eclipse-temurin:21-jdk AS builder\n\
                  WORKDIR /app\n\
                  COPY . .\n\
@@ -239,7 +239,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
                  CMD [\"java\", \"-jar\", \"app.jar\"]\n"
                     .to_string()
             } else {
-                "# Gerado pelo DevForge. Ajuste o CMD conforme seu build Maven.\n\
+                "# Gerado pelo Zavik. Ajuste o CMD conforme seu build Maven.\n\
                  FROM maven:3.9-eclipse-temurin-21 AS builder\n\
                  WORKDIR /app\n\
                  COPY . .\n\
@@ -252,7 +252,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
                     .to_string()
             }
         }
-        Language::Php => "# Gerado pelo DevForge. Ajuste o CMD/docroot conforme o projeto.\n\
+        Language::Php => "# Gerado pelo Zavik. Ajuste o CMD/docroot conforme o projeto.\n\
              FROM php:8.3-cli\n\
              WORKDIR /app\n\
              RUN apt-get update && apt-get install -y unzip git \
@@ -262,7 +262,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
              RUN composer install --no-interaction\n\
              CMD [\"php\", \"-S\", \"0.0.0.0:8000\", \"-t\", \"public\"]\n"
             .to_string(),
-        Language::Ruby => "# Gerado pelo DevForge. Ajuste o CMD conforme o framework.\n\
+        Language::Ruby => "# Gerado pelo Zavik. Ajuste o CMD conforme o framework.\n\
              FROM ruby:3.3-slim\n\
              WORKDIR /app\n\
              COPY . .\n\
@@ -270,7 +270,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
              CMD [\"bundle\", \"exec\", \"rails\", \"server\", \"-b\", \"0.0.0.0\"]\n"
             .to_string(),
         Language::CSharp => format!(
-            "# Gerado pelo DevForge. Ajuste o nome do .dll no CMD.\n\
+            "# Gerado pelo Zavik. Ajuste o nome do .dll no CMD.\n\
              FROM mcr.microsoft.com/dotnet/sdk:8.0 AS builder\n\
              WORKDIR /app\n\
              COPY . .\n\
@@ -283,7 +283,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
         ),
         Language::Dart => {
             if stack.frameworks.iter().any(|f| f == "Flutter") {
-                "# Gerado pelo DevForge (Flutter).\n\
+                "# Gerado pelo Zavik (Flutter).\n\
                  FROM ghcr.io/cirruslabs/flutter:stable\n\
                  WORKDIR /app\n\
                  COPY . .\n\
@@ -291,7 +291,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
                  CMD [\"flutter\", \"run\"]\n"
                     .to_string()
             } else {
-                "# Gerado pelo DevForge (Dart).\n\
+                "# Gerado pelo Zavik (Dart).\n\
                  FROM dart:stable\n\
                  WORKDIR /app\n\
                  COPY . .\n\
@@ -300,7 +300,7 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
                     .to_string()
             }
         }
-        Language::Elixir => "# Gerado pelo DevForge. Ajuste o CMD conforme o projeto.\n\
+        Language::Elixir => "# Gerado pelo Zavik. Ajuste o CMD conforme o projeto.\n\
              FROM hexpm/elixir:1.16-erlang-26-debian-bookworm-slim\n\
              WORKDIR /app\n\
              COPY . .\n\
@@ -308,14 +308,14 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
                  && mix deps.get && mix compile\n\
              CMD [\"mix\", \"phx.server\"]\n"
             .to_string(),
-        Language::Swift => "# Gerado pelo DevForge.\n\
+        Language::Swift => "# Gerado pelo Zavik.\n\
              FROM swift:5.9\n\
              WORKDIR /app\n\
              COPY . .\n\
              RUN swift build\n\
              CMD [\"swift\", \"run\"]\n"
             .to_string(),
-        Language::C | Language::Cpp => "# Gerado pelo DevForge. Ajuste o CMD conforme o binário.\n\
+        Language::C | Language::Cpp => "# Gerado pelo Zavik. Ajuste o CMD conforme o binário.\n\
              FROM gcc:13\n\
              WORKDIR /app\n\
              RUN apt-get update && apt-get install -y cmake\n\
@@ -323,14 +323,14 @@ fn dockerfile_for(stack: &ProjectStack, project: &str) -> String {
              RUN cmake -S . -B build && cmake --build build\n\
              CMD [\"./build/app\"]\n"
             .to_string(),
-        Language::Unknown => "# Gerado pelo DevForge.\nFROM alpine:3.19\n".to_string(),
+        Language::Unknown => "# Gerado pelo Zavik.\nFROM alpine:3.19\n".to_string(),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use devforge_shared::{Language, ProjectStack};
+    use zavik_shared::{Language, ProjectStack};
     use std::path::PathBuf;
 
     fn stack(language: Language, name: &str) -> ProjectStack {
@@ -348,7 +348,7 @@ mod tests {
     #[test]
     fn sanitizes_image_name() {
         assert_eq!(sanitize("Meu App/Web!"), "meu-app-web");
-        assert_eq!(sanitize("___"), "devforge-app");
+        assert_eq!(sanitize("___"), "zavik-app");
     }
 
     #[test]
@@ -356,7 +356,7 @@ mod tests {
         let steps = steps_for(
             &[stack(Language::Rust, "demo")],
             Path::new("/p"),
-            devforge_shared::i18n::Lang::PtBr,
+            zavik_shared::i18n::Lang::PtBr,
         );
         // 1 check + 1 Dockerfile + 1 build.
         assert_eq!(steps.len(), 3);

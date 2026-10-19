@@ -1,12 +1,12 @@
-//! Crate `devforge-plugins` — **concrete** implementations of the capabilities.
+//! Crate `zavik-plugins` — **concrete** implementations of the capabilities.
 //!
 //! In V1 the plugins are static (linked into the binary), but they already
-//! implement the same contracts as `devforge-sdk`, so they can migrate to
+//! implement the same contracts as `zavik-sdk`, so they can migrate to
 //! dynamic plugins (`.dll`/`.so`) without changing the Kernel.
 //!
-//! - [`LocalFileSystem`]: implements [`devforge_sdk::FileSystemAccess`].
-//! - [`StackDetector`]: implements [`devforge_sdk::ProjectDetector`].
-//! - [`DependencyAnalyzer`]: implements [`devforge_sdk::ProjectAnalyzer`].
+//! - [`LocalFileSystem`]: implements [`zavik_sdk::FileSystemAccess`].
+//! - [`StackDetector`]: implements [`zavik_sdk::ProjectDetector`].
+//! - [`DependencyAnalyzer`]: implements [`zavik_sdk::ProjectAnalyzer`].
 
 mod analyzer;
 mod audit;

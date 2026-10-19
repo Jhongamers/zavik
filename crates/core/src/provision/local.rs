@@ -4,17 +4,17 @@
 //! dependencies on the user's machine.
 
 use super::{ProvisionAction, ProvisionStep};
-use devforge_shared::{Language, ProjectStack};
-use devforge_sdk::CommandSpec;
+use zavik_shared::{Language, ProjectStack};
+use zavik_sdk::CommandSpec;
 use std::path::Path;
 
 /// Local steps for a stack.
 pub(crate) fn steps_for(
     stack: &ProjectStack,
     root: &Path,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Vec<ProvisionStep> {
-    use devforge_shared::i18n::{t_fmt_in, translate};
+    use zavik_shared::i18n::{t_fmt_in, translate};
     let manifest = stack
         .manifest
         .file_name()
@@ -156,9 +156,9 @@ fn python_steps(
     stack: &ProjectStack,
     manifest: &str,
     root: &Path,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Vec<ProvisionStep> {
-    use devforge_shared::i18n::translate;
+    use zavik_shared::i18n::translate;
     match stack.package_manager.as_deref() {
         Some("poetry") => vec![run(
             translate(lang, "Instalar dependências (poetry install)"),
@@ -217,9 +217,9 @@ fn jvm_steps(
     stack: &ProjectStack,
     manifest: &str,
     root: &Path,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Vec<ProvisionStep> {
-    use devforge_shared::i18n::translate;
+    use zavik_shared::i18n::translate;
     match stack.package_manager.as_deref() {
         Some("gradle") => {
             // Prefers the `./gradlew` wrapper when present.

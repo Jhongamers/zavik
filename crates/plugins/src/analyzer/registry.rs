@@ -1,18 +1,18 @@
 //! **Online** access to package registries (crates.io, npm, PyPI).
 //!
-//! It is DevForge's "look-up" layer: instead of blindly trusting the manifest,
+//! It is Zavik's "look-up" layer: instead of blindly trusting the manifest,
 //! we consult the real registry. Used by:
 //! - [`check_latest`] (`analyze --online` command): finds newer versions;
 //! - [`presence`] (trust verification): checks whether the package **exists**.
 
 use super::version::{base_version, compare};
 use super::SourceKind;
-use devforge_shared::{AnalysisReport, Finding, Language, ProjectStack};
+use zavik_shared::{AnalysisReport, Finding, Language, ProjectStack};
 use std::collections::HashSet;
 
 /// Request cap so we neither take too long nor hit the rate limit.
 pub(crate) const MAX_CHECKS: usize = 40;
-const USER_AGENT: &str = "devforge-analyzer/0.1 (devforge)";
+const USER_AGENT: &str = "zavik-analyzer/0.1 (zavik)";
 
 /// Result of querying the registry about a package.
 #[derive(Debug, Clone, PartialEq, Eq)]

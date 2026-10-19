@@ -1,4 +1,4 @@
-//! Integration tests for i18n (real binary): `--lang`, `DEVFORGE_LANG`,
+//! Integration tests for i18n (real binary): `--lang`, `ZAVIK_LANG`,
 //! the post-flip default (en), and the invariant that machine output
 //! (JSON) never changes language (docs/design-i18n.md).
 
@@ -7,8 +7,8 @@
 use std::process::Command;
 use tempfile::TempDir;
 
-fn devforge() -> Command {
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_devforge"));
+fn zavik() -> Command {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_zavik"));
     // Locale must not flip the post-flip default (en) on any machine.
     cmd.env_remove("LC_ALL")
         .env_remove("LC_MESSAGES")
@@ -35,8 +35,8 @@ fn stdout_of(output: &std::process::Output) -> String {
 #[test]
 fn default_language_is_english_after_the_phase3_flip() {
     let project = js_project();
-    let output = devforge()
-        .env_remove("DEVFORGE_LANG") // the machine must not leak in
+    let output = zavik()
+        .env_remove("ZAVIK_LANG") // the machine must not leak in
         .args(["env"])
         .arg(project.path())
         .output()
@@ -53,8 +53,8 @@ fn default_language_is_english_after_the_phase3_flip() {
 #[test]
 fn lang_flag_switches_human_output_to_english() {
     let project = js_project();
-    let output = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let output = zavik()
+        .env_remove("ZAVIK_LANG")
         .args(["env", "--lang", "en"])
         .arg(project.path())
         .output()
@@ -75,7 +75,7 @@ fn lang_flag_switches_human_output_to_english() {
 #[test]
 fn lang_flag_accepts_equals_form_and_ptbr_explicitly() {
     let project = js_project();
-    let output = devforge()
+    let output = zavik()
         .args(["env", "--lang=pt-BR"])
         .arg(project.path())
         .output()
@@ -87,8 +87,8 @@ fn lang_flag_accepts_equals_form_and_ptbr_explicitly() {
 #[test]
 fn env_var_lang_is_honored_for_agents() {
     let project = js_project();
-    let output = devforge()
-        .env("DEVFORGE_LANG", "en")
+    let output = zavik()
+        .env("ZAVIK_LANG", "en")
         .args(["env"])
         .arg(project.path())
         .output()
@@ -96,15 +96,15 @@ fn env_var_lang_is_honored_for_agents() {
     assert!(output.status.success());
     assert!(
         stdout_of(&output).contains("ENVIRONMENT"),
-        "DEVFORGE_LANG=en"
+        "ZAVIK_LANG=en"
     );
 }
 
 #[test]
 fn flag_beats_env_var() {
     let project = js_project();
-    let output = devforge()
-        .env("DEVFORGE_LANG", "en")
+    let output = zavik()
+        .env("ZAVIK_LANG", "en")
         .args(["env", "--lang", "pt-BR"])
         .arg(project.path())
         .output()
@@ -112,15 +112,15 @@ fn flag_beats_env_var() {
     assert!(output.status.success());
     assert!(
         stdout_of(&output).contains("AMBIENTE"),
-        "--lang > DEVFORGE_LANG"
+        "--lang > ZAVIK_LANG"
     );
 }
 
 #[test]
 fn invalid_lang_fails_loudly_with_the_valid_options() {
     let project = js_project();
-    let output = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let output = zavik()
+        .env_remove("ZAVIK_LANG")
         .args(["env", "--lang", "de"])
         .arg(project.path())
         .output()
@@ -141,13 +141,13 @@ fn invalid_lang_fails_loudly_with_the_valid_options() {
 #[test]
 fn json_is_language_independent() {
     let project = js_project();
-    let pt = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let pt = zavik()
+        .env_remove("ZAVIK_LANG")
         .args(["env", "--json"])
         .arg(project.path())
         .output()
         .unwrap();
-    let en = devforge()
+    let en = zavik()
         .args(["env", "--json", "--lang", "en"])
         .arg(project.path())
         .output()
@@ -170,8 +170,8 @@ fn lang_after_double_dash_is_passed_to_the_child_not_consumed() {
         r#"{"name":"i18n-run","scripts":{"start":"node server.js"}}"#,
     )
     .unwrap();
-    let output = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let output = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "run",
             project.path().to_str().unwrap(),
@@ -196,7 +196,7 @@ fn lang_after_double_dash_is_passed_to_the_child_not_consumed() {
 #[test]
 fn help_follows_the_lang_flag_with_english_default() {
     // Default (no flag): English since the phase-3 flip.
-    let def = Command::new(env!("CARGO_BIN_EXE_devforge"))
+    let def = Command::new(env!("CARGO_BIN_EXE_zavik"))
         .arg("help")
         .output()
         .unwrap();
@@ -210,7 +210,7 @@ fn help_follows_the_lang_flag_with_english_default() {
     );
 
     // Explicit pt-BR: the same document fully Portuguese (chave = HELP_PT).
-    let pt = Command::new(env!("CARGO_BIN_EXE_devforge"))
+    let pt = Command::new(env!("CARGO_BIN_EXE_zavik"))
         .args(["help", "--lang", "pt-BR"])
         .output()
         .unwrap();
@@ -223,7 +223,7 @@ fn help_follows_the_lang_flag_with_english_default() {
     );
 
     // Explicit --lang en: same English document, no pt residue.
-    let en = Command::new(env!("CARGO_BIN_EXE_devforge"))
+    let en = Command::new(env!("CARGO_BIN_EXE_zavik"))
         .args(["help", "--lang", "en"])
         .output()
         .unwrap();
@@ -236,8 +236,8 @@ fn help_follows_the_lang_flag_with_english_default() {
 #[test]
 fn diagnose_human_output_follows_lang_flag() {
     // Human path: section, composed summary, cause and labels all follow `--lang`.
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "diagnose",
             "--message",
@@ -265,8 +265,8 @@ fn diagnose_human_output_follows_lang_flag() {
     );
 
     // Explicit pt-BR keeps the pt path covered — the default is EN now.
-    let pt = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let pt = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "diagnose",
             "--message",
@@ -288,12 +288,12 @@ fn diagnose_human_output_follows_lang_flag() {
 fn diagnose_json_prose_is_always_english_whatever_the_lang_flag() {
     // JSON contract: prose inside JSON is English even with the default
     // (pt-BR) language — and the document is byte-for-byte the same.
-    let pt = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let pt = zavik()
+        .env_remove("ZAVIK_LANG")
         .args(["diagnose", "--message", "sh: 1: cargo: not found", "--json"])
         .output()
         .unwrap();
-    let en = devforge()
+    let en = zavik()
         .args([
             "diagnose",
             "--message",
@@ -333,8 +333,8 @@ fn run_output_follows_lang_flag() {
         r#"{"name":"i18n-run-bare","version":"1.0.0"}"#,
     )
     .unwrap();
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .args(["run", bare.path().to_str().unwrap(), "--lang", "en"])
         .output()
         .unwrap();
@@ -355,8 +355,8 @@ fn run_output_follows_lang_flag() {
         r#"{"name":"i18n-run-ok","scripts":{"start":"node server.js"}}"#,
     )
     .unwrap();
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "run",
             runnable.path().to_str().unwrap(),
@@ -385,8 +385,8 @@ fn data_and_license_follow_lang_flag() {
     // Isolated config → deterministic "absent" paths for dataset and license.
     let config = TempDir::new().unwrap();
 
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .env("XDG_CONFIG_HOME", config.path())
         .args(["data", "status", "--lang", "en"])
         .output()
@@ -402,8 +402,8 @@ fn data_and_license_follow_lang_flag() {
         "sem pt no --lang en: {stdout}"
     );
 
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .env("XDG_CONFIG_HOME", config.path())
         .args(["license", "status", "--lang", "en"])
         .output()
@@ -416,8 +416,8 @@ fn data_and_license_follow_lang_flag() {
     assert!(!stdout.contains("nenhuma licença"), "sem pt: {stdout}");
 
     // JSON prose stays English under the default pt language (hint field).
-    let out = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let out = zavik()
+        .env_remove("ZAVIK_LANG")
         .env("XDG_CONFIG_HOME", config.path())
         .args(["data", "status", "--json"])
         .output()
@@ -435,8 +435,8 @@ fn data_and_license_follow_lang_flag() {
 fn up_dry_run_output_follows_lang_flag() {
     // Explicit pt-BR: plan section, target label and dry-run note stay pt.
     let project = js_project();
-    let pt = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let pt = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "up",
             project.path().to_str().unwrap(),
@@ -456,8 +456,8 @@ fn up_dry_run_output_follows_lang_flag() {
 
     // --lang en: the same plan fully English, no pt residue.
     let project = js_project();
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "up",
             project.path().to_str().unwrap(),
@@ -484,8 +484,8 @@ fn up_dry_run_output_follows_lang_flag() {
 fn prepare_trust_and_plan_follow_lang_flag() {
     // Explicit pt-BR: trust line, plan section and dry-run note stay pt.
     let project = js_project();
-    let pt = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let pt = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "prepare",
             project.path().to_str().unwrap(),
@@ -504,8 +504,8 @@ fn prepare_trust_and_plan_follow_lang_flag() {
 
     // --lang en: the same surfaces fully English, no pt residue.
     let project = js_project();
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "prepare",
             project.path().to_str().unwrap(),
@@ -538,8 +538,8 @@ fn prepare_trust_and_plan_follow_lang_flag() {
 fn parse_and_policy_errors_follow_lang_flag() {
     // Composed parse errors are built in the current language.
     let project = js_project();
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "run",
             project.path().to_str().unwrap(),
@@ -555,8 +555,8 @@ fn parse_and_policy_errors_follow_lang_flag() {
         "stderr em EN: {stderr}"
     );
 
-    let pt = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let pt = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "run",
             project.path().to_str().unwrap(),
@@ -573,8 +573,8 @@ fn parse_and_policy_errors_follow_lang_flag() {
     );
 
     // audit --fail-on validation composes with the flag value.
-    let en = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let en = zavik()
+        .env_remove("ZAVIK_LANG")
         .args([
             "audit",
             project.path().to_str().unwrap(),
@@ -605,8 +605,8 @@ fn finding_and_evidence_content_is_english_even_in_ptbr() {
     )
     .unwrap();
 
-    let analyze = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let analyze = zavik()
+        .env_remove("ZAVIK_LANG")
         .args(["analyze", "--lang", "pt-BR"])
         .arg(dir.path())
         .output()
@@ -622,8 +622,8 @@ fn finding_and_evidence_content_is_english_even_in_ptbr() {
         "shell do analyze em pt-BR: {stdout}"
     );
 
-    let audit = devforge()
-        .env_remove("DEVFORGE_LANG")
+    let audit = zavik()
+        .env_remove("ZAVIK_LANG")
         .args(["audit", "--lang", "pt-BR"])
         .arg(dir.path())
         .output()

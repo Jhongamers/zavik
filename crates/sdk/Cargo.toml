@@ -1,10 +1,10 @@
 [package]
-name = "devforge-sdk"
-description = "Contratos (Capabilities) que os plugins do DevForge implementam."
+name = "zavik-sdk"
+description = "Contratos (Capabilities) que os plugins do Zavik implementam."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
-devforge-shared.workspace = true
-devforge-events.workspace = true
+zavik-shared.workspace = true
+zavik-events.workspace = true

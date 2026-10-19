@@ -1,6 +1,6 @@
 <div align="center">
 
-# DevForge
+# Zavik
 
 **The open-source dev CLI & AI-orchestration engine** — detect your stack,
 audit your dependency **supply chain**, hand any AI agent a one-call briefing.
@@ -13,7 +13,7 @@ audit your dependency **supply chain**, hand any AI agent a one-call briefing.
 </div>
 
 **Works with any agent** — Claude Code, Codex, OpenCode, Cursor, Antigravity,
-aider, Copilot — or with no agent at all. DevForge is a plain CLI: stable
+aider, Copilot — or with no agent at all. Zavik is a plain CLI: stable
 `--json` output and exit codes *are* the interface; there is no vendor plugin
 to install. *(Compatibility, not affiliation.)*
 
@@ -31,15 +31,15 @@ Detects your OS/arch, downloads the release tarball, **verifies its sha256**
 reading it, then running it — our own `audit` classifies `curl | sh` as a
 risk. Windows: grab the `.zip` from
 [Releases](https://github.com/Jhongamers/devforge/releases). Overrides:
-`DEVFORGE_VERSION`, `DEVFORGE_INSTALL_DIR`, `DEVFORGE_BASE_URL` (mirrors,
+`ZAVIK_VERSION`, `ZAVIK_INSTALL_DIR`, `ZAVIK_BASE_URL` (mirrors,
 air-gapped, tests).
 
 **From source** (always works):
 
 ```bash
-git clone https://github.com/Jhongamers/devforge && cd devforge
+git clone https://github.com/Jhongamers/devforge && cd zavik
 cargo build --release
-cp target/release/devforge ~/.local/bin/   # or anywhere on your PATH
+cp target/release/zavik ~/.local/bin/   # or anywhere on your PATH
 ```
 
 Requires Rust stable. Every `v*` tag publishes binaries
@@ -49,35 +49,35 @@ above and `cargo install` cover the main doors (package-manager one-liners
 are on the launch roadmap).
 
 > **For AI agents:** clone + `cargo build --release` is the canonical
-> zero-mystery install. After that, `devforge context --json` is the fastest
+> zero-mystery install. After that, `zavik context --json` is the fastest
 > way to learn an unfamiliar repo.
 
 ## Quickstart
 
 ```bash
 cd some-project
-devforge                    # detect the stack
-devforge context --json     # one-call briefing (runbook + entrypoints + trust)
-devforge audit              # supply-chain audit
-devforge up                 # audit → prepare → run, with intact gates
+zavik                    # detect the stack
+zavik context --json     # one-call briefing (runbook + entrypoints + trust)
+zavik audit              # supply-chain audit
+zavik up                 # audit → prepare → run, with intact gates
 ```
 
 ## Commands
 
 ```bash
-devforge [path]                     # detect the stack (default)
-devforge detect [path]              # same
-devforge analyze [path] [flags]     # analyze the project's dependencies
-devforge context [path] [flags]     # briefing: runbook + entrypoints + risks (1 call)
-devforge diagnose [flags]           # summarize an error: root cause + fix
-devforge env [path] [flags]         # environment fingerprint: tool versions + what's missing
-devforge run [path] [--detach]      # boot the project (--detach: background + PID)
-devforge up [url|path] [flags]      # pipeline: clone? → audit → prepare → run (same gates)
-devforge audit [path] [flags]       # supply-chain audit (--fail-on gates CI)
-devforge license status|install|remove # offline license (Ed25519 signature, local)
-devforge data status|update         # risk dataset (free: status; Pro: update)
-devforge prepare [path] [flags]     # install dependencies (no Docker)
-devforge docker  [path] [flags]     # generate Dockerfile + build the image
+zavik [path]                     # detect the stack (default)
+zavik detect [path]              # same
+zavik analyze [path] [flags]     # analyze the project's dependencies
+zavik context [path] [flags]     # briefing: runbook + entrypoints + risks (1 call)
+zavik diagnose [flags]           # summarize an error: root cause + fix
+zavik env [path] [flags]         # environment fingerprint: tool versions + what's missing
+zavik run [path] [--detach]      # boot the project (--detach: background + PID)
+zavik up [url|path] [flags]      # pipeline: clone? → audit → prepare → run (same gates)
+zavik audit [path] [flags]       # supply-chain audit (--fail-on gates CI)
+zavik license status|install|remove # offline license (Ed25519 signature, local)
+zavik data status|update         # risk dataset (free: status; Pro: update)
+zavik prepare [path] [flags]     # install dependencies (no Docker)
+zavik docker  [path] [flags]     # generate Dockerfile + build the image
 ```
 
 Flags:
@@ -95,7 +95,7 @@ Flags:
 | `--ignore`  | (`audit`) TOML suppressions with **mandatory expiry**.              |
 | `--sarif`   | (`audit`) Emits SARIF 2.1.0 (GitHub Code Scanning).                 |
 | `--url`     | (`data`) Dataset origin: `https://...` or `file://<path>`           |
-|             | (alternative: env `DF_DATASET_URL`).                                |
+|             | (alternative: env `ZV_DATASET_URL`).                                |
 | `--message` | (`diagnose`) Inline error text.                                     |
 | `--input`   | (`diagnose`) File containing the error output.                      |
 | `--timeout` | (`run`) Seconds to wait for readiness (default 60).                 |
@@ -111,22 +111,22 @@ the model interpret and burn tokens; JSON delivers the fact ready-made. Every
 document carries `"schema": 1`.
 
 ```bash
-devforge detect  --json          # what is this project (ground truth)
-devforge context --json          # briefing: runbook + entrypoints + risks (1 call)
-devforge analyze --json          # sick dependencies
-devforge diagnose --json         # root cause of an error (+ fix)
-devforge env --json              # environment fingerprint: OS/arch, tool versions, missing
-devforge run --dry-run --json    # resolved start command + where it came from
-devforge run --json              # plan without executing (agent mode) or final result
-devforge run --detach --json     # background: pid + log + stop_command (no supervision)
-devforge up --dry-run --json     # pipeline plan (stage by stage, nothing executed)
-devforge up --json               # JSON Lines: 1 object per stage + final summary
-devforge audit --json            # supply-chain report (score, factors, verdict)
-devforge license status --json   # installed license (plan, holder, expires, valid)
-devforge data status --json      # dataset installed? version, age, staleness (free)
-devforge data update --json      # Pro: downloads+verifies; no license → no_license, exit 1
-devforge prepare --json          # plan + trust verification (does not execute)
-devforge docker  --json          # same, Docker mode
+zavik detect  --json          # what is this project (ground truth)
+zavik context --json          # briefing: runbook + entrypoints + risks (1 call)
+zavik analyze --json          # sick dependencies
+zavik diagnose --json         # root cause of an error (+ fix)
+zavik env --json              # environment fingerprint: OS/arch, tool versions, missing
+zavik run --dry-run --json    # resolved start command + where it came from
+zavik run --json              # plan without executing (agent mode) or final result
+zavik run --detach --json     # background: pid + log + stop_command (no supervision)
+zavik up --dry-run --json     # pipeline plan (stage by stage, nothing executed)
+zavik up --json               # JSON Lines: 1 object per stage + final summary
+zavik audit --json            # supply-chain report (score, factors, verdict)
+zavik license status --json   # installed license (plan, holder, expires, valid)
+zavik data status --json      # dataset installed? version, age, staleness (free)
+zavik data update --json      # Pro: downloads+verifies; no license → no_license, exit 1
+zavik prepare --json          # plan + trust verification (does not execute)
+zavik docker  --json          # same, Docker mode
 ```
 
 > `prepare`/`docker` with `--json` deliver the **plan** and **risks**
@@ -146,15 +146,15 @@ Example (`detect --json`, trimmed):
 ### Language (`--lang`)
 
 Human CLI text: **English by default** (flipped at the pre-launch i18n
-milestone); `--lang pt-BR` (also `--lang=pt-BR` and `DEVFORGE_LANG=pt-BR`,
+milestone); `--lang pt-BR` (also `--lang=pt-BR` and `ZAVIK_LANG=pt-BR`,
 or a BR system locale `LC_ALL`/`LANG=pt_BR…`) switches the messages to
 Brazilian Portuguese, `--lang en` forces English back. **Machine output
 never switches**: JSON keys/values, SARIF and exit codes are always
 English. Migration design and status: `docs/design-i18n.md`.
 
 ```bash
-devforge env --lang en            # human sections in English
-DEVFORGE_LANG=en devforge audit   # same, via env (agents/CI)
+zavik env --lang en            # human sections in English
+ZAVIK_LANG=en zavik audit   # same, via env (agents/CI)
 ```
 
 ### One-call briefing (`context`)
@@ -164,7 +164,7 @@ An AI's biggest expense in an unfamiliar project is **exploration**
 The `context` answers all of it **in a single call**:
 
 ```bash
-devforge context --json
+zavik context --json
 ```
 
 ```json
@@ -202,19 +202,19 @@ whole output and returns the **real** cause + the fix, with the "proof"
 
 ```bash
 # 1) paste the error directly
-devforge diagnose --message "sh: 1: cargo: not found"
-#   → fix: `cargo` is not on PATH — run `devforge prepare` for the toolchain
+zavik diagnose --message "sh: 1: cargo: not found"
+#   → fix: `cargo` is not on PATH — run `zavik prepare` for the toolchain
 
 # 2) or pipe (without leaving your build flow)
-my_build 2>&1 | devforge diagnose
+my_build 2>&1 | zavik diagnose
 
 # 3) or from a file
-devforge diagnose --input build.log --json
+zavik diagnose --input build.log --json
 ```
 
 Local deterministic Rust (zero tokens). If **no** rule matches, it is honest
 and returns the lines that look most like the error (a summary) instead of
-pretending it understood. Why not `devforge run <command>`? To avoid adding a
+pretending it understood. Why not `zavik run <command>`? To avoid adding a
 new arbitrary-execution surface — you/the agent already have the error; only
 the translation is missing.
 
@@ -231,18 +231,18 @@ project boots** and boots it — never silently guesses:
    guess).
 
 ```bash
-devforge run                      # resolves, ASKS permission to execute, boots
-devforge run --detach             # background: returns pid + log (no readiness wait)
-devforge run --dry-run            # only shows the resolved command (no execution)
-devforge run --timeout 90         # wait up to 90s for readiness (default 60)
-devforge run --health http://localhost:3000/health   # explicit readiness
-devforge run . -- --port 3001     # args after -- go to the start command
-devforge run --json               # structured plan/result (agent mode)
+zavik run                      # resolves, ASKS permission to execute, boots
+zavik run --detach             # background: returns pid + log (no readiness wait)
+zavik run --dry-run            # only shows the resolved command (no execution)
+zavik run --timeout 90         # wait up to 90s for readiness (default 60)
+zavik run --health http://localhost:3000/health   # explicit readiness
+zavik run . -- --port 3001     # args after -- go to the start command
+zavik run --json               # structured plan/result (agent mode)
 ```
 
 **Detached:** `--detach` starts the project in its **own session** — closing
 the terminal doesn't take the dev server down — and returns `pid`, `log`
-(`.devforge/run.log`, follow with `tail -f`) and `stop_command` (e.g.
+(`.zavik/run.log`, follow with `tail -f`) and `stop_command` (e.g.
 `kill 1234`). The trade is honest: it does **not** wait for readiness or
 supervise; run without `--detach` for health check + crash→diagnose. Same
 gate: executing is critical risk, `--yes` doesn't cover it. *(On Windows the
@@ -270,14 +270,14 @@ composed**. `up` chains the pipeline through **literally the same code paths**
 of the isolated commands — composing does not weaken security:
 
 ```bash
-devforge up                        # audit → prepare → run in the current directory
-devforge up ./my-project           # same in another path
-devforge up https://github.com/x/y # safe clone (--depth 1, no submodules,
+zavik up                        # audit → prepare → run in the current directory
+zavik up ./my-project           # same in another path
+zavik up https://github.com/x/y # safe clone (--depth 1, no submodules,
                                    # no hooks; destination = ./y — never overwrites)
-devforge up --until audit          # stop after the audit (useful in CI)
-devforge up --skip run             # prepare only, don't boot
-devforge up --dry-run              # shows the stage plan; executes nothing
-devforge up --json                 # JSON Lines: 1 object per stage + final summary
+zavik up --until audit          # stop after the audit (useful in CI)
+zavik up --skip run             # prepare only, don't boot
+zavik up --dry-run              # shows the stage plan; executes nothing
+zavik up --json                 # JSON Lines: 1 object per stage + final summary
 ```
 
 **Per-stage gates, intact:** trust/toolchain/installation checks and the `run`
@@ -310,19 +310,19 @@ confluence), **Snyk/cargo-audit** (policy + `fail_on` + exit code) and
    re-activates the alert and is listed for re-triage.
 
 ```bash
-devforge audit                      # offline: origin (registry/git/path) + pin
-devforge audit --online             # + install hooks and npm downloads
-devforge audit --fail-on high       # exit 1 on high/critical (gates CI)
-devforge audit --sarif > results.sarif   # SARIF 2.1.0 for GitHub Code Scanning
-devforge audit --policy .devforge/policy.toml --ignore .devforge/ignore.toml
+zavik audit                      # offline: origin (registry/git/path) + pin
+zavik audit --online             # + install hooks and npm downloads
+zavik audit --fail-on high       # exit 1 on high/critical (gates CI)
+zavik audit --sarif > results.sarif   # SARIF 2.1.0 for GitHub Code Scanning
+zavik audit --policy .zavik/policy.toml --ignore .zavik/ignore.toml
 ```
 
-Policy (`.devforge/policy.toml`, versioned):
+Policy (`.zavik/policy.toml`, versioned):
 ```toml
 fail_on = "high"
 allowlist = ["my-internal-package"]   # expected internal git → no alert
 ```
-Suppression (`.devforge/ignore.toml` — `expires` is **mandatory**):
+Suppression (`.zavik/ignore.toml` — `expires` is **mandatory**):
 ```toml
 [[ignore]]
 package = "some-package"
@@ -388,14 +388,14 @@ Chosen model: **open core + subscription**. The CLI is free; the license is
 the key that unlocks (and will unlock) what's paid — with zero network calls.
 
 ```bash
-devforge license install <key|@file>   # validates locally (Ed25519) and installs
-devforge license status [--json]       # plan, holder, expiry, validity
-devforge license remove
+zavik license install <key|@file>   # validates locally (Ed25519) and installs
+zavik license status [--json]       # plan, holder, expiry, validity
+zavik license remove
 ```
 
-- **Format:** token `DF1.<payload-b64url>.<signature>`; the binary embeds only
+- **Format:** token `ZV1.<payload-b64url>.<signature>`; the binary embeds only
   the **public** key. 100% local verification, stored at
-  `~/.config/devforge/license.key`.
+  `~/.config/zavik/license.key`.
 - **Honesty:** it's an **anti-dishonesty** gate, not an anti-attacker one —
   patching the binary bypasses it (same deal as TablePlus/Transmit). It also
   doesn't defend against a system clock rolled back. Real protection arrives
@@ -417,8 +417,8 @@ the real database — no fuzzy matching), downloaded from the Releases here and
 verified with the embedded public key.
 
 ```bash
-devforge data status [--json]               # free, offline: version, age, staleness
-devforge data update [--json] [--url <url>] # Pro: downloads, VERIFIES, installs (needs license)
+zavik data status [--json]               # free, offline: version, age, staleness
+zavik data update [--json] [--url <url>] # Pro: downloads, VERIFIES, installs (needs license)
 ```
 
 | | Free (today) | Pro (license + `data update`) |
@@ -468,7 +468,7 @@ Rules and limits (by design, see `docs/design-data.md`):
 
 ### Permissions
 
-By default DevForge **does nothing on its own**: before each sensitive action
+By default Zavik **does nothing on its own**: before each sensitive action
 (install, generate/overwrite a file, run `docker build`) it asks:
 
 ```
@@ -486,7 +486,7 @@ By default DevForge **does nothing on its own**: before each sensitive action
 ### Security & supply-chain (automatic verification)
 
 A manifest (`package.json`, `Cargo.toml`, ...) is **untrusted input**: a
-malicious project (or an agent driving DevForge unknowingly) could ask it to
+malicious project (or an agent driving Zavik unknowingly) could ask it to
 install arbitrary code. So **before** any `prepare`/`docker` runs, a
 **trust pre-flight** executes that does not blindly trust the manifest:
 
@@ -537,7 +537,7 @@ One read-only call that replaces an agent's ~10 probes for *"does this machine
 even work?"*:
 
 ```bash
-devforge env --json
+zavik env --json
 ```
 
 ```json
@@ -586,7 +586,7 @@ MISSING TOOLS
 
 ## Architecture
 
-DevForge follows **Clean Architecture** with the **Microkernel** pattern for
+Zavik follows **Clean Architecture** with the **Microkernel** pattern for
 modularity, testability and extensibility. The critical components:
 
 - **EventBus:** reactive, decoupled communication between modules.
@@ -605,13 +605,13 @@ shared  ->  events  ->  sdk  ->  { core, kernel } / plugins
 
 | Crate              | Role                                                             | Depends on                     |
 | ------------------ | ---------------------------------------------------------------- | ------------------------------ |
-| `devforge-shared`  | Domain: universal types (`Context`, `ProjectStack`, `Language`).  | —                              |
-| `devforge-events`  | Event bus (`EventBus`, `EventEnvelope`).                          | `shared`                       |
-| `devforge-sdk`     | Contracts: `Capability`, `FileSystemAccess`, `ProjectDetector`, `CommandRunner` and the `PermissionGate` port. | `shared`, `events` |
-| `devforge-plugins` | V1 plugins: `LocalFileSystem`, `StackDetector`, `LocalCommandRunner`. | `shared`, `sdk`             |
-| `devforge-core`    | Use cases: `WorkflowEngine` and `Provisioner` (project preparation). | `shared`, `sdk`                |
-| `devforge-kernel`  | Microkernel: plugin registry and lifecycle.                       | `shared`, `events`, `sdk`      |
-| `devforge` (CLI)   | Entry point + interactive `PermissionGate`.                        | all                            |
+| `zavik-shared`  | Domain: universal types (`Context`, `ProjectStack`, `Language`).  | —                              |
+| `zavik-events`  | Event bus (`EventBus`, `EventEnvelope`).                          | `shared`                       |
+| `zavik-sdk`     | Contracts: `Capability`, `FileSystemAccess`, `ProjectDetector`, `CommandRunner` and the `PermissionGate` port. | `shared`, `events` |
+| `zavik-plugins` | V1 plugins: `LocalFileSystem`, `StackDetector`, `LocalCommandRunner`. | `shared`, `sdk`             |
+| `zavik-core`    | Use cases: `WorkflowEngine` and `Provisioner` (project preparation). | `shared`, `sdk`                |
+| `zavik-kernel`  | Microkernel: plugin registry and lifecycle.                       | `shared`, `events`, `sdk`      |
+| `zavik` (CLI)   | Entry point + interactive `PermissionGate`.                        | all                            |
 
 ## Stack detection
 
@@ -652,5 +652,5 @@ The full keyword table lives in `crates/plugins/src/detector/`.
   machine contract (JSON, SARIF, exit codes) is **always English**.
 - Honest limitations are called out inline throughout this README — nothing
   claims more than the tool does. Automatic fix execution is **out of scope**
-  by design: DevForge only **proposes** fixes.
+  by design: Zavik only **proposes** fixes.
 - License: [MIT](LICENSE).

@@ -1,4 +1,4 @@
-//! Crate `devforge-events` — the **EventBus**.
+//! Crate `zavik-events` — the **EventBus**.
 //!
 //! Reactive, decoupled communication between the Kernel, Core, and plugins. No
 //! Core module calls a presentation layer directly: they all exchange
@@ -64,7 +64,7 @@ impl EventBus {
             .expect("EventBus: lock de leitura envenenado");
         eprintln!(
             "{}",
-            devforge_shared::i18n::t_fmt(
+            zavik_shared::i18n::t_fmt(
                 "EVENTBUS: publicando '{}' para {} assinante(s)",
                 &[&event.event_type, &handlers.len().to_string()]
             )

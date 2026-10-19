@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use devforge_shared::{Language, ProjectStack};
+use zavik_shared::{Language, ProjectStack};
 
 /// Envelope + payload schema this build understands.
 pub const DATASET_SCHEMA: u32 = 2;
@@ -31,7 +31,7 @@ pub const DATASET_PUBLIC_KEY_B64: &str = "jSunlm4BzG3Q3-THwoaG4z-IeM4XjpGb4MzekC
 /// Default origin of the dataset (a GitHub Release asset). Empty until the
 /// repository exists (ROADMAP F0); then fill
 /// `https://github.com/<owner>/<repo>/releases/download/dataset-latest/dataset.json`.
-/// Override per call with `--url` or `DF_DATASET_URL` (also how tests and
+/// Override per call with `--url` or `ZV_DATASET_URL` (also how tests and
 /// air-gapped mirrors point at local files: `file://<path>` or a bare path).
 pub const DEFAULT_DATASET_URL: &str = "";
 
@@ -106,8 +106,8 @@ impl DatasetError {
     /// Message in the target language: JSON prose is always English
     /// (docs/design-i18n.md); human output goes through `Display`, which
     /// renders in the current language.
-    pub(crate) fn message_in(&self, lang: devforge_shared::i18n::Lang) -> String {
-        use devforge_shared::i18n::{t_fmt_in, translate};
+    pub(crate) fn message_in(&self, lang: zavik_shared::i18n::Lang) -> String {
+        use zavik_shared::i18n::{t_fmt_in, translate};
         match self {
             DatasetError::PublicKeyMissing => translate(
                 lang,
@@ -144,7 +144,7 @@ impl std::fmt::Display for DatasetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Human path: renders in the CURRENT language; JSON sites call
         // `message_in(Lang::En)` instead.
-        f.write_str(&self.message_in(devforge_shared::i18n::lang()))
+        f.write_str(&self.message_in(zavik_shared::i18n::lang()))
     }
 }
 
@@ -157,7 +157,7 @@ pub fn dataset_file() -> PathBuf {
         .unwrap_or_else(|| {
             PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".config")
         });
-    base.join("devforge").join("dataset.json")
+    base.join("zavik").join("dataset.json")
 }
 
 /// Embedded public key, already decoded (mirrors the license's helper).
@@ -318,9 +318,9 @@ pub struct DatasetReport {
 pub fn findings_for(
     stacks: &[ProjectStack],
     dataset: &Dataset,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> Vec<DatasetFinding> {
-    use devforge_shared::i18n::t_fmt_in;
+    use zavik_shared::i18n::t_fmt_in;
     let normalize_for = |ecosystem: &str, name: &str| normalize_name(ecosystem, name);
 
     let mut bad_index: HashMap<(String, String), &BadName> = HashMap::new();
@@ -426,7 +426,7 @@ pub fn build_report(
     stacks: &[ProjectStack],
     dataset: &Dataset,
     today: &str,
-    lang: devforge_shared::i18n::Lang,
+    lang: zavik_shared::i18n::Lang,
 ) -> DatasetReport {
     let age = age_days(&dataset.generated, today).unwrap_or(-1);
     DatasetReport {
@@ -503,7 +503,7 @@ pub fn sign_envelope_for_test(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use devforge_shared::{Dependency, DependencyKind};
+    use zavik_shared::{Dependency, DependencyKind};
     use ed25519_dalek::SigningKey;
     use std::path::PathBuf;
 
@@ -696,7 +696,7 @@ mod tests {
         let mut s = stacks[0].clone();
         s.dependencies
             .push(Dependency::new("LoDaHs", None, DependencyKind::Runtime));
-        let findings = findings_for(&[s], &dataset, devforge_shared::i18n::Lang::PtBr);
+        let findings = findings_for(&[s], &dataset, zavik_shared::i18n::Lang::PtBr);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].kind, "bad_name");
         assert_eq!(findings[0].severity, "high");
@@ -708,7 +708,7 @@ mod tests {
     fn advisory_name_match_is_low_with_link_even_with_version() {
         let dataset = sample_dataset();
         let stacks = [stack(Language::JavaScript, &[("lodash", "4.17.21")])];
-        let findings = findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr);
+        let findings = findings_for(&stacks, &dataset, zavik_shared::i18n::Lang::PtBr);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].kind, "advisory");
         assert_eq!(findings[0].severity, "low", "v1 propõe, não confirma");
@@ -730,7 +730,7 @@ mod tests {
             kind: "advisory".into(),
         });
         let stacks = [stack(Language::JavaScript, &[("lodash", "4.17.21")])];
-        let findings = findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr);
+        let findings = findings_for(&stacks, &dataset, zavik_shared::i18n::Lang::PtBr);
         assert_eq!(findings.len(), 1, "um pacote = um achado");
         assert!(findings[0].detail.contains("GHSA-test-1"), "id principal citado");
         assert!(
@@ -748,7 +748,7 @@ mod tests {
             Language::JavaScript,
             &[("lodash-x", "1.0.0"), ("notlodahs", "1.0.0"), ("lo-dahs", "1.0.0")],
         )];
-        assert!(findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr).is_empty());
+        assert!(findings_for(&stacks, &dataset, zavik_shared::i18n::Lang::PtBr).is_empty());
     }
 
     #[test]
@@ -756,7 +756,7 @@ mod tests {
         // `lodash` advisory is npm-only; same name in a Go project = nothing.
         let dataset = sample_dataset();
         let stacks = [stack(Language::Go, &[("lodash", "v1.2.3")])];
-        assert!(findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr).is_empty());
+        assert!(findings_for(&stacks, &dataset, zavik_shared::i18n::Lang::PtBr).is_empty());
     }
 
     #[test]
@@ -784,20 +784,20 @@ mod tests {
 
         // PyPI folds case + separators: `Foo_Bar` == `foo-bar` → matches.
         let py = [stack(Language::Python, &[("Foo_Bar", "1.0")])];
-        assert_eq!(findings_for(&py, &dataset, devforge_shared::i18n::Lang::PtBr).len(), 1);
+        assert_eq!(findings_for(&py, &dataset, zavik_shared::i18n::Lang::PtBr).len(), 1);
 
         // PyPI near-miss (`Foo_Bar_Baz` → `foo-bar-baz`) stays silent.
         let py_near = [stack(Language::Python, &[("Foo_Bar_Baz", "1.0")])];
-        assert!(findings_for(&py_near, &dataset, devforge_shared::i18n::Lang::PtBr).is_empty());
+        assert!(findings_for(&py_near, &dataset, zavik_shared::i18n::Lang::PtBr).is_empty());
 
         // RubyGems does NOT fold separators: `foo_bar` ≠ `foo-bar` → no match
         // (folding there would invent findings for distinct gems).
         let rb = [stack(Language::Ruby, &[("foo_bar", "1.0")])];
-        assert!(findings_for(&rb, &dataset, devforge_shared::i18n::Lang::PtBr).is_empty());
+        assert!(findings_for(&rb, &dataset, zavik_shared::i18n::Lang::PtBr).is_empty());
 
         // ...while the exact rubygems name does match (case-only fold).
         let rb_exact = [stack(Language::Ruby, &[("Foo-Bar", "1.0")])];
-        assert_eq!(findings_for(&rb_exact, &dataset, devforge_shared::i18n::Lang::PtBr).len(), 1);
+        assert_eq!(findings_for(&rb_exact, &dataset, zavik_shared::i18n::Lang::PtBr).len(), 1);
     }
 
     #[test]
@@ -823,8 +823,8 @@ mod tests {
             kind: "advisory".into(),
         });
 
-        let a = findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr);
-        let b = findings_for(&stacks, &dataset, devforge_shared::i18n::Lang::PtBr);
+        let a = findings_for(&stacks, &dataset, zavik_shared::i18n::Lang::PtBr);
+        let b = findings_for(&stacks, &dataset, zavik_shared::i18n::Lang::PtBr);
         assert_eq!(a, b, "saída determinística");
         let kinds: Vec<&str> = a.iter().map(|f| f.kind).collect();
         assert_eq!(kinds, ["bad_name", "advisory", "advisory"]);

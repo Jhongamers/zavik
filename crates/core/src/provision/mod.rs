@@ -10,8 +10,8 @@
 //! The `core` executes nothing directly: it uses the capabilities
 //! `CommandRunner`/`FileSystemAccess` and the `PermissionGate` port.
 
-use devforge_shared::{Error, ProjectStack};
-use devforge_sdk::{
+use zavik_shared::{Error, ProjectStack};
+use zavik_sdk::{
     CommandRunner, CommandSpec, Decision, FileSystemAccess, PermissionGate, PermissionRequest,
 };
 use std::path::{Path, PathBuf};
@@ -91,7 +91,7 @@ impl Provisioner {
         mode: PrepareMode,
         stacks: &[ProjectStack],
         root: &Path,
-        lang: devforge_shared::i18n::Lang,
+        lang: zavik_shared::i18n::Lang,
     ) -> PreparePlan {
         let mut plan = PreparePlan::default();
         match mode {
@@ -188,9 +188,9 @@ impl Provisioner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use devforge_shared::i18n::Lang;
-    use devforge_shared::{Dependency, DependencyKind, Language};
-    use devforge_sdk::{
+    use zavik_shared::i18n::Lang;
+    use zavik_shared::{Dependency, DependencyKind, Language};
+    use zavik_sdk::{
         Capability, CommandOutput, CommandRunner, CommandSpec, Decision, FileSystemAccess,
         PermissionGate, PermissionRequest,
     };

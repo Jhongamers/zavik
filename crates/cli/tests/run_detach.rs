@@ -1,4 +1,4 @@
-//! Integration tests for `devforge run --detach` (real binary).
+//! Integration tests for `zavik run --detach` (real binary).
 //!
 //! The spawn mechanics themselves are unit-tested in `src/detached.rs`; here
 //! we lock the **gate invariant**: detach executes code, so a non-interactive
@@ -10,8 +10,8 @@
 use std::process::Command;
 use tempfile::TempDir;
 
-fn devforge() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_devforge"))
+fn zavik() -> Command {
+    Command::new(env!("CARGO_BIN_EXE_zavik"))
 }
 
 /// Project with a resolvable start command (never executed: gate denies).
@@ -28,7 +28,7 @@ fn project_with_start() -> TempDir {
 #[test]
 fn detach_without_a_human_is_denied_even_with_yes() {
     let dir = project_with_start();
-    let output = devforge()
+    let output = zavik()
         .args([
             "run",
             dir.path().to_str().unwrap(),
@@ -48,7 +48,7 @@ fn detach_without_a_human_is_denied_even_with_yes() {
 
     // Nothing was spawned: no log file, no background process.
     assert!(
-        !dir.path().join(".devforge/run.log").exists(),
+        !dir.path().join(".zavik/run.log").exists(),
         "negado = nada executado"
     );
 }
@@ -56,7 +56,7 @@ fn detach_without_a_human_is_denied_even_with_yes() {
 #[test]
 fn detach_dry_run_plans_without_executing() {
     let dir = project_with_start();
-    let output = devforge()
+    let output = zavik()
         .args([
             "run",
             dir.path().to_str().unwrap(),
@@ -73,7 +73,7 @@ fn detach_dry_run_plans_without_executing() {
     assert_eq!(json["status"], "planned");
     assert_eq!(json["resolved"], "npm run start");
     assert!(
-        !dir.path().join(".devforge/run.log").exists(),
+        !dir.path().join(".zavik/run.log").exists(),
         "nada executado"
     );
 }

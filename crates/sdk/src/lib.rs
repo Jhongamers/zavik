@@ -1,13 +1,13 @@
-//! Crate `devforge-sdk` — the **contracts** for capabilities.
+//! Crate `zavik-sdk` — the **contracts** for capabilities.
 //!
 //! This crate is what a third-party developer imports to create a plugin
-//! (ADR 0003). It depends only on `devforge-shared`/`devforge-events`, and
+//! (ADR 0003). It depends only on `zavik-shared`/`zavik-events`, and
 //! never on the Kernel, the database, or Tauri.
 //!
 //! Besides capabilities, the SDK defines presentation ports (e.g.
 //! [`PermissionGate`]) that `core` uses without knowing the concrete UI.
 
-use devforge_shared::{
+use zavik_shared::{
     AnalysisReport, Context, Error, PluginId, ProjectStack, TrustReport,
 };
 use std::any::Any;
@@ -162,7 +162,7 @@ pub trait ProjectAnalyzer: Capability {
 
     /// Trust check **before** installing: finds things that can
     /// execute arbitrary code (e.g. `postinstall`) or that do not match the
-    /// registry (possible typo/fraud). It is the "search" that stops DevForge from
+    /// registry (possible typo/fraud). It is the "search" that stops Zavik from
     /// trusting the manifest blindly — it protects when an AI drives the tool.
     fn verify_trust(
         &self,
