@@ -6,7 +6,7 @@
 audit your dependency **supply chain**, hand any AI agent a one-call briefing.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![CI](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml)
+[![CI](https://github.com/Jhongamers/zavik/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhongamers/zavik/actions/workflows/ci.yml)
 
 [English](README.md) · [Português (Brasil)](README.pt-BR.md)
 
@@ -23,28 +23,28 @@ to install. *(Compatibility, not affiliation.)*
 published):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Jhongamers/devforge/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Jhongamers/zavik/main/install.sh | sh
 ```
 
 Detects your OS/arch, downloads the release tarball, **verifies its sha256**
 (no skip flag) and installs to `~/.local/bin`. Prefer downloading the script,
 reading it, then running it — our own `audit` classifies `curl | sh` as a
 risk. Windows: grab the `.zip` from
-[Releases](https://github.com/Jhongamers/devforge/releases). Overrides:
+[Releases](https://github.com/Jhongamers/zavik/releases). Overrides:
 `ZAVIK_VERSION`, `ZAVIK_INSTALL_DIR`, `ZAVIK_BASE_URL` (mirrors,
 air-gapped, tests).
 
 **From source** (always works):
 
 ```bash
-git clone https://github.com/Jhongamers/devforge && cd zavik
+git clone https://github.com/Jhongamers/zavik && cd zavik
 cargo build --release
 cp target/release/zavik ~/.local/bin/   # or anywhere on your PATH
 ```
 
 Requires Rust stable. Every `v*` tag publishes binaries
 (linux x64/arm64, macOS arm64, Windows) + `.sha256` checksums on
-[Releases](https://github.com/Jhongamers/devforge/releases); the installer
+[Releases](https://github.com/Jhongamers/zavik/releases); the installer
 above and `cargo install` cover the main doors (package-manager one-liners
 are on the launch roadmap).
 
@@ -360,7 +360,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Jhongamers/devforge@v0.1.0
+      - uses: Jhongamers/zavik@v0.1.0
         with:
           fail-on: high
           # version: v0.1.0   # pinned tag (on purpose, not "latest")

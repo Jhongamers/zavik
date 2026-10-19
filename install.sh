@@ -1,5 +1,5 @@
 #!/bin/sh
-# Zavik installer — https://github.com/Jhongamers/devforge
+# Zavik installer — https://github.com/Jhongamers/zavik
 #
 # Detects your OS/arch, downloads the release tarball, verifies its sha256
 # and installs the `zavik` binary. Non-interactive, POSIX sh.
@@ -17,7 +17,7 @@
 #   ZAVIK_BASE_URL      download base (default: GitHub release download URL)
 set -eu
 
-REPO="Jhongamers/devforge"
+REPO="Jhongamers/zavik"
 VERSION="${ZAVIK_VERSION:-v0.1.0}"
 INSTALL_DIR="${ZAVIK_INSTALL_DIR:-${HOME}/.local/bin}"
 BASE_URL="${ZAVIK_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"

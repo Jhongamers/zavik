@@ -7,7 +7,7 @@ stack, audita a **supply-chain** das suas dependências, entrega a qualquer
 agente de IA um briefing de uma chamada.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![CI](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhongamers/devforge/actions/workflows/ci.yml)
+[![CI](https://github.com/Jhongamers/zavik/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhongamers/zavik/actions/workflows/ci.yml)
 
 [English](README.md) · [Português (Brasil)](README.pt-BR.md)
 
@@ -24,14 +24,14 @@ vendor pra instalar. *(Compatibilidade, não filiação.)*
 `v0.1.0` publicada):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Jhongamers/devforge/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Jhongamers/zavik/main/install.sh | sh
 ```
 
 Detecta seu OS/arch, baixa o tarball da release, **confere o sha256** (sem
 flag de pular) e instala em `~/.local/bin`. De preferência baixe o script,
 leia e rode — o nosso próprio `audit` classifica `curl | sh` como risco.
 Windows: pegue o `.zip` em
-[Releases](https://github.com/Jhongamers/devforge/releases). Overrides:
+[Releases](https://github.com/Jhongamers/zavik/releases). Overrides:
 `ZAVIK_VERSION`, `ZAVIK_INSTALL_DIR`, `ZAVIK_BASE_URL` (espelhos,
 ambiente air-gapped, testes).
 
@@ -339,7 +339,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Jhongamers/devforge@v0.1.0
+      - uses: Jhongamers/zavik@v0.1.0
         with:
           fail-on: high
           # version: v0.1.0   # tag pinada (proposital, não "latest")
