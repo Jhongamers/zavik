@@ -194,8 +194,10 @@ CI (cron diário + dispatch manual)              CLI (offline-first)
    builder sobre os **36.885** GHSAs reviewed → 4.065 advisories + 61 kill
    list, 0 parse errado, 750 KB; assinado → verificado → `data update
    file://` → audit com `lodahs` real (GHSA link) e advisory real agrupado.
-   Só não RODA de verdade sem F0 (repo remoto + secret `ZV_DATASET_KEY` +
-   preencher `DEFAULT_DATASET_URL`).
+   RODA de verdade desde 2026-10-19: repo remoto `Jhongamers/zavik`, secret
+   `ZV_DATASET_KEY` e `DEFAULT_DATASET_URL` ativos — E2E local verde
+   (license `ZV1` → `data update file://` → audit com seção FRESH DATA).
+   URL direto só resolve com repo público (asset privado → 404 honesto).
 5. [x] Integração no `audit` (seção separada, invariante do tier grátis) (+ testes).
    — `dataset`/`dataset_findings` no JSON só quando há dataset válido;
    inválido = aviso no stderr e stdout limpo; seção humana antes do Veredito;

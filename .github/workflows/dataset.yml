@@ -1,9 +1,9 @@
 # Builds and publishes the signed Pro risk dataset (docs/design-data.md).
 # Output: Release tag `dataset-latest` → `dataset.json` (Ed25519 envelope).
 #
-# After the repo exists (ROADMAP F0): fill `DEFAULT_DATASET_URL` in
-# crates/cli/src/dataset.rs with this release URL, add the `ZV_DATASET_KEY`
-# secret, push, and trigger this workflow once to publish the first asset.
+# `DEFAULT_DATASET_URL` in crates/cli/src/dataset.rs points at this release
+# and the `ZV_DATASET_KEY` secret is configured; refresh via workflow_dispatch
+# or wait for the daily cron.
 #
 # Supply-chain stance: GitHub-official `actions/checkout` + the runner's
 # preinstalled `gh`/rustup only — no third-party actions (we audit what we

@@ -226,8 +226,12 @@ swift-argument-parser, googletest). Achados:
       clone esparso, build → sign `ZV_DATASET_KEY` → **verifica contra a
       chave do binário antes de publicar** → asset `dataset-latest` via
       `gh`, sem action de terceiro). 11 testes + E2E real (36.885 GHSAs →
-      750 KB → audit com kill list real). Ativação real pende do F0:
-      push+tag, secret `ZV_DATASET_KEY` e preencher `DEFAULT_DATASET_URL`.
+      750 KB → audit com kill list real). Ativação executada: repo
+      `Jhongamers/zavik`, secret `ZV_DATASET_KEY`, `DEFAULT_DATASET_URL`
+      preenchido; dispatch do workflow + E2E local verdes (license `ZV1`
+      → `data update file://` → audit com seção FRESH DATA). Download
+      direto do URL embutido resolve com repo público (asset privado
+      hoje → 404 honesto). Falta: tag `v0.1.0`.
       Upgrade opcional (founder): corpus OSV `ossf/malicious-packages`
       (238k nomes ≈ 28 MB/asset vs ~1 MB hoje) — ver design-data §2.
 - [ ] Action no GitHub Marketplace (billing deles, compute do cliente) —

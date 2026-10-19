@@ -28,12 +28,12 @@ pub const MAX_DATASET_BYTES: usize = 32 * 1024 * 1024;
 /// CLI release.
 pub const DATASET_PUBLIC_KEY_B64: &str = "jSunlm4BzG3Q3-THwoaG4z-IeM4XjpGb4MzekC1UWns";
 
-/// Default origin of the dataset (a GitHub Release asset). Empty until the
-/// repository exists (ROADMAP F0); then fill
-/// `https://github.com/<owner>/<repo>/releases/download/dataset-latest/dataset.json`.
-/// Override per call with `--url` or `ZV_DATASET_URL` (also how tests and
-/// air-gapped mirrors point at local files: `file://<path>` or a bare path).
-pub const DEFAULT_DATASET_URL: &str = "";
+/// Default origin of the dataset (a GitHub Release asset, published daily by
+/// the `dataset` workflow to the `dataset-latest` release). Override per call
+/// with `--url` or `ZV_DATASET_URL` (also how tests and air-gapped mirrors
+/// point at local files: `file://<path>` or a bare path).
+pub const DEFAULT_DATASET_URL: &str =
+    "https://github.com/Jhongamers/zavik/releases/download/dataset-latest/dataset.json";
 
 /// The signed envelope as downloaded (one Release asset, one file).
 #[derive(Debug, Serialize, Deserialize)]
