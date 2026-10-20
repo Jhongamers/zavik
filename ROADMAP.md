@@ -206,13 +206,27 @@ swift-argument-parser, googletest). Achados:
   sha256 OK, **`--version` = `zavik 0.1.2`** (bate com a tag), SIGPIPE
   exit 141. Entradas históricas e fixtures de teste com manifest version
   própria ficaram intactas por design.
-- **Achado (19/10): o `action.yml` usa `curl` anônimo puro** (não injeta
+- [x] **Publicação da `v0.1.3`** (20/10) ✅ — correção do dogfooding #20:
+  default do input `repository` era o placeholder literal `OWNER/zavik`
+  (404 para **todo** consumidor que seguisse o README sem passar o input)
+  → agora `Jhongamers/zavik`; a tag `v0.1.2` carrega o bug no snapshot do
+  `action.yml` dela (tag empurrada não se move) — por isso a re-tag.
+  **Invariante nova no `cargo test`:** default de `version` == `v` +
+  `CARGO_PKG_VERSION` (coerção tag↔binário agora é automática, não
+  checagem manual) + default de `repository` em formato `owner/name` sem
+  placeholder — ambos com não-vacuidade por mutação. Tag `v0.1.3` em
+  `6ad7336` → release 4/4. E2E: sha256 OK, binário `zavik 0.1.3`,
+  install.sh anônimo com default novo OK e **`action-smoke` verde** — o
+  action consumiu a release de verdade (curl anônimo + sha256 + audit +
+  gate), fechando a porta F2 com E2E real.
+- [x] **Achado (19/10): o `action.yml` usa `curl` anônimo puro** (não injeta
   `GITHUB_TOKEN`). Com o repo **privado** o install step falha **404**
   (download anônimo de asset privado); provado que **autenticado** funciona
-  (`gh release download` → arquivo). Logo o E2E real do action só roda com
-  **repo público** (asset anônimo) — validar o action num PR real continua
-  pendente até o repo abrir.
-  *Decisão pendente do founder (não codada):* injetar `GITHUB_TOKEN` no
+  (`gh release download` → arquivo). **Resolvido por abertura do repo
+  (20/10):** repo público → caminho anônimo roda, E2E real verde via
+  `action-smoke` (asset público + sha256 + audit + gate).
+  *Decisão pendente do founder (não codada), agora restrita a consumidor
+  **privado**:* injetar `GITHUB_TOKEN` no
   curl deixaria o action funcionar em repo privado, mas amarra o action ao
   GitHub e muda o modelo de integridade — registrada, aguarda go.
 - Próximos (futuro): typosquat por similaridade, integridade de lockfile,
