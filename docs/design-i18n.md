@@ -235,4 +235,32 @@ que é gate de lançamento.
 - Pluralização/gênero (não temos mensagens com plural em contagem).
 - `format` specs dentro de catálogo (compor número fora — ver §2).
 - Idiomas além de pt-BR/en (a API não muda pra adicionar: enum + catálogo).
-- Tradução de docs (README EN é primário; pt-BR sincronizado por milestone).
+- Tradução de docs: ver §6 (docs públicos em 2 versões; internos vivos pt-BR-only).
+
+## 6. Docs do repo em 2 versões (decisão do founder, 20/10)
+
+Decisão: docs **públicos de cara visita** em 2 versões, EN primário +
+`.pt-BR.md`, no padrão do README. Escopo em 2 lotes:
+
+- **Lote 1 ✅ (20/10, commit `3a64108`)**: `ROADMAP.md` (EN) +
+  `ROADMAP.pt-BR.md` (numeração de seções idêntica — `main.rs` cita
+  "ROADMAP 5.4"); `arquiteture.md` → `ARCHITECTURE.md` (EN) +
+  `ARCHITECTURE.pt-BR.md` (typo do nome corrigido, 5 referências
+  atualizadas: README×2, Cargo.toml, kernel/lib.rs, sdk/lib.rs); deleção
+  de `arquire.md` (cópia drifting acidental, zero referências). Testes:
+  switcher nos 4 arquivos, grep negativo dos paths antigos, links
+  relativos resolvem.
+- **Lote 2 (pós-launch, pendente)**: ADRs bilíngues (imutáveis → drift
+  zero), índice `docs/README.md` em EN, banner "mantido em pt-BR" nos
+  docs vivos internos (`design-*.md`, `dogfooding.md`), lint de CI de
+  paridade EN↔pt-BR dos docs pareados.
+
+**Exceção permanente: `docs/plano-lancamento.md` fica pt-BR-only** —
+táticas de lançamento não são traduzidas pro idioma do público-alvo.
+
+**Racional do corte** (por que não traduzir tudo): docs vivos internos
+são editados a cada batch; versão dupla deles = duas verdades daqui a
+duas semanas (`arquire.md` é a prova de que até UMA doc drifting de si
+mesma acontece em um dia). O visitante internacional lê README, ROADMAP,
+ARCHITECTURE — os 3 agora servidos. A linha antiga "tradução de docs
+fora de escopo" vale só pros docs internos vivos.
