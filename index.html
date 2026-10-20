@@ -82,6 +82,7 @@
       </p>
       <a class="cta primary" href="https://github.com/Jhongamers/zavik">View on GitHub</a>
       <a class="cta ghost" href="https://github.com/Jhongamers/zavik#quickstart">Quickstart</a>
+      <a class="cta ghost" href="https://github.com/Jhongamers/zavik#commands">Docs</a>
     </header>
 
     <section>
@@ -134,6 +135,34 @@ zavik up                 # audit → prepare → run, with intact gates</code></
       </p>
     </section>
 
+    <section id="pricing">
+      <h2>Pricing (honest)</h2>
+      <p class="lead">
+        The CLI is free forever — the paid add-on is fresh data, not features
+        held back.
+      </p>
+      <ul>
+        <li>
+          <strong>Zavik CLI — free, open core (MIT):</strong> everything on
+          this page — <code>detect</code>, <code>context</code>,
+          <code>audit</code>, <code>up</code>, the GitHub Action, unlimited
+          repos.
+        </li>
+        <li>
+          <strong>Fresh risk dataset — paid add-on:</strong>
+          <code>zavik data update</code> pulls a daily, Ed25519-signed risk
+          dataset (GHSA-based) that adds <code>dataset_findings</code> to
+          audits. Without it the CLI still audits everything else, offline.
+        </li>
+      </ul>
+      <p class="note">
+        The price is researched instead of guessed — it lands right after
+        launch, together with checkout. No fake buy button until you can
+        actually buy.
+        <a href="https://github.com/Jhongamers/zavik/issues">Tell us what you'd pay</a>.
+      </p>
+    </section>
+
     <section>
       <h2>Honest limitations</h2>
       <p class="lead">Nothing here claims more than the tool does.</p>
@@ -142,12 +171,12 @@ zavik up                 # audit → prepare → run, with intact gates</code></
         <li>Supply-chain checks are an <strong>anti-dishonesty gate</strong>, not an anti-attacker one.</li>
         <li>Human CLI messages ship in pt-BR + English (English default); the machine contract (JSON, SARIF, exit codes) is always English.</li>
         <li>Online enrichment (npm install hooks, download counts) needs the network; offline the score is more conservative.</li>
-        <li>Package-manager one-liners (brew/npx/winget/choco) are on the pre-launch roadmap.</li>
+        <li>Package-manager one-liners (brew/npx/winget/choco) are on the roadmap.</li>
       </ul>
     </section>
 
     <footer>
-      MIT License · <a href="https://github.com/Jhongamers/zavik">github.com/Jhongamers/zavik</a>
+      MIT License · <a href="#pricing">Pricing</a> · <a href="https://github.com/Jhongamers/zavik">github.com/Jhongamers/zavik</a>
     </footer>
   </div>
 </body>
