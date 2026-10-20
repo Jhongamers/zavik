@@ -115,3 +115,13 @@ token de licença `ZV1.…`.
   não em repo novo. Ativação no dia de abrir o repo (Pages free exige repo
   público). Faltam pro founder: GIF demo (placeholder pronto) e nome legal
   da LICENSE no footer.
+- 2026-10-20: **Site no ar + decisão de stack** — Pages ativado junto com
+  a abertura do repo; landing servida em `jhongamers.github.io/zavik/`
+  (200 verificado com controles anti-fantasma) e ganhou nav "Docs"
+  (→ README) + seção "Pricing (honest)". **Decisão do founder:** o site
+  segue **HTML estático puro** durante todo o lançamento — sem build, sem
+  CI de site, zero deriva de conteúdo; framework (ex.: VitePress/MkDocs)
+  só **pós-lançamento** e apenas quando o conteúdo exigir (docs
+  multi-página com busca/versionamento/i18n). Migração no futuro é
+  barata: o que já existe no `index.html` e no README é portável, sem
+  reescrita.
