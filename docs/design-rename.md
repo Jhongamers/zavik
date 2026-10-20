@@ -113,8 +113,9 @@ token de licença `ZV1.…`.
   sufixo, 404 sem) — um repo `zavik.github.io` publicaria em
   `.../zavik.github.io/` e **divergiria** do ADR; logo o site vive na branch,
   não em repo novo. Ativação no dia de abrir o repo (Pages free exige repo
-  público). Faltam pro founder: GIF demo (placeholder pronto) e nome legal
-  da LICENSE no footer.
+  público). GIF demo pronto (20/10, run real no site — ver
+  `plano-lancamento.md`). Falta pro founder: nome legal da LICENSE no
+  footer.
 - 2026-10-20: **Site no ar + decisão de stack** — Pages ativado junto com
   a abertura do repo; landing servida em `jhongamers.github.io/zavik/`
   (200 verificado com controles anti-fantasma) e ganhou nav "Docs"

@@ -134,9 +134,10 @@ opcional.
 ### Pré-lançamento (checklist)
 - [x] Arquivo `LICENSE` (MIT) na raiz ✅ (holder "Zavik contributors";
       nome legal do founder é opcional, não bloqueia).
-- [ ] README com **GIF no topo**: `detect` → `audit` achando algo → anotação
-      no PR (SARIF). Ferramenta de dev vende no GIF. **(pendência do
-      founder — placeholder pronto no site e no README)**
+- [x] GIF demo no site ✅ (20/10): run **real** do `zavik` v0.1.3 contra um
+      demo service — `detect` → `audit` (achado **MEDIUM** honesto, git-dep
+      non-registry + unpinned) → `--sarif` (anotação no PR). Servido pelo
+      `gh-pages` (`4237c10`, 200 verificado com controle anti-fantasma).
 - [x] `--version` e instalação documentados ✅ (install.sh + READMEs;
       install anônimo E2E verde).
 - [x] Tag publicada ✅ — `v0.1.3` (20/10) com release 4/4 + E2E completo
