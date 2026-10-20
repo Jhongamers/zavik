@@ -104,3 +104,13 @@ token de licença `ZV1.…`.
   `/home/jondo/devforge` → `/home/jondo/zavik` (rename cosmético pós-release:
   nenhum path absoluto do repo apontava para o diretório — grep verificado —;
   sessão de trabalho movida junto; `devforge-corpus` mantém nome legado).
+- 2026-10-19: **Lote C (scaffold) concluído** — site estático (`index.html`
+  autocontido + `.nojekyll` + README de publicação) na branch **`gh-pages`
+  órfã** do próprio repo (`2c35e48`). Endereço verificado, não assumido:
+  Pages de project-site serve `<owner>.github.io/<repo>` literalmente (doc
+  oficial + caso-controle `RayeRen/acad-homepage.github.io` → 200 com o
+  sufixo, 404 sem) — um repo `zavik.github.io` publicaria em
+  `.../zavik.github.io/` e **divergiria** do ADR; logo o site vive na branch,
+  não em repo novo. Ativação no dia de abrir o repo (Pages free exige repo
+  público). Faltam pro founder: GIF demo (placeholder pronto) e nome legal
+  da LICENSE no footer.
