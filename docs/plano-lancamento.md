@@ -70,13 +70,78 @@ dataset:  zavik data update   ← só baixa com licença válida
 - Slogan candidato (EN): *"Prep any repo to run. Audit it before it runs."*
 - Badge "Open source" é ativo de conversão no PH; repo público com GIF bom.
 
+### Copy pronta (colar no PH — EN, pronta pro founder revisar)
+
+**Name:** Zavik
+
+**Tagline (≤60 chars — candidatas medidas; recomendada a nº 1, o slogan
+registrado):**
+
+1. `Prep any repo to run. Audit it before it runs.` (46)
+2. `Audit your supply chain, brief your AI agent.` (45) — diz o que é
+3. `One CLI: supply-chain audit + AI agent briefing` (47) — explícita
+
+**Description (campo do produto):**
+
+> Zavik is an open-source dev CLI & AI-orchestration engine. One call
+> detects the stack and hands any AI coding agent a complete briefing —
+> runbook, entrypoints, trust (`zavik context --json`). Another audits
+> your dependency supply-chain and gates PRs through a GitHub Action
+> with SARIF output.
+>
+> It's a plain CLI: stable `--json` and exit codes *are* the interface —
+> works with Claude Code, Codex, Cursor, or no agent at all. Free
+> forever, MIT core; the paid add-on is a daily signed risk dataset,
+> never locked features.
+
+**Primeiro comentário do maker (EN)** — story curta + limitações
+honestas, como registrado:
+
+> Hi! I built Zavik because two things bugged me: every AI coding agent
+> re-learns the same repo from scratch (burning tokens guessing the
+> runbook), and supply-chain audit tools are mostly heavy, enterprise,
+> SaaS-shaped. Zavik is the opposite: one plain CLI, offline-first, that
+> prepares any repo for humans *and* agents — and audits it before it
+> runs.
+>
+> Honest limitations (yes, on launch day):
+>
+> - Zavik **proposes** fixes; it never applies them automatically —
+>   execution is out of scope by design.
+> - It's an **anti-dishonesty gate**, not an anti-attacker guarantee. We
+>   don't claim more than the tool does.
+> - Online enrichment needs the network; offline audits are more
+>   conservative.
+> - Human messages ship in pt-BR + English (default: English); the
+>   machine contract (JSON, SARIF, exit codes) is always English.
+> - The CLI is free forever (MIT). A daily signed risk dataset is the
+>   paid add-on — price lands after launch, researched, not guessed.
+>
+> What would you pay for the dataset? Roast the docs, the GIF, or the
+> whole thing — feedback *is* the launch. 🙌
+
+**Tópicos sugeridos** (conferir a lista atual do PH na hora): Developer
+Tools, Open Source, Artificial Intelligence, Productivity.
+
+**Galeria:** GIF `detect → audit (achado) → anotação no PR` (topo do
+README + slot do site — **pendência do founder**); 4–6 screenshots de
+terminal (`context --json`, `audit`, `up`, action no PR); vídeo de 60s
+opcional.
+
+**Links:** site `https://jhongamers.github.io/zavik/` · repo
+`https://github.com/Jhongamers/zavik`
+
 ### Pré-lançamento (checklist)
-- [ ] Arquivo `LICENSE` (MIT) na raiz (o Cargo.toml já declara).
+- [x] Arquivo `LICENSE` (MIT) na raiz ✅ (holder "Zavik contributors";
+      nome legal do founder é opcional, não bloqueia).
 - [ ] README com **GIF no topo**: `detect` → `audit` achando algo → anotação
-      no PR (SARIF). Ferramenta de dev vende no GIF.
-- [ ] `--version` e instalação documentados (cargo install / binário da Release).
-- [ ] Tag `v0.1.0` publicada (o action e o kit de instalação dependem dela).
-- [ ] 4-6 screenshots/GIFs + vídeo de 60s.
+      no PR (SARIF). Ferramenta de dev vende no GIF. **(pendência do
+      founder — placeholder pronto no site e no README)**
+- [x] `--version` e instalação documentados ✅ (install.sh + READMEs;
+      install anônimo E2E verde).
+- [x] Tag publicada ✅ — `v0.1.3` (20/10) com release 4/4 + E2E completo
+      (binário, install.sh anônimo, action-smoke verde).
+- [ ] 4-6 screenshots/GIFs + vídeo de 60s. **(founder)**
 
 ### No lançamento
 - [ ] Terça–quinta, manhã EUA. Nunca sexta.
