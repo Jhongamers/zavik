@@ -644,7 +644,7 @@ The full keyword table lives in `crates/plugins/src/detector/`.
 
 ## Status & honesty
 
-- Everything described above is implemented and under test (200 passing,
+- Everything described above is implemented and under test (210 passing,
   clippy clean). Pre-launch roadmap (installer, brew/npx/winget):
   [ROADMAP.md](ROADMAP.md).
 - **Language**: human-facing CLI messages ship in **pt-BR + English** with

@@ -188,8 +188,23 @@ swift-argument-parser, googletest). Achados:
   `release.yml` verde nos 4 alvos, 8 assets (binários + `.sha256`). E2E
   local com o binário **baixado da release**: sha256 OK, `--version`
   0.1.0, fix do lote E e `DEFAULT_DATASET_URL` gravados no artefato.
-- Pendência: validar o action de ponta a ponta num PR real (requer
-  repositório público ou consumidor autenticado).
+- [x] **Publicação da `v0.1.1`** (19/10) ✅: tag em `d440325` (3 fixes de
+  dogfooding: git-dep trust #13, lockfile de membro #14, SIGPIPE #15) →
+  release verde, 6 assets. E2E local do binário **baixado da release**:
+  sha256 OK, e os 3 fixes provados no artefato (git-dep → "outside the
+  registry"; workspace-member → "Nothing to report"; `| head` → exit 141,
+  sem panic). **Incoerência honesta de versão:** o binário se identifica
+  como `0.1.0` (`CARGO_PKG_VERSION` do workspace nunca foi bumpado);
+  corrigir exige bump + re-tag (`v0.1.2`) — decisão do founder, registrada.
+- **Achado (19/10): o `action.yml` usa `curl` anônimo puro** (não injeta
+  `GITHUB_TOKEN`). Com o repo **privado** o install step falha **404**
+  (download anônimo de asset privado); provado que **autenticado** funciona
+  (`gh release download` → arquivo). Logo o E2E real do action só roda com
+  **repo público** (asset anônimo) — validar o action num PR real continua
+  pendente até o repo abrir.
+  *Decisão pendente do founder (não codada):* injetar `GITHUB_TOKEN` no
+  curl deixaria o action funcionar em repo privado, mas amarra o action ao
+  GitHub e muda o modelo de integridade — registrada, aguarda go.
 - Próximos (futuro): typosquat por similaridade, integridade de lockfile,
   advisory DB (GHSA) online.
 
@@ -313,6 +328,17 @@ swift-argument-parser, googletest). Achados:
 - [ ] **Lançar no Product Hunt** (repo aberto + LICENSE + GIF no topo + tag
       v0.1.0; terça–quinta manhã EUA; primeiro comentário com limitações
       honestas).
+- [x] **Pré-checagem de nomes de registro** (19/10, adiantado) ✅: `zavik`
+      está **livre** no npm **e** no crates.io, e também os fallbacks
+      `zavik-cli` (npm + crates) e `@jhongamers/zavik` (npm) — todos 404
+      "não existe". Sinal confiável desta máquina (controle `express`/`serde`
+      → 200, logo o caminho de rede não é o 404-fantasma já observado no
+      browser). **Ainda re-confirma no browser no dia do publish** — registro
+      é first-come-first-served e pode mudar entre agora e o lançamento.
+- [ ] **Publicar no npm + crates.io no dia** (conta nova, nome `zavik`;
+      se ocupado até lá → fallback `zavik-cli` / `@jhongamers/zavik`).
+      `cargo publish -p zavik` e `npm publish` apontando pro binário da
+      Release mais recente.
 - [ ] **Matriz de distribuição (F0–F3) — 3 portas: instalador, prompt
       (gerenciador), IA/Action**. Recomendado por público marcado ✅;
       página do Chocolatey olhada (convenção padrão `choco install
