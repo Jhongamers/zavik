@@ -78,7 +78,8 @@ token de licença `ZV1.…`.
 - `Jhongamers/devforge` — URL válida até o rename do repo (sweep é do Lote B).
 - `devforge-corpus` e o diretório de trabalho local — paths que existem de
   verdade: o diretório do repo foi renomeado no Lote G
-  (`/home/jondo/devforge` → `/home/jondo/zavik`); `devforge-corpus` mantém
+  (`~/devforge` → `~/zavik`, no diretório home do fundador);
+  `devforge-corpus` mantém
   o nome legado (cache local de dados, fora do git).
 - Este arquivo (`docs/design-rename.md`) — ADR histórico, excluído do varrimento.
 
@@ -101,7 +102,7 @@ token de licença `ZV1.…`.
   sweep de URLs em install.sh +2 READMEs, CI green (`963725d`) e **dataset workflow
   disparado com sucesso** → release `dataset-latest/dataset.json` prova o secret E2E.
 - 2026-10-19: **Lote G concluído** — diretório local de trabalho renomeado
-  `/home/jondo/devforge` → `/home/jondo/zavik` (rename cosmético pós-release:
+  `~/devforge` → `~/zavik` (rename cosmético pós-release:
   nenhum path absoluto do repo apontava para o diretório — grep verificado —;
   sessão de trabalho movida junto; `devforge-corpus` mantém nome legado).
 - 2026-10-19: **Lote C (scaffold) concluído** — site estático (`index.html`
