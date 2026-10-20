@@ -381,6 +381,19 @@ swift-argument-parser, googletest). Achados:
       se ocupado até lá → fallback `zavik-cli` / `@jhongamers/zavik`).
       `cargo publish -p zavik` e `npm publish` apontando pro binário da
       Release mais recente.
+- [ ] **Canal de aviso de update p/ binários instalados (sync batch do MoR)
+      — $0** (registrado 20/10): unidade = **release/tag, não commit**.
+      (a) Aviso de versão = `GET releases/latest` (GitHub grátis: 60 req/h por
+      IP), no máx. 1×/semana com cache em `XDG_CONFIG_HOME`, só terminal
+      interativo, em **stderr** (stdout/`--json` continua byte-idêntico),
+      silencioso em `CI=true`/offline, opt-out `ZAVIK_NO_UPDATE_CHECK=1`,
+      mensagem só PROPOE o comando de re-instalação — nunca baixa/executa
+      (download + `sha256` fica no `install.sh`; auto-update violaria "produto
+      só propõe" e abriria superfície de ataque). (b) Aviso de plano pago =
+      linha honesta em `data status` + seção "SEM DADOS" do `audit` apontando
+      `zavik.dev` (sem preço no binário nem no repo). (c) Canal de e-mail
+      grátis = GitHub Watch → Releases (embutido). Codar só pós-PH, junto com
+      site pricing + README + E2E purchase→mint.
 - [ ] **Matriz de distribuição (F0–F3) — 3 portas: instalador, prompt
       (gerenciador), IA/Action**. Recomendado por público marcado ✅;
       página do Chocolatey olhada (convenção padrão `choco install
