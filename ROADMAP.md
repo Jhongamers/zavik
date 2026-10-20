@@ -195,7 +195,17 @@ swift-argument-parser, googletest). Achados:
   registry"; workspace-member → "Nothing to report"; `| head` → exit 141,
   sem panic). **Incoerência honesta de versão:** o binário se identifica
   como `0.1.0` (`CARGO_PKG_VERSION` do workspace nunca foi bumpado);
-  corrigir exige bump + re-tag (`v0.1.2`) — decisão do founder, registrada.
+  corrigir exige bump + re-tag (`v0.1.2`) — decisão do founder, registrada
+  (**resolvida na `v0.1.2`, abaixo**).
+- [x] **Publicação da `v0.1.2`** (19/10) ✅ — **coerção versão↔tag
+  resolvida**: bump do `version` do workspace (`0.1.0` → `0.1.2`, decisão
+  do founder; `0.1.1` pulado no semver da origem, tag já publicada) + pins
+  de release acompanhando (`install.sh` default, input default do
+  `action.yml`, snippets dos dois READMEs). Tag `v0.1.2` em `8aeec59` →
+  release verde 4/4 alvos, 8 assets. E2E do binário **baixado da release**:
+  sha256 OK, **`--version` = `zavik 0.1.2`** (bate com a tag), SIGPIPE
+  exit 141. Entradas históricas e fixtures de teste com manifest version
+  própria ficaram intactas por design.
 - **Achado (19/10): o `action.yml` usa `curl` anônimo puro** (não injeta
   `GITHUB_TOKEN`). Com o repo **privado** o install step falha **404**
   (download anônimo de asset privado); provado que **autenticado** funciona
