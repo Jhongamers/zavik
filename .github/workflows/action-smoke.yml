@@ -1,0 +1,34 @@
+# Smoke test for the published GitHub Action surface (F2 distribution door):
+# exercises the real consumer path on a public repo — fetch the action, then
+# let action.yml download the release asset with plain anonymous `curl` (no
+# GITHUB_TOKEN: the exact path that 404'd while the repo was private), sha256
+# verify, audit this repo, gate on the exit code.
+#
+# Manual trigger on purpose: it consumes release assets, and the static
+# action.yml invariants (repository/version defaults) are already covered by
+# `cargo test` on every push — this workflow proves the runtime path.
+name: action-smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag the action should install."
+        required: false
+        default: "v0.1.2"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      # Action source = main (current action.yml); the input controls which
+      # release asset the anonymous install step downloads.
+      - uses: actions/checkout@v4
+      - uses: Jhongamers/zavik@main
+        with:
+          version: ${{ inputs.version }}
+          fail-on: high
+          upload-sarif: "false"

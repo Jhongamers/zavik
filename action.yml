@@ -14,9 +14,9 @@ inputs:
     required: false
     default: "v0.1.2"
   repository:
-    description: "zavik repository (owner/name) to download the Release from."
+    description: "zavik repository (owner/name) to download the Release from (canonical release repo)."
     required: false
-    default: "OWNER/zavik"
+    default: "Jhongamers/zavik"
   path:
     description: "Path of the project to audit."
     required: false

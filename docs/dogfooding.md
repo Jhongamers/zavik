@@ -152,6 +152,29 @@ crate temporário), mais `cargo run` cru pra validar a resolução de start.
     sinal), stderr sem panic. Teste: exit code com stdout fechado
     (verificado não-vacuo: sem a correção o teste falha com o panic).
 
+### Correção 20/10 (pós-abertura) — placeholder no `action.yml`
+
+20. **O default do input `repository` era o placeholder literal
+    `OWNER/zavik`** (herdado do scaffold inicial `OWNER/devforge`, passou
+    pelo rename do Lote A): `github.com/OWNER/zavik` → **404** (controles
+    200/404 comportando), então o snippet documentado no README — `uses:
+    Jhongamers/zavik@vX` **sem** passar esse input — quebrava o install
+    step de **todo** consumidor. Só apareceu no primeiro E2E **anônimo
+    real** do action (primeiro dia com o repo público): com o repo privado
+    o download anônimo dava 404 de qualquer jeito e mascarava o bug (ver
+    achado relacionado no ROADMAP). **Correção:** default →
+    `Jhongamers/zavik` (repo canônico das releases; o input continua
+    sobrepondo, pra mirrors/forks). **Testes (2, não-vacuos — mutação
+    verificada:** placeholder no arquivo faz o teste 1 falhar; versão
+    default divergente faz o teste 2 falhar**):** default de `repository`
+    em formato `owner/name` sem placeholder **e** default de `version` ==
+    `v` + `CARGO_PKG_VERSION` — a invariante de coerção tag↔binário que
+    antes era checada à mão a cada release agora roda no `cargo test` de
+    todo push. **E2E permanente:** workflow `action-smoke.yml`
+    (`workflow_dispatch`) roda o action de verdade — download anônimo do
+    asset da release + sha256 + audit + gate. Predição empírica na raiz do
+    repo: gate = exit 0 e SARIF limpo no stdout (banner/kernel no stderr).
+
 ### Comportamentos verificados OK (sem achado)
 
 - `env --json`: os logs do KERNEL vão pra **stderr**; stdout é JSON puro.
