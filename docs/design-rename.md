@@ -125,3 +125,14 @@ token de licença `ZV1.…`.
   multi-página com busca/versionamento/i18n). Migração no futuro é
   barata: o que já existe no `index.html` e no README é portável, sem
   reescrita.
+- 2026-10-20: **Identidade visual oficial + assets do site** — o founder
+  escolheu o símbolo **Z partido com a ✦** (dois mockups gerados por IA
+  avaliados com teste de fogo empírico: 16px, 32px, preto-e-branco e
+  avatar circular — ambos sobreviveram; o lockup com wordmark em imagem
+  foi rejeitado como marca secundária por construir um Z diferente do
+  símbolo oficial). O lockup do site é **símbolo + texto HTML**, não
+  imagem, pra grafia nunca divergir. Assets (símbolo master, mark
+  transparente, favicon.ico, apple-touch-icon, og.png 1200×630) ficam em
+  **`~/zavik-brand/`** — binários de marca fora do repo de código, por
+  decisão registrada; o `gh-pages` carrega só o que a página serve
+  (`ad1d756`, 200 verificado com controles anti-fantasma).

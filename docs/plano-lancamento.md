@@ -141,6 +141,10 @@ opcional.
       install anônimo E2E verde).
 - [x] Tag publicada ✅ — `v0.1.3` (20/10) com release 4/4 + E2E completo
       (binário, install.sh anônimo, action-smoke verde).
+- [x] Identidade visual ✅ — símbolo oficial **Z + ✦** escolhido pelo
+      founder (teste de fogo: 16px, B&W, avatar circular); favicon,
+      apple-touch-icon, header e og:image no ar (`gh-pages` `ad1d756`).
+      Avatar do PH/npm/GitHub = `~/zavik-brand/zavik-symbol.jpg`.
 - [ ] 4-6 screenshots/GIFs + vídeo de 60s. **(founder)**
 
 ### No lançamento
