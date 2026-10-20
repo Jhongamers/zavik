@@ -81,7 +81,20 @@ registrado):**
 2. `Audit your supply chain, brief your AI agent.` (45) — diz o que é
 3. `One CLI: supply-chain audit + AI agent briefing` (47) — explícita
 
-**Description (campo do produto):**
+**Description (campo do produto — limite do formulário: 500 chars;
+versão contada = 482):**
+
+> Zavik is an open-source dev CLI & AI-orchestration engine. One call
+> detects your stack and briefs any AI coding agent — runbook,
+> entrypoints, trust (zavik context --json). Another audits your
+> dependency supply chain and gates PRs via a GitHub Action with SARIF
+> output. Plain CLI: stable --json and exit codes are the interface —
+> works with Claude Code, Codex, Cursor or no agent at all. Free
+> forever (MIT core); the paid add-on is a daily signed risk dataset,
+> never locked features.
+
+<details>
+<summary>Versão longa antiga (617 chars — cortada por exceder o limite)</summary>
 
 > Zavik is an open-source dev CLI & AI-orchestration engine. One call
 > detects the stack and hands any AI coding agent a complete briefing —
@@ -93,6 +106,8 @@ registrado):**
 > works with Claude Code, Codex, Cursor, or no agent at all. Free
 > forever, MIT core; the paid add-on is a daily signed risk dataset,
 > never locked features.
+
+</details>
 
 **Primeiro comentário do maker (EN)** — story curta + limitações
 honestas, como registrado:
