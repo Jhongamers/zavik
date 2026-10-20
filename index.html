@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zavik — open-source dev CLI &amp; AI-orchestration engine</title>
+  <meta name="description" content="Zavik detects your stack, audits your dependency supply chain, and hands any AI agent a one-call briefing. A plain CLI: stable --json and exit codes are the interface." />
+  <link rel="canonical" href="https://jhongamers.github.io/zavik/" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #9198a1;
+      --accent: #f85149;
+      --code-bg: #010409;
+      --green: #3fb950;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+    header { padding: 72px 0 40px; text-align: center; }
+    h1 { font-size: 2.6rem; margin: 0 0 12px; letter-spacing: -0.02em; }
+    h1 .mark { color: var(--accent); }
+    .tagline { font-size: 1.2rem; color: var(--muted); max-width: 640px; margin: 0 auto 28px; }
+    .cta { display: inline-block; margin: 6px; padding: 12px 22px; border-radius: 8px; font-weight: 600; text-decoration: none; }
+    .cta.primary { background: var(--accent); color: #fff; }
+    .cta.ghost { border: 1px solid var(--border); color: var(--text); }
+    section { padding: 32px 0; border-top: 1px solid var(--border); }
+    h2 { font-size: 1.5rem; margin: 0 0 16px; }
+    p.lead { color: var(--muted); }
+    .demo {
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      background: var(--panel);
+      margin: 8px 0 0;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font: 13px/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+    p code, li code { background: var(--panel); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; font-size: 0.9em; }
+    .note { color: var(--muted); font-size: 0.9rem; }
+    .agent {
+      border-left: 3px solid var(--accent);
+      padding: 4px 0 4px 16px;
+      color: var(--muted);
+    }
+    ul { padding-left: 20px; }
+    li { margin: 6px 0; }
+    footer { border-top: 1px solid var(--border); padding: 28px 0 48px; color: var(--muted); font-size: 0.9rem; }
+    footer a { color: var(--muted); }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1><span class="mark">✦</span> Zavik</h1>
+      <p class="tagline">
+        The open-source dev CLI &amp; AI-orchestration engine — detect your stack,
+        audit your dependency <strong>supply chain</strong>, hand any AI agent a
+        one-call briefing.
+      </p>
+      <a class="cta primary" href="https://github.com/Jhongamers/zavik">View on GitHub</a>
+      <a class="cta ghost" href="https://github.com/Jhongamers/zavik#quickstart">Quickstart</a>
+    </header>
+
+    <section>
+      <h2>See it work</h2>
+      <p class="note">
+        <!-- GIF placeholder: drop a demo.gif next to index.html and replace this div. -->
+      </p>
+      <div class="demo">demo GIF — <code>zavik up</code> (audit → prepare → run)</div>
+    </section>
+
+    <section>
+      <h2>Install</h2>
+      <p>Quick install (linux x64/arm64, macOS arm64):</p>
+      <pre><code>curl -fsSL https://raw.githubusercontent.com/Jhongamers/zavik/main/install.sh | sh</code></pre>
+      <p class="note">
+        Detects your OS/arch, downloads the release tarball,
+        <strong>verifies its sha256</strong> (no skip flag), installs to
+        <code>~/.local/bin</code>. Prefer downloading the script, reading it, then
+        running it — Zavik's own <code>audit</code> classifies <code>curl | sh</code>
+        as a risk. Windows: grab the <code>.zip</code> from
+        <a href="https://github.com/Jhongamers/zavik/releases">Releases</a>.
+      </p>
+      <p>From source (always works):</p>
+      <pre><code>git clone https://github.com/Jhongamers/zavik &amp;&amp; cd zavik
+cargo build --release
+cp target/release/zavik ~/.local/bin/   # anywhere on your PATH</code></pre>
+      <p class="note">Requires Rust stable. Every <code>v*</code> tag publishes binaries + <code>.sha256</code> checksums.</p>
+    </section>
+
+    <section>
+      <h2>One call, whole picture</h2>
+      <pre><code>cd some-project
+zavik                    # detect the stack
+zavik context --json     # one-call briefing: runbook + entrypoints + trust
+zavik audit              # supply-chain audit
+zavik up                 # audit → prepare → run, with intact gates</code></pre>
+    </section>
+
+    <section>
+      <h2>Works with any agent</h2>
+      <p class="agent">
+        Claude Code, Codex, OpenCode, Cursor, Antigravity, aider, Copilot — or
+        with no agent at all. Zavik is a plain CLI: stable <code>--json</code>
+        output and exit codes <em>are</em> the interface; there is no vendor
+        plugin to install. <em>(Compatibility, not affiliation.)</em>
+      </p>
+      <p>
+        For AI agents, <code>zavik context --json</code> is the fastest way to
+        learn an unfamiliar repo in a single call.
+      </p>
+    </section>
+
+    <section>
+      <h2>Honest limitations</h2>
+      <p class="lead">Nothing here claims more than the tool does.</p>
+      <ul>
+        <li>Zavik only <strong>proposes</strong> fixes — automatic fix execution is out of scope by design.</li>
+        <li>Supply-chain checks are an <strong>anti-dishonesty gate</strong>, not an anti-attacker one.</li>
+        <li>Human CLI messages ship in pt-BR + English (English default); the machine contract (JSON, SARIF, exit codes) is always English.</li>
+        <li>Online enrichment (npm install hooks, download counts) needs the network; offline the score is more conservative.</li>
+        <li>Package-manager one-liners (brew/npx/winget/choco) are on the pre-launch roadmap.</li>
+      </ul>
+    </section>
+
+    <footer>
+      MIT License · <a href="https://github.com/Jhongamers/zavik">github.com/Jhongamers/zavik</a>
+    </footer>
+  </div>
+</body>
+</html>
