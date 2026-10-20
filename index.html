@@ -56,6 +56,13 @@
       background: var(--panel);
       margin: 8px 0 0;
     }
+    .demo img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
     pre {
       background: var(--code-bg);
       border: 1px solid var(--border);
@@ -95,10 +102,15 @@
 
     <section>
       <h2>See it work</h2>
+      <div class="demo">
+        <img src="demo.gif" alt="zavik detect → audit (real MEDIUM finding) → SARIF export" />
+      </div>
       <p class="note">
-        <!-- GIF placeholder: drop a demo.gif next to index.html and replace this div. -->
+        Real run against a demo service: <code>zavik detect</code> →
+        <code>zavik audit</code> (flags a git dependency as
+        <strong>MEDIUM</strong>, non-registry + unpinned) →
+        <code>zavik audit --sarif</code> for inline PR annotations.
       </p>
-      <div class="demo">demo GIF — <code>zavik up</code> (audit → prepare → run)</div>
     </section>
 
     <section>
