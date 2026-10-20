@@ -571,7 +571,7 @@ modularidade, testabilidade e extensibilidade. Os componentes críticos são:
 
 ### Estrutura do workspace (`crates/`)
 
-As dependências fluem de fora para dentro (veja `arquiteture.md`):
+As dependências fluem de fora para dentro (veja `ARCHITECTURE.pt-BR.md`):
 
 ```text
 shared  ->  events  ->  sdk  ->  { core, kernel } / plugins

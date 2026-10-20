@@ -4,7 +4,7 @@
 //! 1. Manage the plugin lifecycle (registration/discovery).
 //! 2. Publish system events to the `EventBus` (ADR 0002).
 //! 3. Perform the "safe cast" of capabilities when a use case needs
-//!    them (`arquiteture.md`, section 3).
+//!    them (`ARCHITECTURE.md`, section 3).
 //!
 //! The Kernel holds no business rules and knows nothing about UI/frameworks.
 

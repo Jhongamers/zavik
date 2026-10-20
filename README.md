@@ -597,7 +597,7 @@ modularity, testability and extensibility. The critical components:
 
 ### Workspace layout (`crates/`)
 
-Dependencies flow from outside in (see `arquiteture.md`):
+Dependencies flow from outside in (see `ARCHITECTURE.md`):
 
 ```text
 shared  ->  events  ->  sdk  ->  { core, kernel } / plugins

@@ -1,7 +1,7 @@
 # Cargo.toml — Zavik workspace root.
 #
 # The project is split into independent crates following the dependency
-# direction described in `arquiteture.md` (Clean Architecture):
+# direction described in `ARCHITECTURE.md` (Clean Architecture):
 #
 #     shared  ->  events  ->  sdk  ->  { core, kernel } / plugins
 #

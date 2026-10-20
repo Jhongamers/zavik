@@ -2,6 +2,8 @@
 
 Este documento documenta os fluxos internos de comunicação, regras de dependências físicas entre crates e o ciclo de vida operacional de plugins no **Zavik**.
 
+[English](ARCHITECTURE.md) · [Português (Brasil)](ARCHITECTURE.pt-BR.md)
+
 ---
 
 ## 1. Regras e Relatório de Dependência (Dependency Rules)

@@ -1,460 +1,466 @@
-# Roadmap — próximas tarefas (Zavik)
+# Roadmap — upcoming tasks (Zavik)
 
-> Anotado para implementação **futura**. Nada disso foi feito ainda.
-> Objetivo: transformar o Zavik num produto bom — ferramenta que uma IA
-> orquestra gastando pouco token, com segurança de verdade.
+> Annotated for **future** implementation. None of this has been done yet.
+> Goal: turn Zavik into a good product — a tool an AI orchestrates while
+> spending few tokens, with real security.
+
+[English](ROADMAP.md) · [Português (Brasil)](ROADMAP.pt-BR.md)
 
 ---
 
-## 1. Segurança / supply-chain (fechar lacunas)
+## 1. Security / supply-chain (closing gaps)
 
-### 1.1 Execução no install para TODAS as linguagens (hoje é só npm)
-O check de `postinstall` hoje cobre **apenas JS/TS**. Cada ecossistema tem o
-equivalente e **não é checado**:
+### 1.1 Install-time execution for ALL languages (today it's npm only)
+The `postinstall` check today covers **only JS/TS**. Every ecosystem has an
+equivalent and it is **not checked**:
 
-- [ ] **Python**: `setup.py` / hooks de build (`pyproject.toml` `[build-system]`)
-      rodam no `pip install .`.
-- [ ] **Rust**: `build.rs` + hooks/alias do `.cargo/config.toml` rodam no `cargo build`.
-- [ ] **PHP**: `composer install` roda scripts (`pre/post-install-cmd`).
-- [ ] **JVM (Maven/Gradle)**: plugins de build executam código no build.
-- [ ] **.NET**: scripts NuGet / targets MSBuild.
-- [ ] **Ruby**: compilação de extensão nativa no `bundle install`.
-- [ ] **Elixir/Mix**: hooks de compilação.
+- [ ] **Python**: `setup.py` / build hooks (`pyproject.toml` `[build-system]`)
+      run on `pip install .`.
+- [ ] **Rust**: `build.rs` + hooks/alias in `.cargo/config.toml` run on
+      `cargo build`.
+- [ ] **PHP**: `composer install` runs scripts (`pre/post-install-cmd`).
+- [ ] **JVM (Maven/Gradle)**: build plugins execute code at build time.
+- [ ] **.NET**: NuGet scripts / MSBuild targets.
+- [ ] **Ruby**: native extension compilation on `bundle install`.
+- [ ] **Elixir/Mix**: compile hooks.
 
-### 1.2 `postinstall` das DEPENDÊNCIAS (hoje só do projeto raiz)
-Vetor mais perigoso (ex.: `event-stream`). Hoje só lemos o `package.json` raiz.
-- [ ] Opção A: instalar com `--ignore-scripts`, inspecionar `node_modules`, só
-      aí liberar os scripts.
-- [ ] Opção B: baixar tarballs só dos pacotes suspeitos e ler o `package.json`
-      de dentro (pesado; faz sentido só pra suspeitos).
+### 1.2 `postinstall` of DEPENDENCIES (today only the root project)
+The most dangerous vector (e.g. `event-stream`). Today we only read the root
+`package.json`.
+- [ ] Option A: install with `--ignore-scripts`, inspect `node_modules`, and
+      only then allow the scripts.
+- [ ] Option B: download tarballs only for suspicious packages and read the
+      `package.json` inside (heavy; only worth it for suspects).
 
-### 1.3 Cobertura do "existe no registry"
-A "busca" cobre agora **todos** os ecossistemas suportados:
-- [x] npm (downloads/semana anti-typosquat), crates.io, PyPI.
+### 1.3 "Exists in the registry" coverage
+The "lookup" now covers **all** supported ecosystems:
+- [x] npm (weekly downloads anti-typosquat), crates.io, PyPI.
 - [x] RubyGems, Packagist (PHP), NuGet (.NET), pub.dev (Dart), Hex (Elixir).
-- [x] **Go** via `proxy.golang.org/@latest` (escapa maiúscula → `!lowercase`).
+- [x] **Go** via `proxy.golang.org/@latest` (escapes uppercase → `!lowercase`).
 - [x] **Maven Central** via `repo1.maven.org/maven2/{group}/{artifact}/`
-      (detectores Maven/Gradle agora guardam a coordenada `groupId:artifactId`
-      pra permitir a checagem).
+      (Maven/Gradle detectors now keep the `groupId:artifactId` coordinate to
+      allow the check).
 
-### 1.4 Sinais anti-typosquat mais fortes
-- [ ] Popularidade/downloads é um **sinal, não prova**. Avaliar:
-      idade da conta, nº de versões, similaridade de nome com pacote famoso.
+### 1.4 Stronger anti-typosquat signals
+- [ ] Popularity/downloads is a **signal, not proof**. To evaluate:
+      account age, number of versions, name similarity with a famous package.
 
-### 1.6 Toolchain faltando (node/npm/go/...) — detectar e sugerir
-O usuário não deve descobrir "node não encontrado" só quando o `npm install`
-falhar. Cada SO tem seu jeito de instalar e não dá pra prever tudo (sudo,
-distro, conflitos), então é **faseado e conservador**:
+### 1.6 Missing toolchain (node/npm/go/...) — detect and suggest
+The user should not discover "node not found" only when `npm install` fails.
+Each OS has its own way of installing and not everything can be predicted
+(sudo, distro, conflicts), so this is **phased and conservative**:
 
-- [x] **Fase 1 (feita): detectar + sugerir** — antes do `prepare` (local),
-      checa se as ferramentas do stack estão no PATH (`which`/`where`) e mostra
-      a sugestão de instalação **pra família de SO atual** (apt/dnf/pacman,
-      brew, winget). Só leitura, não instala nada.
-- [x] **Fase 2 (feita): perguntar e rodar a instalação** — com design
-      conservador: só um **set curado** de ferramentas (node/npm/go/python3/
-      java/php/ruby) tem comando automático; as demais (rust via `curl|sh`,
-      dotnet/java com variantes) ficam só na sugestão. Cada instalação exige
-      confirmação **crítica** no `PermissionGate` (nem "sim para todas" nem
-      `--yes` cobrem). Roda **sem shell** (argv) com **stdio herdado**, então
-      `sudo`/`brew` que pedem senha funcionam; se o gerenciador não existir ou
-      a ferramenta não for curada, não oferece. Depois **re-verifica** o PATH
-      e reporta com honestidade (pode falhar / recusado).
-- [ ] **Fase 3: corrigir/sugerir em erro** — quando um comando falhar, ler a
-      causa e sugerir o próximo passo (ex.: "faltou lib X", "versão conflitante").
-      O mais imprevisível; deixar por último.
-- Limitação honesta: as sugestões são um palpite razoável por SO, não
-  garantia. Não substituem ler o erro da sua máquina.
+- [x] **Phase 1 (done): detect + suggest** — before `prepare` (local), checks
+      whether the stack's tools are on the PATH (`which`/`where`) and shows
+      the install suggestion **for the current OS family** (apt/dnf/pacman,
+      brew, winget). Read-only, installs nothing.
+- [x] **Phase 2 (done): ask and run the installation** — with a conservative
+      design: only a **curated set** of tools (node/npm/go/python3/java/php/
+      ruby) has an automatic command; the others (rust via `curl|sh`,
+      dotnet/java with variants) stay suggestion-only. Each installation
+      requires a **critical** confirmation at the `PermissionGate` (neither
+      "yes to all" nor `--yes` cover it). Runs **without a shell** (argv) with
+      **inherited stdio**, so password-prompting `sudo`/`brew` work; if the
+      package manager doesn't exist or the tool isn't curated, it doesn't
+      offer it. Afterwards it **re-verifies** the PATH and reports honestly
+      (it can fail / be refused).
+- [ ] **Phase 3: fix/suggest on error** — when a command fails, read the cause
+      and suggest the next step (e.g. "missing lib X", "conflicting version").
+      The least predictable; leave it for last.
+- Honest limitation: the suggestions are a reasonable guess per OS, not a
+  guarantee. They don't replace reading the error on your machine.
 
 ---
 
-## 2. Economia de token / virar produto de orquestração por IA
+## 2. Token economy / becoming an AI orchestration product
 
-**Posicionamento:** o LLM é o **cérebro** (decide o quê), a CLI é as **mãos**
-(sabe como, com permissão + verificação). Tudo que a CLI faz é **Rust local
-determinístico = zero token de IA**. A peça que falta é saída **estruturada**.
+**Positioning:** the LLM is the **brain** (decides *what*), the CLI is the
+**hands** (knows *how*, with permission + verification). Everything the CLI
+does is **local deterministic Rust = zero AI tokens**. The missing piece is
+**structured** output.
 
-### 2.1 `--json` em TODOS os comandos (prioridade máxima)
+### 2.1 `--json` on ALL commands (highest priority)
 - [x] `detect --json`, `analyze --json`, `prepare --json`, `docker --json`.
-- [x] Saída compacta (uma linha) no stdout; logs de diagnóstico indo pra stderr.
-- [x] Schema estável com `"schema": 1`.
-- [x] `prepare`/`docker --json` entregam **plano + verificação de confiança** e
-      **não executam** (execução é interativa).
+- [x] Compact output (single line) on stdout; diagnostic logs go to stderr.
+- [x] Stable schema with `"schema": 1`.
+- [x] `prepare`/`docker --json` deliver **plan + trust check** and **do not
+      execute** (execution is interactive).
 
-### 2.2 `detect --json` como "ground truth"
-- [x] Feito junto com 2.1. Substitui a IA lendo N arquivos de manifesto.
+### 2.2 `detect --json` as "ground truth"
+- [x] Done together with 2.1. Replaces the AI reading N manifest files.
 
 ### 2.3 `prepare --dry-run --json`
-- [x] Coberto por `prepare --json` (plano + trust estruturados, sem executar).
-- [ ] (Opcional) expor também `--dry-run` explicitamente igual ao `--json`.
+- [x] Covered by `prepare --json` (structured plan + trust, without executing).
+- [ ] (Optional) also expose `--dry-run` explicitly, mirroring `--json`.
 
-### 2.4 Resumo de erro / próximo passo — `zavik diagnose` ✅
-- [x] Um `zavik diagnose` que recebe uma saída que falhou e devolve
-      **diagnóstico curto**: causa provável **real** (não o sintoma), conserto
-      sugerido, e as linhas que casaram (a "prova"). Economiza ler stack trace
-      gigante — e resolve o caso em que o erro literal aponta pro lugar errado.
-- [x] Entrada por `--message "..."`, `--input <arquivo>` ou **pipe**
-      (`meu_comando 2>&1 | zavik diagnose`). Só lê stdin se não for terminal.
-- [x] ~16 regras de padrão conhecido (linguagem-agnósticas), Rust local e
-      determinístico, zero token. Parte dinâmica extraída do próprio erro:
-      `-lssl` → `libssl-dev`, `No module named 'requests'` → `pip install
-      requests`, `cargo: not found` → toolchain. Regras de sintoma que engana
-      (link, node-gyp) marcadas com `note` explicando que é só consequência.
-- [x] Fallback honesto: se nenhuma regra casa, devolve as linhas com mais cara
-      de erro (resumo) em vez de fingir que entendeu.
-- [x] `--json` (schema 1, stdout puro).
+### 2.4 Error summary / next step — `zavik diagnose` ✅
+- [x] A `zavik diagnose` that takes a failed output and returns a **short
+      diagnosis**: the **real** likely cause (not the symptom), a suggested
+      fix, and the lines that matched (the "proof"). Saves reading a giant
+      stack trace — and solves the case where the literal error points to the
+      wrong place.
+- [x] Input via `--message "..."`, `--input <file>` or **pipe**
+      (`my_command 2>&1 | zavik diagnose`). Only reads stdin when it is not a
+      terminal.
+- [x] ~16 known-pattern rules (language-agnostic), local and deterministic
+      Rust, zero tokens. The extra dynamic part is extracted from the error
+      itself: `-lssl` → `libssl-dev`, `No module named 'requests'` →
+      `pip install requests`, `cargo: not found` → toolchain. Misleading
+      symptom rules (link, node-gyp) are marked with a `note` explaining it
+      is only a consequence.
+- [x] Honest fallback: if no rule matches, it returns the most error-looking
+      lines (a summary) instead of pretending it understood.
+- [x] `--json` (schema 1, pure stdout).
 
-> Decisão: **`diagnose` sobre texto**, não `zavik run <comando>`. Assim o
-> Zavik não ganha uma superfície nova de execução arbitrária (coerente com o
-> postura de segurança); a IA/usuário já tem o erro e só quer a tradução.
+> Decision: **`diagnose` on text**, not `zavik run <command>`. That way Zavik
+> doesn't gain a new arbitrary-execution surface (consistent with the security
+> posture); the AI/user already has the error and only wants the translation.
 
-### 2.5 Cache determinístico
-- [ ] Chamadas repetidas não re-detectam (detecção é pura e barata).
+### 2.5 Deterministic cache
+- [ ] Repeated calls don't re-detect (detection is pure and cheap).
 
-### 2.6 Briefing de uma chamada (`context`) — economizar exploração
-- [x] **Feito.** `zavik context [--json]` junta `detect` + `trust` + um
-      **runbook** (setup/build/test/run/lint, de `scripts` do `package.json`,
-      alvos de `Makefile`/`justfile`, wrappers `mvnw`/`gradlew`, convenções por
-      linguagem) + **entrypoints** + **arquivos-chave** (manifesto, lockfile,
-      CI, Dockerfile, `.env`, README). Troca N `glob`/`grep`/leitura de uma IA
-      por **1 JSON**. Leitura pura, não executa.
-- Limitação honesta: o runbook é **inferido** (comando mais provável, não
-  garantia); CI não é parsed de YAML (só listada).
+### 2.6 One-call briefing (`context`) — save exploration
+- [x] **Done.** `zavik context [--json]` joins `detect` + `trust` + a
+      **runbook** (setup/build/test/run/lint, from `scripts` in
+      `package.json`, `Makefile`/`justfile` targets, `mvnw`/`gradlew`
+      wrappers, per-language conventions) + **entrypoints** + **key files**
+      (manifest, lockfile, CI, Dockerfile, `.env`, README). Replaces N
+      AI `glob`/`grep`/reads with **1 JSON**. Pure read, executes nothing.
+- Honest limitation: the runbook is **inferred** (most likely command, not a
+  guarantee); CI is not parsed from YAML (only listed).
 
 ---
 
-## 1.5 Detecção — melhorias descobertas testando em projetos REAIS
-Testado em 12 projetos reais (anyhow, cobra, itsdangerous, cobra, junit4,
+## 1.5 Detection — improvements found testing on REAL projects
+Tested on 12 real projects (anyhow, cobra, itsdangerous, cobra, junit4,
 polyfill-mbstring, sinatra, Newtonsoft.Json, dart-lang/args, phoenix,
-swift-argument-parser, googletest). Achados:
-- [x] **Bug corrigido**: Makefile sozinho virava falso C/C++ (ex.: `cobra`/Go).
-      Agora exige fonte C/C++ real ou CMakeLists.txt.
-- [x] **Descoberta de projeto aninhado/monorepo** (`--all`): varredura recursiva
-      opcional que acha manifesto em subpasta (`.csproj` em `Src/...`,
-      `package.json` em `pkgs/...`). Pula dirs de dependência/build
-      (`node_modules`, `target`, ...) com limite de profundidade/quantidade.
-      Padrão continua olhando só a raiz (comportamento estável).
-- [ ] Cobertura de frameworks: nos testes reais só o Phoenix acusou framework;
-      ampliar/validar o matching de frameworks contra manifests do mundo real.
-- [ ] **Corpus de validação por ecossistema (design `docs/design-corpus.md`,
-      aprovado 17/10)** — transformar o teste-em-projeto-real (que achou o
-      bug do Makefile e os 4 do dogfooding) em prática permanente: projetos
-      reais **pinados em SHA**, partial clone com cache, **sem vendorizar**
-      código de terceiro (repo vira público no PH), corpus **só read-only**
-      (`run`/`prepare`/`up` **nunca** rodam código alheio — doutrina de
-      permissão), ground truth anti-circular (lockfile = verdade de
-      versão + metadados curados por projeto), testes `#[ignore]` fora do
-      `cargo test` padrão (segue offline). Fases: A Rust → B npm/Python/Go
-      → C diagnose com stderr reais → D monorepo não-Rust (decidir
-      implementar ou documentar). Seed: os12 do §1.5.
+swift-argument-parser, googletest). Findings:
+- [x] **Bug fixed**: a lone Makefile used to become a false C/C++ detection
+      (e.g. `cobra`/Go). Now it requires real C/C++ source or CMakeLists.txt.
+- [x] **Nested/monorepo project discovery** (`--all`): optional recursive
+      scan that finds manifests in subfolders (`.csproj` under `Src/...`,
+      `package.json` under `pkgs/...`). Skips dependency/build dirs
+      (`node_modules`, `target`, ...) with depth/quantity limits. Default
+      still looks only at the root (stable behavior).
+- [ ] Framework coverage: in the real tests only Phoenix reported a framework;
+      expand/validate framework matching against real-world manifests.
+- [ ] **Per-ecosystem validation corpus** (design `docs/design-corpus.md`,
+      approved 17/10) — turn testing-on-real-projects (which found the
+      Makefile bug and the 4 from dogfooding) into a permanent practice:
+      real projects **pinned by SHA**, partial clone with cache, **no
+      vendoring** of third-party code (repo goes public on PH), corpus
+      **read-only only** (`run`/`prepare`/`up` **never** run other people's
+      code — permission doctrine), anti-circular ground truth (lockfile =
+      version truth + curated per-project metadata), `#[ignore]` tests outside
+      the default `cargo test` (stays offline). Phases: A Rust → B npm/Python/
+      Go → C diagnose with real stderr → D non-Rust monorepo (decide to
+      implement or document). Seed: the 12 from §1.5.
 
 ---
 
-## 3. Produto / monetização (a cunha: supply-chain audit)
+## 3. Product / monetization (the wedge: supply-chain audit)
 
-### 3.1 `zavik audit` — auditoria de supply-chain ✅
-- [x] **Feito.** `zavik audit [--online] [--fail-on sev] [--policy] [--ignore]
-      [--json]`. Padrão dos consolidados: **Socket.dev** (risk factors +
-      confluência de score), **Snyk/cargo-audit** (policy + `fail_on` + exit
-      code), **OWASP** (supressão de FP com motivo + expiry).
-- [x] **Motor puro** em `plugins/src/audit.rs`: classificador de hook benigno vs
-      suspeito (`node-gyp rebuild` OK; `curl|sh`/base64/credencial = crítico) +
-      score por **confluência** (nenhum sinal isolado é veredito; limiar 25 evita
-      alertar range normal ou hook benigno). 8 testes offline (incl. esbuild real
-      NÃO alertado, `curl|sh` → critical, allowlist, supressão vigente/expirada).
-- [x] **Segurança**: supressão **exige expiração** (ignorar nunca vira escudo
-      eterno); política/supressão em TOML versionado; `--fail-on` dá exit 1 que
-      gateia CI; nada é executado (só leitura de manifest/registry).
-- [x] Enriquecimento online npm (hook + downloads) via bridge
-      `npm_audit_signals`; offline pega origem (registro/git/path) + pin.
-- Limitações honestas: analisa o **texto** do script, não os arquivos que ele
-  invoca; typosquat por similaridade de nome e integridade de lockfile ainda
-  não implementados (ver 1.4).
-- [x] **SARIF 2.1.0** (`--sarif`): achações viram `results[]` com `ruleId`
-      (fator), `level` (sev→note/warning/error) e `location` = manifesto + **linha
-      exata** (lookup lazy, sem regex/dependência). Lido pelo GitHub Code
-      Scanning → anota o PR inline. Validado (linha 4 do package.json).
-### 3.2 GitHub Action + empacotamento ✅ (templates prontos; validação em GH pendente)
-- [x] **`action.yml`** (composite): baixa binário da Release → verifica
-      `sha256` (input opcional ancora o hash no action) → roda
-      `audit --sarif --fail-on` → publica SARIF **antes** do gate (anotação
-      aparece mesmo quando o PR reprova) → exit code final. Inputs via `env:`
-      (imune a script injection); ref pinado por tag.
-- [x] **`.github/workflows/release.yml`**: binários por tag `v*` (linux
-      x64/arm64, macOS arm64, windows) + `.sha256` como asset.
-- [x] **README**: workflow de exemplo do consumidor + limitações honestas
-      (SARIF inline exige Code Scanning; gate por exit code funciona sempre;
-      Windows só download manual).
-- [x] **Publicação da `v0.1.0`** (19/10) ✅: tag anotada em `936c4fb` →
-  `release.yml` verde nos 4 alvos, 8 assets (binários + `.sha256`). E2E
-  local com o binário **baixado da release**: sha256 OK, `--version`
-  0.1.0, fix do lote E e `DEFAULT_DATASET_URL` gravados no artefato.
-- [x] **Publicação da `v0.1.1`** (19/10) ✅: tag em `d440325` (3 fixes de
-  dogfooding: git-dep trust #13, lockfile de membro #14, SIGPIPE #15) →
-  release verde, 6 assets. E2E local do binário **baixado da release**:
-  sha256 OK, e os 3 fixes provados no artefato (git-dep → "outside the
-  registry"; workspace-member → "Nothing to report"; `| head` → exit 141,
-  sem panic). **Incoerência honesta de versão:** o binário se identifica
-  como `0.1.0` (`CARGO_PKG_VERSION` do workspace nunca foi bumpado);
-  corrigir exige bump + re-tag (`v0.1.2`) — decisão do founder, registrada
-  (**resolvida na `v0.1.2`, abaixo**).
-- [x] **Publicação da `v0.1.2`** (19/10) ✅ — **coerção versão↔tag
-  resolvida**: bump do `version` do workspace (`0.1.0` → `0.1.2`, decisão
-  do founder; `0.1.1` pulado no semver da origem, tag já publicada) + pins
-  de release acompanhando (`install.sh` default, input default do
-  `action.yml`, snippets dos dois READMEs). Tag `v0.1.2` em `8aeec59` →
-  release verde 4/4 alvos, 8 assets. E2E do binário **baixado da release**:
-  sha256 OK, **`--version` = `zavik 0.1.2`** (bate com a tag), SIGPIPE
-  exit 141. Entradas históricas e fixtures de teste com manifest version
-  própria ficaram intactas por design.
-- [x] **Publicação da `v0.1.3`** (20/10) ✅ — correção do dogfooding #20:
-  default do input `repository` era o placeholder literal `OWNER/zavik`
-  (404 para **todo** consumidor que seguisse o README sem passar o input)
-  → agora `Jhongamers/zavik`; a tag `v0.1.2` carrega o bug no snapshot do
-  `action.yml` dela (tag empurrada não se move) — por isso a re-tag.
-  **Invariante nova no `cargo test`:** default de `version` == `v` +
-  `CARGO_PKG_VERSION` (coerção tag↔binário agora é automática, não
-  checagem manual) + default de `repository` em formato `owner/name` sem
-  placeholder — ambos com não-vacuidade por mutação. Tag `v0.1.3` em
-  `6ad7336` → release 4/4. E2E: sha256 OK, binário `zavik 0.1.3`,
-  install.sh anônimo com default novo OK e **`action-smoke` verde** — o
-  action consumiu a release de verdade (curl anônimo + sha256 + audit +
-  gate), fechando a porta F2 com E2E real.
-- [x] **Achado (19/10): o `action.yml` usa `curl` anônimo puro** (não injeta
-  `GITHUB_TOKEN`). Com o repo **privado** o install step falha **404**
-  (download anônimo de asset privado); provado que **autenticado** funciona
-  (`gh release download` → arquivo). **Resolvido por abertura do repo
-  (20/10):** repo público → caminho anônimo roda, E2E real verde via
-  `action-smoke` (asset público + sha256 + audit + gate).
-  *Decisão pendente do founder (não codada), agora restrita a consumidor
-  **privado**:* injetar `GITHUB_TOKEN` no
-  curl deixaria o action funcionar em repo privado, mas amarra o action ao
-  GitHub e muda o modelo de integridade — registrada, aguarda go.
-- Próximos (futuro): typosquat por similaridade, integridade de lockfile,
-  advisory DB (GHSA) online.
+### 3.1 `zavik audit` — supply-chain audit ✅
+- [x] **Done.** `zavik audit [--online] [--fail-on sev] [--policy] [--ignore]
+      [--json]`. Patterns from the established tools: **Socket.dev** (risk
+      factors + score confluence), **Snyk/cargo-audit** (policy + `fail_on` +
+      exit code), **OWASP** (FP suppression with reason + expiry).
+- [x] **Pure engine** in `plugins/src/audit.rs`: benign-vs-suspicious hook
+      classifier (`node-gyp rebuild` OK; `curl|sh`/base64/credential =
+      critical) + score by **confluence** (no single signal is a verdict;
+      threshold 25 avoids flagging a normal range or a benign hook). 8 offline
+      tests (incl. real esbuild NOT flagged, `curl|sh` → critical, allowlist,
+      active/expired suppression).
+- [x] **Security**: suppression **requires an expiry** (ignore never becomes an
+      eternal shield); policy/suppression in versioned TOML; `--fail-on` gives
+      exit 1 to gate CI; nothing is executed (only manifest/registry reads).
+- [x] Online npm enrichment (hook + downloads) via the `npm_audit_signals`
+      bridge; offline gets origin (registry/git/path) + pin.
+- Honest limitations: it analyzes the **text** of the script, not the files it
+  invokes; name-similarity typosquatting and lockfile integrity are not yet
+  implemented (see 1.4).
+- [x] **SARIF 2.1.0** (`--sarif`): findings become `results[]` with `ruleId`
+      (factor), `level` (sev→note/warning/error) and `location` = manifest +
+      **exact line** (lazy lookup, no regex/dependency). Read by GitHub Code
+      Scanning → annotates the PR inline. Validated (line 4 of package.json).
+### 3.2 GitHub Action + packaging ✅ (templates ready; GH validation pending)
+- [x] **`action.yml`** (composite): downloads the binary from the Release →
+      verifies `sha256` (optional input anchors the hash in the action) →
+      runs `audit --sarif --fail-on` → publishes SARIF **before** the gate
+      (the annotation shows even when the PR fails) → final exit code.
+      Inputs via `env:` (immune to script injection); ref pinned by tag.
+- [x] **`.github/workflows/release.yml`**: binaries per `v*` tag (linux
+      x64/arm64, macOS arm64, windows) + `.sha256` as an asset.
+- [x] **README**: consumer example workflow + honest limitations (inline
+      SARIF requires Code Scanning; exit-code gating always works; Windows is
+      manual download only).
+- [x] **`v0.1.0` published** (19/10) ✅: annotated tag at `936c4fb` →
+  `release.yml` green on all 4 targets, 8 assets (binaries + `.sha256`).
+  Local E2E with the binary **downloaded from the release**: sha256 OK,
+  `--version` 0.1.0, batch-E fix and `DEFAULT_DATASET_URL` baked into the
+  artifact.
+- [x] **`v0.1.1` published** (19/10) ✅: tag at `d440325` (3 dogfooding
+  fixes: git-dep trust #13, member lockfile #14, SIGPIPE #15) → green
+  release, 6 assets. Local E2E of the binary **downloaded from the release**:
+  sha256 OK, and the 3 fixes proven on the artifact (git-dep → "outside the
+  registry"; workspace-member → "Nothing to report"; `| head` → exit 141, no
+  panic). **Honest version inconsistency:** the binary identified itself as
+  `0.1.0` (the workspace `CARGO_PKG_VERSION` was never bumped); fixing it
+  required a bump + re-tag (`v0.1.2`) — founder decision, recorded
+  (**resolved in `v0.1.2`, below**).
+- [x] **`v0.1.2` published** (19/10) ✅ — **version↔tag coercion
+  resolved**: workspace `version` bump (`0.1.0` → `0.1.2`, founder decision;
+  `0.1.1` skipped in the source semver, tag already published) + release
+  pins following along (`install.sh` default, `action.yml` input default,
+  snippets in both READMEs). Tag `v0.1.2` at `8aeec59` → green release on
+  4/4 targets, 8 assets. E2E of the binary **downloaded from the release**:
+  sha256 OK, **`--version` = `zavik 0.1.2`** (matches the tag), SIGPIPE exit
+  141. Historical entries and test fixtures with their own manifest versions
+  stayed intact by design.
+- [x] **`v0.1.3` published** (20/10) ✅ — dogfooding fix #20: the
+  `repository` input default was the literal placeholder `OWNER/zavik` (404
+  for **every** consumer who followed the README without passing the input) →
+  now `Jhongamers/zavik`; tag `v0.1.2` carries the bug in its `action.yml`
+  snapshot (a pushed tag doesn't move) — hence the re-tag. **New invariant in
+  `cargo test`:** the `version` default == `v` + `CARGO_PKG_VERSION`
+  (tag↔binary coercion is now automatic, not a manual check) + the
+  `repository` default in `owner/name` format with no placeholder — both with
+  non-vacuity by mutation. Tag `v0.1.3` at `6ad7336` → release 4/4. E2E:
+  sha256 OK, binary `zavik 0.1.3`, anonymous install.sh with the new default
+  OK and **`action-smoke` green** — the action consumed a real release
+  (anonymous curl + sha256 + audit + gate), closing door F2 with real E2E.
+- [x] **Finding (19/10): `action.yml` uses pure anonymous `curl`** (it does
+  not inject `GITHUB_TOKEN`). With the repo **private** the install step
+  fails **404** (anonymous download of a private asset); proven that
+  **authenticated** works (`gh release download` → file). **Resolved by
+  opening the repo (20/10):** public repo → the anonymous path runs, real E2E
+  green via `action-smoke` (public asset + sha256 + audit + gate).
+  *Pending founder decision (not coded), now restricted to **private**
+  consumers:* injecting `GITHUB_TOKEN` into the curl would make the action
+  work in a private repo, but it couples the action to GitHub and changes the
+  integrity model — recorded, awaiting go.
+- Next (future): name-similarity typosquatting, lockfile integrity, online
+  advisory DB (GHSA).
 
-### 3.3 Monetização — fundação de licença offline (fase 1, custo $0) ✅
-- [x] **Modelo decidido**: open core + assinatura. CLI grátis (cunha de
-      adoção + confiança); gate server-side só quando a receita da fase 1
-      bancar o backend (fase 2). Dados frescos = moat (código a IA reescreve).
-- [x] **`zavik license status|install|remove`** (+ `--json`): token
-      `ZV1` = payload (plan/holder/issued/expires) assinado **Ed25519**; o
-      binário carrega só a pública; verificação 100% local (offline-first
-      mantido). 5 testes de motor + E2E manual (válido/adulterado/expirado/
-      chave-errada/lixo — todos rejeitados corretamente).
-- [x] **Ferramenta de cunho** `examples/license_tool.rs` (`genkey`/`mint`) —
-      não entra no binário; chave privada fica com o vendor, **nunca** no repo.
-- Limitações honestas: gate anti-honesto (patch burla), não defende relógio
-  atrasado; hoje ela bloqueia **apenas** `data update` — o resto do CLI,
-  incluindo `context`, segue 100% grátis.
-- [x] **Dataset de risco fase 1 — `zavik data status|update`** ✅
-      (design + amendments: `docs/design-data.md`; staging 1–3, 5, 6 feitos):
-      envelope Ed25519 com **chave separada** da licença (privada em
-      `~/.zavik-dataset.key` + secret `ZV_DATASET_KEY` — nunca no repo);
-      `status` livre/offline (ausente / inválido / idade / stale >14d);
-      `update` gate de licença **antes da rede** (`no_license`/
-      `license_invalid`, exit 1), download `https`/`file://` com teto de
-      32 MB, verificação → escrita atômica (recusa deixa o anterior
-      intacto); `audit` ganha seção `dataset_findings` — kill list **exata**
-      → `high`, advisory só por **nome** → `low` (sem fuzzy, sem
-      range-matching) — que **não toca** `score`/`passed`/`--fail-on`; sem
-      dataset, o JSON do audit é **byte idêntico** (invariante testada).
-      24 testes novos (15 unit + 9 integração; total 123) + E2E real com as
-      chaves de produção: update → status → audit com a seção → dataset
-      adulterado recusado com o anterior permanecendo.
-- [x] **Dataset fase 1 completa (staging 4)** ✅: builder
-      `license_tool build-dataset` (GHSA **reviewed** só, janela 90d;
-      kill list por 4 patterns de título medidos nos 389.683 arquivos
-      reais → 61 nomes; exclui título version-scoped = anti-FP) +
-      workflow `.github/workflows/dataset.yml` (cron diário + dispatch,
-      clone esparso, build → sign `ZV_DATASET_KEY` → **verifica contra a
-      chave do binário antes de publicar** → asset `dataset-latest` via
-      `gh`, sem action de terceiro). 11 testes + E2E real (36.885 GHSAs →
-      750 KB → audit com kill list real). Ativação executada: repo
-      `Jhongamers/zavik`, secret `ZV_DATASET_KEY`, `DEFAULT_DATASET_URL`
-      preenchido; dispatch do workflow + E2E local verdes (license `ZV1`
-      → `data update file://` → audit com seção FRESH DATA). Download
-      direto do URL embutido resolve com repo público (asset privado
-      hoje → 404 honesto). Tag `v0.1.0` publicada (19/10) com release de
-      binários nos 4 alvos.
-      Upgrade opcional (founder): corpus OSV `ossf/malicious-packages`
-      (238k nomes ≈ 28 MB/asset vs ~1 MB hoje) — ver design-data §2.
-- [ ] Action no GitHub Marketplace (billing deles, compute do cliente) —
-      após publicar repo + tags.
-- [ ] Gate server-side (GitHub App, dashboard, trilha de auditoria) — só
-      com receita da fase 1 pagando a infra.
+### 3.3 Monetization — offline license foundation (phase 1, $0 cost) ✅
+- [x] **Model decided**: open core + subscription. Free CLI (adoption +
+      trust wedge); server-side gate only when phase-1 revenue funds the
+      backend (phase 2). Fresh data = the moat (code the AI rewrites).
+- [x] **`zavik license status|install|remove`** (+ `--json`): `ZV1` token =
+      payload (plan/holder/issued/expires) signed **Ed25519**; the binary
+      carries only the public key; verification 100% local (offline-first
+      kept). 5 engine tests + manual E2E (valid/tampered/expired/wrong-key/
+      garbage — all correctly rejected).
+- [x] **Minting tool** `examples/license_tool.rs` (`genkey`/`mint`) — not in
+      the binary; the private key stays with the vendor, **never** in the repo.
+- Honest limitations: an anti-honesty gate (a patch bypasses it), it doesn't
+  defend against a backward clock; today it blocks **only** `data update` —
+  the rest of the CLI, including `context`, stays 100% free.
+- [x] **Risk dataset phase 1 — `zavik data status|update`** ✅
+      (design + amendments: `docs/design-data.md`; staging 1–3, 5, 6 done):
+      Ed25519 envelope with a **separate key** from the license (private key
+      in `~/.zavik-dataset.key` + `ZV_DATASET_KEY` secret — never in the
+      repo); `status` free/offline (absent / invalid / age / stale >14d);
+      `update` license gate **before the network** (`no_license`/
+      `license_invalid`, exit 1), `https`/`file://` download with a 32 MB
+      cap, verification → atomic write (a refusal leaves the previous one
+      intact); `audit` gains a `dataset_findings` section — **exact** kill
+      list → `high`, advisory by **name only** → `low` (no fuzzy, no
+      range-matching) — which does **not** touch `score`/`passed`/`--fail-on`;
+      without the dataset, the audit JSON is **byte identical** (tested
+      invariant). 24 new tests (15 unit + 9 integration; total 123) + real E2E
+      with the production keys: update → status → audit with the section →
+      tampered dataset refused with the previous one remaining.
+- [x] **Dataset phase 1 complete (staging 4)** ✅: `license_tool
+      build-dataset` builder (GHSA **reviewed** only, 90d window; kill list
+      from 4 title patterns measured across the 389,683 real files → 61
+      names; excludes version-scoped titles = anti-FP) +
+      `.github/workflows/dataset.yml` workflow (daily cron + dispatch, sparse
+      clone, build → sign with `ZV_DATASET_KEY` → **verify against the
+      binary's key before publishing** → `dataset-latest` asset via `gh`, no
+      third-party action). 11 tests + real E2E (36,885 GHSAs → 750 KB → audit
+      with a real kill list). Activation executed: repo `Jhongamers/zavik`,
+      `ZV_DATASET_KEY` secret, `DEFAULT_DATASET_URL` filled in; workflow
+      dispatch + local E2E green (license `ZV1` → `data update file://` →
+      audit with the FRESH DATA section). Direct download from the embedded
+      URL resolves with a public repo (private asset today → honest 404). Tag
+      `v0.1.0` published (19/10) with a binaries release on the 4 targets.
+      Optional upgrade (founder): `ossf/malicious-packages` OSV corpus (238k
+      names ≈ 28 MB per asset vs ~1 MB today) — see design-data §2.
+- [ ] Action on the GitHub Marketplace (their billing, the client's compute)
+      — after publishing the repo + tags.
+- [ ] Server-side gate (GitHub App, dashboard, audit trail) — only with
+      phase-1 revenue paying for the infra.
 
-## 4. Lançamento & monetização (plano detalhado: `docs/plano-lancamento.md`)
-- Modelo: open core + assinatura (grátis: CLI toda; pago: dataset fresco +
-  serviço). Fases, fluxo de cobrança (MoR → chave via expiry) e kit de
-  Product Hunt documentados no plano.
-- [x] **Princípio de UX (decidido)**: etapas isoladas E composto (`up`) —
-      ver `docs/plano-lancamento.md` 5.0 (WorkflowEngine + gates por etapa).
-- [x] **`up` v1 implementado** (design + amendments: `docs/design-up.md` §12):
-      pipeline `[clone?] → audit → prepare (trust embutido) → run` reusando os
-      comandos isolados inteiros (mesmo código, mesmos gates); `run_prepare` →
-      `PrepareOutcome::{Completed,Aborted}` — trust/toolchain/instalação
-      abortada interrompe ANTES do `run` (nunca executa código após aborto);
-      `--until/--skip/--dry-run`; clone seguro (`--depth 1`, sem submódulos,
-      `-c core.hooksPath=/dev/null`, nunca sobrescreve destino; `file://` ou
-      terminando em `.git`; `--skip clone` é sempre erro); JSONL no `--json`
-      (audit real, prepare=plano, run nega sem TTY — modo IA não executa
-      risco). 17 testes novos (10 unit + 7 integração), E2E real com repo git
-      local: clone + pipeline completo saiu 0; trust negada interrompeu antes
-      do `run`; destino existente → erro honesto + exit1; non-TTY → nega.
-- [x] **i18n da CLI (decidido, implementar ANTES do PH)** ✅ **CONCLUÍDO
-      18/10 (fases 1–3)** — **FASE 1 ✅
-      (17/10**, design `docs/design-i18n.md`): infra no shared (`Lang`,
-      `t`/`t_fmt` — pt-BR é a chave, `EN` é o catálogo, fallback honesto =
-      identidade), resolução `--lang` > `ZAVIK_LANG` > locale >
-      default; `--lang` extraído **pré-dispatch** (vale pra `license`/
-      `data`), respeita flags de valor e para em `--`; migrados na fase 1:
-      `section()` (17 cabeçalhos), banner, saída humana do `env`, prompts
-      do gate de permissão, títulos de etapa do `up`; +14 testes (paridade
-      e placeholders do catálogo, ordem de resolução, integração: flag/env/
-      default/inválido/JSON independente/pós-`--`). **FASE 2 EM CURSO
-      (17/10)**: corpo do `audit` (incl. "SEM DADOS" anti-false-positive)
-      + `help` completo migrados (consts `HELP_PT`/`HELP_EN` — a chave é o
-      texto emitido, sem drift), decisão registrada de prose de JSON em EN
-      forçado via `t_en` (achado do dogfooding, `docs/dogfooding.md`);
-      ✅ `diagnose` (17/10, incl. plugins), ✅ `run` (17/10) e ✅
-      `data`/`license` + SARIF p/ EN (17/10, `message_in(lang)` pros erros
-      compostos); migrados também `up` (corpo/erros/clone construction-lang
-      p/ JSON), `analyze`, `print_stacks`/`print_execution`, `context`
-      (envelopes) e o corpo do `prepare` (confiança/toolchain/execução);
-      restos de dispatch/parse migrados (logger, plugins, policy, parse) —
-      varredura de residuais no main.rs: ZERO. **Reautoria de conteúdo ✅
-      (18/10)**: `evidence` + `finding/risk message` reescritos em EN
-      (classe conteúdo — nunca traduzido em runtime; teste trava o split
-      shell-`--lang`/conteúdo-EN). **FASE 3 ✅ (18/10)**: sweep final
-      (`KERNEL:`/`EVENTBUS:` dos crates kernel/events + prefixos do
-      `Display` de erro do shared) + **flip do default `en`** + testes
-      atualizados (default pinado como EN, lado pt coberto por `--lang
-      pt-BR` explícito, helpers de teste removem locale — máquina BR não
-      vira flake) + README. Catálogo hand-rolled
-      (`pt-BR` + `en`, zero dependência — mantém offline-first), idioma
-      automático pelo locale (`LC_ALL`/`LANG`) com override `--lang
-      pt-BR|en`, **padrão `en`** vigente desde o flip (o default era
-      `pt-BR` durante a migração, pra nunca sair texto misto).
-      Regras: **JSON/SARIF/exit codes nunca traduzem** (contrato travado em
-      en); identificadores, comentários e rustdoc **em inglês desde o 1º
-      commit** (migração feita antes de versionar). Custo: extrair ~100+
-      mensagens soltas em `println!` + taxinha contínua de 2 entradas por
-      mensagem nova. Racional do padrão en: erro técnico em inglês é
-      pesquisável; PH/issues são em inglês.
-- [x] **README em inglês como principal** ✅ (16/10): `README.md` traduzido
-      (EN) + cópia em pt-BR (`README.pt-BR.md`, sincronizada nos **marcos**,
-      não a cada commit — custo honesto de manter dois textos). Posicionamento
-      **agent-agnóstico**: seção "Works with any agent" (Claude Code, Codex,
-      OpenCode, Cursor, Antigravity, aider, Copilot) como **compatibilidade,
-      não filiação** — o título antigo dizia "OpenCode Agent" (corrigido;
-      associação a um único agente limitaria o mercado e induziria a erro).
-      Nota honesta no README: mensagens humanas seguem pt-BR até o i18n.
-- [ ] **Lançar no Product Hunt** (repo aberto + LICENSE + GIF no topo + tag
-      v0.1.0; terça–quinta manhã EUA; primeiro comentário com limitações
-      honestas).
-- [x] **Pré-checagem de nomes de registro** (19/10, adiantado) ✅: `zavik`
-      está **livre** no npm **e** no crates.io, e também os fallbacks
-      `zavik-cli` (npm + crates) e `@jhongamers/zavik` (npm) — todos 404
-      "não existe". Sinal confiável desta máquina (controle `express`/`serde`
-      → 200, logo o caminho de rede não é o 404-fantasma já observado no
-      browser). **Ainda re-confirma no browser no dia do publish** — registro
-      é first-come-first-served e pode mudar entre agora e o lançamento.
-- [x] **Org GitHub `zavik` — indisponível; decisão: sem org** (19/10) ✅
-      registrada: o formulário de criação de org **autenticado** diz "The
-      name 'zavik' is already taken" mesmo com `github.com/zavik` → 404
-      (controles 200/404 confiáveis, mesmo protocolo dos checks npm/crates)
-      — padrão de nome reservado / cooldown de org apagada. **Consequência:**
-      a URL raiz `zavik.github.io` não existe sem a org exata; uma org
-      variante (`zavikhq` etc.) não pagaria o custo (transferência do repo
-      + sweep de URLs baked — `install.sh` `REPO`, `dataset.rs`
-      `DEFAULT_DATASET_URL` no binário, READMEs — + re-E2E) por um ganho
-      equivalente à URL atual. **Decisão do founder:** repo continua
-      `Jhongamers/zavik`; site fica em `jhongamers.github.io/zavik`
-      (branch `gh-pages`, Lote C), ativado no dia de abrir o repo.
-      Transferência futura permanece possível a qualquer momento (redirect
-      preserva a URL antiga; playbook de sweep já existe — Lote B);
-      **rechecar `zavik` no browser no dia do publish** — se liberar,
-      reavaliar com custo-benefício na mesa.
-- [ ] **Publicar no npm + crates.io no dia** (conta nova, nome `zavik`;
-      se ocupado até lá → fallback `zavik-cli` / `@jhongamers/zavik`).
-      `cargo publish -p zavik` e `npm publish` apontando pro binário da
-      Release mais recente.
-- [ ] **Matriz de distribuição (F0–F3) — 3 portas: instalador, prompt
-      (gerenciador), IA/Action**. Recomendado por público marcado ✅;
-      página do Chocolatey olhada (convenção padrão `choco install
-      zavik` — sem inspiração extra necessária):
-  - **F0 (founder — bloqueante de todas)** ✅ **FEITO** (19/10): tag
-    anotada `v0.1.0` em `936c4fb` → `release.yml` publicou binários
-    (linux x64/arm64, macOS arm, windows) + `.sha256` — 4/4 alvos
-    verdes, checksum conferido no binário baixado da release.
-  - **F1**: `install.sh` ✅ **recomendado (usuário final, inclui WSL e
-    macOS)** — **FEITO** (17/10): detecta OS/arch, baixa da Release, confere
-    sha256 (sem flag de pular — adulterado é recusado, com teste), não
-    interativo; overrides `ZAVIK_VERSION`/`ZAVIK_INSTALL_DIR`/
-    `ZAVIK_BASE_URL`; 4 testes (sintaxe POSIX, E2E via `file://`
-    instalando binário funcional, recusa de checksum divergente, SO
-    desconhecido com mensagem clara). Versão manual de 2 linhas documentada
-    ao lado (comemos o pastel: nosso próprio `audit` classifica `curl|sh`
-    como risco) + seção "Install" do README escrita pra humano E pra IA
-    (linha canônica copiável por OS — a IA usa o mesmo prompt). Binários
-    já publicados (F0 ✅ 19/10); o download anônimo via URL resolve quando
-    o repo abrir (asset privado ainda → 404).
-  - **F2**: `cargo install` ✅ **recomendado (dev com Rust já instalado)**
-    + testar `action.yml` no E2E do release — caminho zero-install de CI
-    (é o que a IA escreve num workflow).
-  - **F3** (conforme adoção): brew tap, `npx` (binário por plataforma),
-    winget/scoop, **`choco install zavik`** ✅ **recomendado (Windows
-    nativo)** — até lá o `.zip` da Release é a porta Windows.
-- [x] **5.1 `zavik run` v1 — FEITO**: resolve start (declarado > convenção >
-      perguntar), readiness heurístico (heurística de porta + `/proc` com
-      descendentes — pega o neto npm→node), SIGTERM→SIGKILL no **grupo**,
-      Ctrl-C gracioso, crash cedo → `diagnose`, gate crítico (humano decide),
-      `--dry-run`/`--timeout`/`--health`/`--`/`--json`. 23 testes novos
-      (18 unit + 5 integração). Desenho: `docs/design-run.md`.
-- [x] **5.1.1 `run` v1.1 — `--detach` FEITO** (17/10): sobe em **sessão própria**
-      (`setsid` — sobrevive ao terminal), devolve `pid` + `log`
-      (`.zavik/run.log`) + `stop_command` no `--json`; sem supervisão de
-      readiness (limitação honesta documentada); mesmo gate crítico (nem
-      `--yes` cobre — teste trava o invariante); no Windows fica preso ao
-      console (limitação conhecida). Testes: 3 unit (sessão própria provada
-      via `getsid`, log capturado, falha vira erro) + 2 integração (negado
-      sem humano mesmo com `--yes`, dry-run não executa). Resta de v1.1:
-      health https.
-- [ ] **5.2 `git clone` integrado** — **absorvido pelo `up <url>`** (o passo de
-      clone do pipeline substitui um comando isolado `from`; ver
-      `docs/design-up.md`). Clone seguro: sem hooks (`core.hooksPath=/dev/null`),
-      `--depth 1`, sem submódulos, via CommandRunner (sem shell) + trust check
-      antes de qualquer execução.
-- [ ] **5.3 `zavik why <pacote>`** (analisada, aguardando desenho/aprovação):
-      árvore de dependências reversa + origem + fatores de risco do `audit` num
-      JSON só. Existe demanda real (`npm why`, `cargo tree -i`,
-      `why-is-installed`); humano debuga na mão, IA substitui 5 comandos por 1
-      chamada. Read-only, zero execução, reforça o cunha de supply-chain.
-- [x] **5.4 `zavik env --json`** ✅ (16/10): fingerprint do ambiente numa
-      chamada — `os`/`arch` + toolchains por stack detectado com presença
-      (PATH) e **versão real** (`<tool> --version`, argv sem shell; falha →
-      `version: null`, nunca inventa) + lista `missing`. Mata "works on my
-      machine", é 1 call de IA em vez de sondar 10 comandos, e alimenta o
-      `diagnose` com evidência de ambiente. Read-only, sem gate (não instala
-      nada, não lê `.env`). Humano: seções por stack + sugestão de instalação
-      do que falta. 4 testes novos (presença+versão, dedupe JS/TS, versão
-      nunca inventada, integração --json/PATH vazio).
+## 4. Launch & monetization (detailed plan: `docs/plano-lancamento.md`)
+- Model: open core + subscription (free: the whole CLI; paid: fresh dataset +
+  service). Phases, billing flow (MoR → key via expiry) and the Product Hunt
+  kit are documented in the plan.
+- [x] **UX principle (decided)**: isolated steps AND composite (`up`) — see
+      `docs/plano-lancamento.md` 5.0 (WorkflowEngine + per-step gates).
+- [x] **`up` v1 implemented** (design + amendments: `docs/design-up.md` §12):
+      pipeline `[clone?] → audit → prepare (trust embedded) → run` reusing
+      the whole isolated commands (same code, same gates); `run_prepare` →
+      `PrepareOutcome::{Completed,Aborted}` — denied trust/toolchain/aborted
+      install interrupts BEFORE `run` (never executes code after an abort);
+      `--until/--skip/--dry-run`; safe clone (`--depth 1`, no submodules,
+      `-c core.hooksPath=/dev/null`, never overwrites the destination;
+      `file://` or ending in `.git`; `--skip clone` is always an error); JSONL
+      on `--json` (real audit, prepare=plan, run denies without a TTY — AI
+      mode doesn't execute risk). 17 new tests (10 unit + 7 integration), real
+      E2E with a local git repo: clone + full pipeline exited 0; denied trust
+      interrupted before `run`; existing destination → honest error + exit 1;
+      non-TTY → denies.
+- [x] **CLI i18n (decided, implement BEFORE PH)** ✅ **DONE 18/10
+      (phases 1–3)** — **PHASE 1 ✅ (17/10**, design
+      `docs/design-i18n.md`): infra in shared (`Lang`, `t`/`t_fmt` — pt-BR is
+      the key, `EN` is the catalog, honest fallback = identity), resolution
+      `--lang` > `ZAVIK_LANG` > locale > default; `--lang` extracted
+      **pre-dispatch** (applies to `license`/`data`), respects value flags and
+      stops at `--`; migrated in phase 1: `section()` (17 headers), banner,
+      `env` human output, permission-gate prompts, `up` step titles; +14 tests
+      (catalog parity and placeholders, resolution order, integration: flag/
+      env/default/invalid/independent-JSON/post-`--`). **PHASE 2 IN PROGRESS
+      (17/10)**: `audit` body (incl. anti-false-positive "NO DATA") + full
+      `help` migrated (consts `HELP_PT`/`HELP_EN` — the key is the emitted
+      text, no drift), registered decision of JSON prose forced to EN via
+      `t_en` (dogfooding finding, `docs/dogfooding.md`); ✅ `diagnose`
+      (17/10, incl. plugins), ✅ `run` (17/10) and ✅ `data`/`license` + SARIF
+      to EN (17/10, `message_in(lang)` for compound errors); `up` also
+      migrated (body/errors/clone construction-lang for JSON), `analyze`,
+      `print_stacks`/`print_execution`, `context` (envelopes) and the
+      `prepare` body (trust/toolchain/execution); remaining dispatch/parse
+      migrated (logger, plugins, policy, parse) — residual sweep in main.rs:
+      ZERO. **Content reauthoring ✅ (18/10)**: `evidence` +
+      `finding/risk message` rewritten in EN (content class — never translated
+      at runtime; a test locks the split shell-`--lang`/EN-content).
+      **PHASE 3 ✅ (18/10)**: final sweep (`KERNEL:`/`EVENTBUS:` from the
+      kernel/events crates + the shared `Display` error prefixes) + **default
+      flip to `en`** + updated tests (default pinned as EN, the pt side
+      covered by explicit `--lang pt-BR`, test helpers remove locale — a BR
+      machine doesn't become a flake) + README. Hand-rolled catalog (`pt-BR` +
+      `en`, zero dependency — keeps offline-first), automatic language by
+      locale (`LC_ALL`/`LANG`) with `--lang pt-BR|en` override, **default
+      `en`** in force since the flip (the default was `pt-BR` during the
+      migration, to never emit mixed text). Rules: **JSON/SARIF/exit codes
+      never translate** (contract locked in en); identifiers, comments and
+      rustdoc **in English from the 1st commit** (migration done before
+      versioning). Cost: extracting ~100+ scattered messages from `println!` +
+      a continuous 2-entry tax per new message. Rationale for the en default:
+      technical errors in English are searchable; PH/issues are in English.
+- [x] **README in English as primary** ✅ (16/10): `README.md` translated (EN)
+      + a pt-BR copy (`README.pt-BR.md`, synced at **milestones**, not every
+      commit — the honest cost of maintaining two texts). **Agent-agnostic**
+      positioning: the "Works with any agent" section (Claude Code, Codex,
+      OpenCode, Cursor, Antigravity, aider, Copilot) as **compatibility, not
+      affiliation** — the old title said "OpenCode Agent" (fixed; association
+      with a single agent would limit the market and mislead).
+      Honest note on the README: human messages follow pt-BR until the i18n.
+- [ ] **Launch on Product Hunt** (open repo + LICENSE + GIF at the top + tag
+      v0.1.0; Tue–Thu US morning; first comment with honest limitations).
+- [x] **Pre-check of registry names** (19/10, brought forward) ✅: `zavik` is
+      **free** on npm **and** crates.io, and so are the fallbacks `zavik-cli`
+      (npm + crates) and `@jhongamers/zavik` (npm) — all 404 "does not
+      exist". Reliable signal from this machine (control `express`/`serde` →
+      200, so the network path is not the phantom-404 already observed in the
+      browser). **Still re-confirm in the browser on publish day** —
+      registration is first-come-first-served and can change between now and
+      launch.
+- [x] **GitHub org `zavik` — unavailable; decision: no org** (19/10) ✅
+      recorded: the **authenticated** org-creation form says "The name 'zavik'
+      is already taken" even though `github.com/zavik` → 404 (reliable 200/404
+      controls, same protocol as the npm/crates checks) — reserved-name
+      pattern / deleted-org cooldown. **Consequence:** the root URL
+      `zavik.github.io` doesn't exist without the exact org; a variant org
+      (`zavikhq` etc.) wouldn't pay for itself (repo transfer + sweep of
+      baked URLs — `install.sh` `REPO`, `dataset.rs` `DEFAULT_DATASET_URL` in
+      the binary, READMEs — + re-E2E) for a gain equivalent to the current
+      URL. **Founder decision:** the repo stays `Jhongamers/zavik`; the site
+      stays at `jhongamers.github.io/zavik` (`gh-pages` branch, Lote C),
+      activated on the day the repo opened. A future transfer remains possible
+      at any time (redirect preserves the old URL; the sweep playbook already
+      exists — Lote B); **recheck `zavik` in the browser on publish day** — if
+      it frees up, reevaluate cost-benefit with the facts on the table.
+- [ ] **Publish to npm + crates.io on the day** (new account, name `zavik`;
+      if taken by then → fallback `zavik-cli` / `@jhongamers/zavik`).
+      `cargo publish -p zavik` and `npm publish` pointing at the most recent
+      Release binary.
+- [ ] **Distribution matrix (F0–F3) — 3 doors: installer, prompt (manager),
+      AI/Action**. Recommended by the marked audience ✅; the Chocolatey page
+      was read (standard convention `choco install zavik` — no extra
+      inspiration needed):
+  - **F0 (founder — blocks everything)** ✅ **DONE** (19/10): annotated tag
+    `v0.1.0` at `936c4fb` → `release.yml` published binaries (linux
+    x64/arm64, macOS arm, windows) + `.sha256` — 4/4 green targets, checksum
+    verified on the binary downloaded from the release.
+  - **F1**: `install.sh` ✅ **recommended (end user, incl. WSL and macOS)**
+    — **DONE** (17/10): detects OS/arch, downloads from the Release, checks
+    sha256 (no skip flag — tampered is refused, with a test), non-interactive;
+    overrides `ZAVIK_VERSION`/`ZAVIK_INSTALL_DIR`/`ZAVIK_BASE_URL`; 4 tests
+    (POSIX syntax, E2E via `file://` installing a working binary, divergent
+    checksum refusal, unknown OS with a clear message). The 2-line manual
+    version documented next to it (we ate our own pastel: our own `audit`
+    classifies `curl|sh` as a risk) + the README "Install" section written for
+    humans AND for AI (a canonical copyable line per OS — the AI uses the
+    same prompt). Binaries already published (F0 ✅ 19/10); the anonymous URL
+    download resolves when the repo opened (private asset used to → 404).
+  - **F2**: `cargo install` ✅ **recommended (dev with Rust already
+    installed)** + test `action.yml` in the release E2E — the zero-install CI
+    path (it's what the AI writes in a workflow).
+  - **F3** (as adoption grows): brew tap, `npx` (per-platform binary),
+    winget/scoop, **`choco install zavik`** ✅ **recommended (native
+    Windows)** — until then the Release `.zip` is the Windows door.
+- [x] **5.1 `zavik run` v1 — DONE**: resolves start (declared > convention >
+      ask), heuristic readiness (port heuristic + `/proc` with descendants —
+      catches the grandchild npm→node), SIGTERM→SIGKILL on the **group**,
+      graceful Ctrl-C, early crash → `diagnose`, critical gate (a human
+      decides), `--dry-run`/`--timeout`/`--health`/`--`/`--json`. 23 new tests
+      (18 unit + 5 integration). Design: `docs/design-run.md`.
+- [x] **5.1.1 `run` v1.1 — `--detach` DONE** (17/10): starts in its **own
+      session** (`setsid` — survives the terminal), returns `pid` + `log`
+      (`.zavik/run.log`) + `stop_command` in the `--json`; no readiness
+      supervision (documented honest limitation); same critical gate (not even
+      `--yes` covers it — a test locks the invariant); on Windows it stays
+      tied to the console (known limitation). Tests: 3 unit (own session
+      proven via `getsid`, log captured, failure becomes an error) + 2
+      integration (denied without a human even with `--yes`, dry-run doesn't
+      execute). Remaining in v1.1: https health.
+- [ ] **5.2 integrated `git clone`** — **absorbed by `up <url>`** (the
+      pipeline's clone step replaces an isolated `from` command; see
+      `docs/design-up.md`). Safe clone: no hooks (`core.hooksPath=/dev/null`),
+      `--depth 1`, no submodules, via CommandRunner (no shell) + trust check
+      before any execution.
+- [ ] **5.3 `zavik why <package>`** (analyzed, awaiting design/approval):
+      reverse dependency tree + origin + the `audit` risk factors in a single
+      JSON. Real demand exists (`npm why`, `cargo tree -i`,
+      `why-is-installed`); humans debug by hand, AI replaces 5 commands with 1
+      call. Read-only, zero execution, reinforces the supply-chain wedge.
+- [x] **5.4 `zavik env --json`** ✅ (16/10): environment fingerprint in one
+      call — `os`/`arch` + toolchains per detected stack with presence (PATH)
+      and **real version** (`<tool> --version`, argv without shell; failure →
+      `version: null`, never invents) + a `missing` list. Kills "works on my
+      machine", it's 1 AI call instead of probing 10 commands, and feeds
+      `diagnose` with environment evidence. Read-only, no gate (installs
+      nothing, doesn't read `.env`). Human: per-stack sections + install
+      suggestions for what's missing. 4 new tests (presence+version, JS/TS
+      dedupe, version never invented, integration --json/empty PATH).
 
 ---
 
-## Notas / princípios já estabelecidos (manter)
-- **Correção automática é FORA** (decisão do founder, out/2026): executar
-  consertos pode quebrar algo que escapa do nosso controle — multi-linguagem ×
-  framework = blast radius imprevisível. O produto só **propõe** (o `diagnose`
-  já entrega o "conserto"); qualquer `--fix` futuro seria restrito a regras
-  inequívocas atrás de gate individual, nunca execução automática.
-- **Idioma**: identificadores, testes e comentários em **inglês**; mensagens
-  humanas da CLI em **pt-BR + en** com default **en** desde o i18n de 18/10
-  (ROADMAP §4); contrato de máquina (JSON/SARIF/exit codes) **sempre en**.
-- Injeção de comando é **impossível por construção**: sem shell
-  (`Command::new(prog).args([...])`), imagem Docker saneada `[a-z0-9._-]`.
-- Riscos de execução de código exigem confirmação **individual** —
-  "sim para todas" e `--yes` **nunca** cobrem isso (protege o caso de IA dirigir).
-- Sem terminal (não interativo) → **nega por padrão**.
-- Arquivos existentes **nunca** sobrescritos sem `--force`.
-- Ser honesto nas limitações: não prometer "roda em tudo sem erro".
+## Notes / principles already established (keep)
+- **Automatic fixing is OUT** (founder decision, Oct/2026): executing fixes
+  can break something outside our control — multi-language × framework =
+  unpredictable blast radius. The product only **proposes** (the `diagnose`
+  already delivers the "fix"); any future `--fix` would be restricted to
+  unambiguous rules behind an individual gate, never automatic execution.
+- **Language**: identifiers, tests and comments in **English**; CLI human
+  messages in **pt-BR + en** with default **en** since the 18/10 i18n
+  (ROADMAP §4); machine contract (JSON/SARIF/exit codes) **always en**.
+- Command injection is **impossible by construction**: no shell
+  (`Command::new(prog).args([...])`), Docker image sanitized `[a-z0-9._-]`.
+- Code-execution risks require **individual** confirmation — "yes to all"
+  and `--yes` **never** cover it (protects the AI-driving case).
+- Non-terminal (non-interactive) → **denies by default**.
+- Existing files are **never** overwritten without `--force`.
+- Be honest about limitations: never promise "runs on everything without
+  errors".

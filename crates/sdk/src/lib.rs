@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 
 /// Base contract for **any** plugin.
 ///
-/// For the Kernel to perform the "safe cast" described in `arquiteture.md`,
+/// For the Kernel to perform the "safe cast" described in `ARCHITECTURE.md`,
 /// each plugin exposes here the capabilities it implements via `as_*` methods.
 pub trait Capability: Any {
     /// Unique name used to register the plugin in the Kernel.
