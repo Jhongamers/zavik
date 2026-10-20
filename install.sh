@@ -12,13 +12,13 @@
 #   - The script pins a release version; bump via ZAVIK_VERSION.
 #
 # Overrides (mirrors, air-gapped, tests):
-#   ZAVIK_VERSION       release tag to install (default: v0.1.0)
+#   ZAVIK_VERSION       release tag to install (default: v0.1.2)
 #   ZAVIK_INSTALL_DIR   install dir (default: $HOME/.local/bin)
 #   ZAVIK_BASE_URL      download base (default: GitHub release download URL)
 set -eu
 
 REPO="Jhongamers/zavik"
-VERSION="${ZAVIK_VERSION:-v0.1.0}"
+VERSION="${ZAVIK_VERSION:-v0.1.2}"
 INSTALL_DIR="${ZAVIK_INSTALL_DIR:-${HOME}/.local/bin}"
 BASE_URL="${ZAVIK_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
 

@@ -10,9 +10,9 @@ branding:
 
 inputs:
   version:
-    description: "zavik tag to install (e.g. v0.1.0). Pinned on purpose."
+    description: "zavik tag to install (e.g. v0.1.2). Pinned on purpose."
     required: false
-    default: "v0.1.0"
+    default: "v0.1.2"
   repository:
     description: "zavik repository (owner/name) to download the Release from."
     required: false

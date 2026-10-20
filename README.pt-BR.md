@@ -21,7 +21,7 @@ vendor pra instalar. *(Compatibilidade, não filiação.)*
 ## Como rodar
 
 **Instalação rápida** (linux x64/arm64, macOS arm64; precisa da release
-`v0.1.0` publicada):
+`v0.1.2` publicada):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jhongamers/zavik/main/install.sh | sh
@@ -324,7 +324,7 @@ workflow `.github/workflows/release.yml` publica binários (linux x64/arm64,
 macOS arm64, windows) a cada tag `v*`:
 
 ```bash
-git tag v0.1.0 && git push origin v0.1.0   # publica as Releases
+git tag v0.1.2 && git push origin v0.1.2   # publica as Releases
 ```
 
 Uso no repositório do consumidor (`.github/workflows/audit.yml`):
@@ -339,10 +339,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Jhongamers/zavik@v0.1.0
+      - uses: Jhongamers/zavik@v0.1.2
         with:
           fail-on: high
-          # version: v0.1.0   # tag pinada (proposital, não "latest")
+          # version: v0.1.2   # tag pinada (proposital, não "latest")
           # sha256: <hash>    # opcional: ancora a integridade no action
           # online: "true"    # default; offline o score só chega a Medium
 ```
