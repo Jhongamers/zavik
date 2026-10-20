@@ -335,6 +335,22 @@ swift-argument-parser, googletest). Achados:
       → 200, logo o caminho de rede não é o 404-fantasma já observado no
       browser). **Ainda re-confirma no browser no dia do publish** — registro
       é first-come-first-served e pode mudar entre agora e o lançamento.
+- [x] **Org GitHub `zavik` — indisponível; decisão: sem org** (19/10) ✅
+      registrada: o formulário de criação de org **autenticado** diz "The
+      name 'zavik' is already taken" mesmo com `github.com/zavik` → 404
+      (controles 200/404 confiáveis, mesmo protocolo dos checks npm/crates)
+      — padrão de nome reservado / cooldown de org apagada. **Consequência:**
+      a URL raiz `zavik.github.io` não existe sem a org exata; uma org
+      variante (`zavikhq` etc.) não pagaria o custo (transferência do repo
+      + sweep de URLs baked — `install.sh` `REPO`, `dataset.rs`
+      `DEFAULT_DATASET_URL` no binário, READMEs — + re-E2E) por um ganho
+      equivalente à URL atual. **Decisão do founder:** repo continua
+      `Jhongamers/zavik`; site fica em `jhongamers.github.io/zavik`
+      (branch `gh-pages`, Lote C), ativado no dia de abrir o repo.
+      Transferência futura permanece possível a qualquer momento (redirect
+      preserva a URL antiga; playbook de sweep já existe — Lote B);
+      **rechecar `zavik` no browser no dia do publish** — se liberar,
+      reavaliar com custo-benefício na mesa.
 - [ ] **Publicar no npm + crates.io no dia** (conta nova, nome `zavik`;
       se ocupado até lá → fallback `zavik-cli` / `@jhongamers/zavik`).
       `cargo publish -p zavik` e `npm publish` apontando pro binário da
