@@ -264,3 +264,7 @@ duas semanas (`arquire.md` é a prova de que até UMA doc drifting de si
 mesma acontece em um dia). O visitante internacional lê README, ROADMAP,
 ARCHITECTURE — os 3 agora servidos. A linha antiga "tradução de docs
 fora de escopo" vale só pros docs internos vivos.
+
+**Addendum 20/10**: `CONTRIBUTING.md` e `SECURITY.md` ficam **só em EN**
+(público-alvo = contribuidores/reportantes internacionais; docs estáticos,
+risco de drift baixo; se aparecer público pt-BR pedindo, copiar no lote).

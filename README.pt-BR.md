@@ -629,3 +629,7 @@ A tabela completa de palavras-chave está em
 - [ ] Analisador de dependências desatualizadas/vulneráveis.
 - [ ] Execução isolada (sandbox) para instalações.
 - [ ] UI desktop via Tauri v2 (ADR 0006).
+- Contribuir: ver [CONTRIBUTING.md](CONTRIBUTING.md) (proponha numa issue
+  antes de código; testes obrigatórios; sem dependência nova sem discussão).
+  Segurança: [SECURITY.md](SECURITY.md) — reportagem privada de
+  vulnerabilidade ativada; não abra issue pública pra vuln.

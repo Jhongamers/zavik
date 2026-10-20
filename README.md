@@ -654,3 +654,7 @@ The full keyword table lives in `crates/plugins/src/detector/`.
   claims more than the tool does. Automatic fix execution is **out of scope**
   by design: Zavik only **proposes** fixes.
 - License: [MIT](LICENSE).
+- Contributing code/docs: [CONTRIBUTING.md](CONTRIBUTING.md) (propose in an
+  issue first, tests mandatory, no new dependencies without discussion).
+  Security reports: [SECURITY.md](SECURITY.md) — private vulnerability
+  reporting is enabled; do not open public issues for vulns.
