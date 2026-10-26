@@ -67,7 +67,7 @@ fn lang_flag_switches_human_output_to_english() {
         "sem resíduo pt-BR no header: {stdout}"
     );
     assert!(
-        stdout.contains("   project: "),
+        stdout.contains("project: "),
         "banner traduzido: {stdout}"
     );
 }

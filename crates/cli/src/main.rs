@@ -242,16 +242,20 @@ fn run_env(
         println!("  {}:", stack.language);
         for tool in lang_tools {
             if tool.present {
+                use zavik_shared::style;
                 println!(
-                    "    • {} ✅ {}",
-                    tool.tool,
-                    tool.version.as_deref().unwrap_or(t("(versão não lida)"))
+                    "    {} {} {}",
+                    style::symbol("ok"),
+                    style::bold(&tool.tool),
+                    style::dim(tool.version.as_deref().unwrap_or(t("(versão não lida)")))
                 );
             } else {
+                use zavik_shared::style;
                 println!(
-                    "{}",
+                    "    {} {}",
+                    style::symbol("crit"),
                     t_fmt(
-                        "    • {} ❌ fora do PATH — sugestão: {}",
+                        "{}: fora do PATH — sugestão: {}",
                         &[
                             &tool.tool,
                             &install_hint(&tool.tool, zavik_shared::i18n::lang())
@@ -367,12 +371,15 @@ fn run_context(
 }
 
 fn print_bucket(label: &str, cmds: &[String]) {
+    use zavik_shared::style;
     if cmds.is_empty() {
         return;
     }
-    println!("  {label}:");
-    for cmd in cmds {
-        println!("     $ {cmd}");
+    println!("  {}", style::bold(&format!("{label}:")));
+    for (i, cmd) in cmds.iter().enumerate() {
+        let last = i + 1 == cmds.len();
+        let branch = if last { "└─" } else { "├─" };
+        println!("  {} {} {}", style::dim(branch), style::dim("$"), cmd);
     }
 }
 
@@ -403,17 +410,18 @@ fn run_diagnose(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
 /// construction); only the labels translate here.
 fn print_diagnosis(diagnosis: &zavik_shared::Diagnosis) {
     use zavik_shared::i18n::{t, t_fmt};
+    use zavik_shared::style;
     println!("{}", diagnosis.summary);
     for cause in &diagnosis.causes {
-        println!("\n• {}", cause.cause);
+        println!("\n{} {}", style::cyan(style::STEP), style::bold(&cause.cause));
         if let Some(note) = &cause.note {
-            println!("{}", t_fmt("  nota: {}", &[note]));
+            println!("{}", style::yellow(&t_fmt("  nota: {}", &[note])));
         }
-        println!("{}", t_fmt("  conserto: {}", &[&cause.fix]));
+        println!("{}", style::green(&t_fmt("  conserto: {}", &[&cause.fix])));
         if !cause.evidence.is_empty() {
-            println!("{}", t("  provas:"));
+            println!("{}", style::dim(t("  provas:")));
             for line in &cause.evidence {
-                println!("    {line}");
+                println!("    {}", style::dim(line));
             }
         }
     }
@@ -701,7 +709,12 @@ fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::Dat
     }
 
     if report.findings.is_empty() {
-        println!("\n{}", t("Nenhuma achação acima do limiar. ✅"));
+        use zavik_shared::style;
+        println!(
+            "\n{} {}",
+            style::symbol("ok"),
+            style::green(t("Nenhuma achação acima do limiar."))
+        );
     }
     for finding in &report.findings {
         let severity = finding.severity.as_str().to_uppercase();
@@ -761,17 +774,23 @@ fn print_audit(report: &AuditReport, online: bool, dataset: Option<&dataset::Dat
     }
 
     if report.packages_audited == 0 {
+        use zavik_shared::style;
         println!(
-            "\n{}",
-            t("Veredito: SEM DADOS ⚠️  (0 pacotes — nada foi atestado)")
+            "\n{} {}",
+            style::symbol("warn"),
+            style::yellow(t(
+                "Veredito: SEM DADOS (0 pacotes — nada foi atestado)"
+            ))
         );
     } else {
-        let verdict = if report.passed {
-            t("APROVADO ✅")
+        use zavik_shared::style;
+        let (kind, verdict) = if report.passed {
+            ("ok", t("APROVADO"))
         } else {
-            t("REPROVADO ❌")
+            ("crit", t("REPROVADO"))
         };
-        println!("\n{}", t_fmt("Veredito: {}", &[verdict]));
+        let verdict = format!("{} {}", style::symbol(kind), verdict);
+        println!("\n{}", t_fmt("Veredito: {}", &[&verdict]));
     }
 }
 
@@ -813,9 +832,13 @@ fn print_dataset_section(report: &dataset::DatasetReport) {
     let (bad, advisories): (Vec<_>, Vec<_>) =
         report.findings.iter().partition(|f| f.kind == "bad_name");
     if !bad.is_empty() {
+        use zavik_shared::style;
         println!(
-            "{}",
-            t("\n🛑 Nome malicioso/typosquat presente nas dependências:")
+            "\n{} {}",
+            style::symbol("crit"),
+            style::red(t(
+                "Nome malicioso/typosquat presente nas dependências:"
+            ))
         );
         for finding in bad {
             println!(
@@ -828,9 +851,13 @@ fn print_dataset_section(report: &dataset::DatasetReport) {
         }
     }
     if !advisories.is_empty() {
+        use zavik_shared::style;
         println!(
-            "{}",
-            t("\n⚠ Possível exposição (casamento só por nome — confira sua versão):")
+            "\n{} {}",
+            style::symbol("warn"),
+            style::yellow(t(
+                "Possível exposição (casamento só por nome — confira sua versão):"
+            ))
         );
         for finding in advisories {
             println!(
@@ -1035,8 +1062,9 @@ fn run_run(
                     );
                 } else {
                     println!(
-                        "{}",
-                        t_fmt_in(lang, "\n▶ rodando em background: {}", &[&display])
+                        "\n{} {}",
+                        zavik_shared::style::cyan(zavik_shared::style::RUN),
+                        t_fmt_in(lang, "rodando em background: {}", &[&display])
                     );
                     println!("   pid  : {pid}");
                     println!(
@@ -1139,7 +1167,11 @@ fn run_run(
     }
 
     if !options.json {
-        println!("{}", t_fmt_in(lang, "\n▶ rodando: {}", &[&display]));
+        println!(
+            "\n{} {}",
+            zavik_shared::style::cyan(zavik_shared::style::RUN),
+            t_fmt_in(lang, "rodando: {}", &[&display])
+        );
         println!(
             "{}\n",
             translate(lang, "   (Ctrl-C encerra: SIGTERM → espera → SIGKILL)")
@@ -1165,13 +1197,15 @@ fn run_run(
             } else {
                 // No format specs in the catalog: compose the number outside.
                 let note = readiness_note(&outcome);
+                let msg = t_fmt_in(
+                    lang,
+                    "terminou normalmente em {}s{}",
+                    &[&format!("{seconds:.1}"), &note]
+                );
                 println!(
-                    "{}",
-                    t_fmt_in(
-                        lang,
-                        "\n✨ terminou normalmente em {}s{}",
-                        &[&format!("{seconds:.1}"), &note]
-                    )
+                    "\n{} {}",
+                    zavik_shared::style::symbol("ok"),
+                    zavik_shared::style::green(&msg)
                 );
             }
         }
@@ -1206,13 +1240,15 @@ fn run_run(
                 // {:?} and {:.1} compose OUTSIDE the template (catalog rule).
                 let code = format!("{:?}", outcome.exit_code);
                 let note = readiness_note(&outcome);
+                let msg = t_fmt_in(
+                    lang,
+                    "o projeto saiu com código {} após {}s{}",
+                    &[&code, &format!("{seconds:.1}"), &note]
+                );
                 println!(
-                    "{}",
-                    t_fmt_in(
-                        lang,
-                        "\n❌ o projeto saiu com código {} após {}s{}",
-                        &[&code, &format!("{seconds:.1}"), &note]
-                    )
+                    "\n{} {}",
+                    zavik_shared::style::symbol("crit"),
+                    zavik_shared::style::red(&msg)
                 );
                 print_diagnosis(&diagnosis);
             }
@@ -1395,7 +1431,11 @@ fn data_status(as_json: bool) -> Result<(), Box<dyn std::error::Error>> {
                            "bad_names": ds.bad_names.len()})
                 );
             } else {
-                println!("{}", t("dataset instalado ✅"));
+                println!(
+                    "{} {}",
+                    zavik_shared::style::symbol("ok"),
+                    zavik_shared::style::green(t("dataset instalado"))
+                );
                 println!(
                     "{}",
                     t_fmt(
@@ -1568,7 +1608,11 @@ fn data_update(
                            "file": dataset::dataset_file().display().to_string()})
                 );
             } else {
-                println!("{}", t("dataset instalado ✅"));
+                println!(
+                    "{} {}",
+                    zavik_shared::style::symbol("ok"),
+                    zavik_shared::style::green(t("dataset instalado"))
+                );
                 println!(
                     "{}",
                     t_fmt(
@@ -1603,8 +1647,12 @@ fn data_update(
                 );
             } else {
                 println!(
-                    "{}",
-                    t_fmt("❌ dataset recusado: {}", &[&error.to_string()])
+                    "{} {}",
+                    zavik_shared::style::symbol("crit"),
+                    zavik_shared::style::red(&t_fmt(
+                        "dataset recusado: {}",
+                        &[&error.to_string()]
+                    ))
                 );
                 println!(
                     "{}",
@@ -1937,15 +1985,22 @@ fn print_findings(report: &AnalysisReport) {
     use zavik_shared::i18n::t;
     section("ANÁLISE DE DEPENDÊNCIAS");
     if report.is_empty() {
-        println!("{}", t("✅ Nada a reportar: dependências e lockfiles parecem saudáveis."));
+        println!(
+            "{} {}",
+            zavik_shared::style::symbol("ok"),
+            zavik_shared::style::green(t(
+                "Nada a reportar: dependências e lockfiles parecem saudáveis."
+            ))
+        );
         return;
     }
 
     for finding in report.sorted() {
+        use zavik_shared::style;
         let icon = match finding.severity {
-            Severity::Critical => "🛑",
-            Severity::Warning => "⚠️ ",
-            Severity::Info => "ℹ️ ",
+            Severity::Critical => style::red(style::CRIT),
+            Severity::Warning => style::yellow(style::WARN),
+            Severity::Info => style::cyan(style::INFO),
         };
         println!("{icon} {}", finding.message);
     }
@@ -1994,7 +2049,13 @@ fn pre_flight_trust(
     };
 
     if report.is_empty() {
-        println!("{}", t("\n✅ Verificação de confiança: nenhum risco detectado."));
+        println!(
+            "\n{} {}",
+            zavik_shared::style::symbol("ok"),
+            zavik_shared::style::green(t(
+                "Verificação de confiança: nenhum risco detectado."
+            ))
+        );
         return true;
     }
 
@@ -2004,14 +2065,15 @@ fn pre_flight_trust(
         t("O Zavik não confia cegamente no manifest. Riscos encontrados:\n")
     );
     for risk in report.sorted() {
+        use zavik_shared::style;
         let icon = match risk.severity {
-            Severity::Critical => "🛑",
-            Severity::Warning => "⚠️ ",
-            Severity::Info => "ℹ️ ",
+            Severity::Critical => style::red(style::CRIT),
+            Severity::Warning => style::yellow(style::WARN),
+            Severity::Info => style::cyan(style::INFO),
         };
         println!("{icon} {}", risk.message);
         if !risk.detail.trim().is_empty() {
-            println!("   ↳ {}", risk.detail);
+            println!("   {} {}", style::dim("↳"), risk.detail);
         }
     }
 
@@ -2285,8 +2347,12 @@ fn run_up(
                 if !options.json {
                     let cloned_into = active_context.project_root.display().to_string();
                     println!(
-                        "{}",
-                        zavik_shared::i18n::t_fmt("✅ clonado em {}", &[&cloned_into])
+                        "{} {}",
+                        zavik_shared::style::symbol("ok"),
+                        zavik_shared::style::green(&zavik_shared::i18n::t_fmt(
+                            "clonado em {}",
+                            &[&cloned_into]
+                        ))
                     );
                 }
                 cloned_kernel = Some(build_kernel(&active_context, options.all)?);
@@ -2359,7 +2425,11 @@ fn emit_up_summary(
             }
         }
         if status == "ok" {
-            println!("{}", t("\n✨ Pipeline concluído."));
+            println!(
+                "\n{} {}",
+                zavik_shared::style::symbol("ok"),
+                zavik_shared::style::green(t("Pipeline concluído."))
+            );
         } else {
             println!(
                 "{}",
@@ -2488,8 +2558,11 @@ fn run_prepare(
                     return Ok(PrepareOutcome::Aborted);
                 }
                 println!(
-                    "{}",
-                    zavik_shared::i18n::t("\n✅ Toolchain instalada — seguindo.")
+                    "\n{} {}",
+                    zavik_shared::style::symbol("ok"),
+                    zavik_shared::style::green(zavik_shared::i18n::t(
+                        "Toolchain instalada — seguindo."
+                    ))
                 );
             }
         }
@@ -2576,52 +2649,66 @@ fn print_stacks(stacks: &[ProjectStack]) {
         return;
     }
     for stack in stacks {
+        use zavik_shared::style;
         let language = stack.language.to_string();
         let manager = stack.package_manager.as_deref().unwrap_or("-");
         let name = stack.name.as_deref().unwrap_or("-");
         println!(
-            "{}",
-            t_fmt(
-                "\n• Linguagem : {}   |   Gerenciador: {}   |   Nome: {}",
-                &[&language, manager, name],
-            )
+            "\n{} {}",
+            style::cyan(style::STEP),
+            style::bold(&t_fmt("{} · {} · {}", &[&language, manager, name]))
         );
         let manifest = stack.manifest.display().to_string();
-        println!("{}", t_fmt("  Manifesto : {}", &[&manifest]));
+        println!(
+            "  {} {}",
+            style::dim("└─"),
+            style::dim(&t_fmt("Manifesto: {}", &[&manifest]))
+        );
         if !stack.frameworks.is_empty() {
-            println!("  Frameworks: {}", stack.frameworks.join(", "));
+            println!(
+                "  {} Frameworks: {}",
+                style::dim("├─"),
+                stack.frameworks.join(", ")
+            );
         }
         println!(
-            "{}",
-            t_fmt("  Dependências: {}", &[&stack.dependencies.len().to_string()])
+            "  {} {}",
+            style::dim("└─"),
+            t_fmt("Dependências: {}", &[&stack.dependencies.len().to_string()])
         );
     }
 }
 
 fn print_execution(report: &PrepareReport) {
     use zavik_shared::i18n::{t, t_fmt};
+    use zavik_shared::style;
     section("RESULTADO");
     for title in &report.executed {
-        println!("✅ {title}");
+        println!("{} {title}", style::symbol("ok"));
     }
     for title in &report.skipped {
-        println!("⏭️  {title}");
+        println!("{} {title}", style::yellow(style::SKIP));
     }
     if let Some(error) = &report.failed {
-        println!("{}", t_fmt("\n❌ A execução parou: {}", &[error.as_str()]));
-        println!("{}", t("   Corrija o problema e rode novamente."));
+        println!(
+            "\n{} {}",
+            style::symbol("crit"),
+            style::red(&t_fmt("A execução parou: {}", &[error.as_str()]))
+        );
+        println!("{}", style::dim(t("   Corrija o problema e rode novamente.")));
     } else if report.executed.is_empty() && report.skipped.is_empty() {
-        println!("{}", t("Nada foi executado."));
+        println!("{}", style::dim(t("Nada foi executado.")));
     } else {
         println!(
-            "{}",
-            t_fmt(
-                "\n✨ Concluído: {} passo(s) executado(s), {} pulado(s).",
+            "\n{} {}",
+            style::symbol("ok"),
+            style::green(&t_fmt(
+                "Concluído: {} passo(s) executado(s), {} pulado(s).",
                 &[
                     &report.executed.len().to_string(),
                     &report.skipped.len().to_string(),
                 ],
-            )
+            ))
         );
     }
 }
@@ -2810,17 +2897,23 @@ fn print_help() {
 
 fn banner(title: &str, project_root: &std::path::Path) {
     use zavik_shared::i18n::t_fmt;
-    println!("=============================================");
-    println!("✨ {title} ✨");
+    use zavik_shared::style;
     println!(
         "{}",
-        t_fmt("   projeto: {}", &[&project_root.display().to_string()])
+        style::framed(
+            title,
+            &[t_fmt("projeto: {}", &[&project_root.display().to_string()])],
+        )
     );
-    println!("=============================================");
 }
 
 fn section(title: &str) {
-    println!("\n---------------------------------------------");
-    println!("{}", zavik_shared::i18n::t(title));
-    println!("---------------------------------------------");
+    use zavik_shared::style;
+    let translated = zavik_shared::i18n::t(title);
+    println!();
+    println!("{}", style::bold(&style::cyan(translated)));
+    println!(
+        "{}",
+        style::dim(&"─".repeat(translated.chars().count().max(8)))
+    );
 }

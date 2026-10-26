@@ -10,6 +10,7 @@ use std::path::PathBuf;
 /// Human-language selection for CLI messages (pt-BR + en). Machine output
 /// (JSON/SARIF/exit codes) never goes through it — see module docs.
 pub mod i18n;
+pub mod style;
 
 /// Identifier of a plugin loaded in the Kernel (e.g. `"stack_detector"`).
 pub type PluginId = String;

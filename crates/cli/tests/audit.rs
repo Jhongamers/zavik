@@ -118,7 +118,7 @@ fn audit_human_output_translates_to_english() {
         "corpo do audit em EN: {stdout}"
     );
     assert!(
-        stdout.contains("Verdict: APPROVED ✅"),
+        stdout.contains("Verdict: ✓ APPROVED"),
         "veredito traduzido: {stdout}"
     );
     assert!(

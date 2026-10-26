@@ -31,13 +31,18 @@ impl InteractivePermissionGate {
     fn ask(&self, request: &PermissionRequest, allow_batch: bool) -> Decision {
         if request.critical {
             println!(
-                "{}",
-                t_fmt("\n⚠️  RISCO DE SEGURANÇA: {}", &[&request.title])
+                "\n{} {}",
+                zavik_shared::style::red(zavik_shared::style::WARN),
+                zavik_shared::style::red(&t_fmt(
+                    "RISCO DE SEGURANÇA: {}",
+                    &[&request.title]
+                ))
             );
         } else {
             println!(
-                "{}",
-                t_fmt("\n🔐 Permissão necessária: {}", &[&request.title])
+                "\n{} {}",
+                zavik_shared::style::cyan(zavik_shared::style::INFO),
+                t_fmt("🔐 Permissão necessária: {}", &[&request.title])
             );
         }
         println!("{}", t_fmt("   ação   : {}", &[&request.detail]));

@@ -292,11 +292,11 @@ static EN: &[(&str, &str)] = &[
         "Detection workflow (dependency_scan)",
     ),
     // --- banner ---
-    ("   projeto: {}", "   project: {}"),
+    ("projeto: {}", "project: {}"),
     // --- `env` human output ---
     (
-        "    • {} ❌ fora do PATH — sugestão: {}",
-        "    • {} ❌ not on PATH — suggestion: {}",
+        "{}: fora do PATH — sugestão: {}",
+        "{}: not on PATH — suggestion: {}",
     ),
     (
         "  nenhum stack detectado nesta pasta.",
@@ -312,7 +312,7 @@ static EN: &[(&str, &str)] = &[
     ),
     ("(versão não lida)", "(version unreadable)"),
     // --- permission prompts ---
-    ("\n⚠️  RISCO DE SEGURANÇA: {}", "\n⚠️  SECURITY RISK: {}"),
+    ("RISCO DE SEGURANÇA: {}", "SECURITY RISK: {}"),
     (
         "\n🔐 Permissão necessária: {}",
         "\n🔐 Permission required: {}",
@@ -370,8 +370,8 @@ static EN: &[(&str, &str)] = &[
         "(offline: registry hooks/downloads not queried — use --online)",
     ),
     (
-        "Nenhuma achação acima do limiar. ✅",
-        "No findings above the threshold. ✅",
+        "Nenhuma achação acima do limiar.",
+        "No findings above the threshold.",
     ),
     (
         "• {} — {}  (score {}, confiança {})",
@@ -386,12 +386,12 @@ static EN: &[(&str, &str)] = &[
     ),
     ("  - {} ({}) expirou {}", "  - {} ({}) expired {}"),
     (
-        "Veredito: SEM DADOS ⚠️  (0 pacotes — nada foi atestado)",
-        "Verdict: NO DATA ⚠️  (0 packages — nothing was certified)",
+        "Veredito: SEM DADOS (0 pacotes — nada foi atestado)",
+        "Verdict: NO DATA (0 packages — nothing was certified)",
     ),
     ("Veredito: {}", "Verdict: {}"),
-    ("APROVADO ✅", "APPROVED ✅"),
-    ("REPROVADO ❌", "REJECTED ❌"),
+    ("APROVADO", "APPROVED"),
+    ("REPROVADO", "REJECTED"),
     // --- `diagnose` (plugins/diagnose.rs: rules, summaries, dynamic fixes) ---
     // Rule causes.
     (
@@ -637,12 +637,12 @@ static EN: &[(&str, &str)] = &[
         "   (Ctrl-C stops: SIGTERM → wait → SIGKILL)",
     ),
     (
-        "\n✨ terminou normalmente em {}s{}",
-        "\n✨ finished normally in {}s{}",
+        "terminou normalmente em {}s{}",
+        "finished normally in {}s{}",
     ),
     (
-        "\n❌ o projeto saiu com código {} após {}s{}",
-        "\n❌ the project exited with code {} after {}s{}",
+        "o projeto saiu com código {} após {}s{}",
+        "the project exited with code {} after {}s{}",
     ),
     (" (pronto na porta {})", " (ready on port {})"),
     (
@@ -681,12 +681,12 @@ static EN: &[(&str, &str)] = &[
         "\nNo new findings in this project's dependencies.",
     ),
     (
-        "\n🛑 Nome malicioso/typosquat presente nas dependências:",
-        "\n🛑 Malicious/typosquat name present in the dependencies:",
+        "Nome malicioso/typosquat presente nas dependências:",
+        "Malicious/typosquat name present in the dependencies:",
     ),
     (
-        "\n⚠ Possível exposição (casamento só por nome — confira sua versão):",
-        "\n⚠ Possible exposure (name-only match — check your version):",
+        "Possível exposição (casamento só por nome — confira sua versão):",
+        "Possible exposure (name-only match — check your version):",
     ),
     (
         "\n(seção informativa: não altera o score nem o --fail-on do audit)",
@@ -705,7 +705,7 @@ static EN: &[(&str, &str)] = &[
         "subcomando desconhecido: {} (use: status | update)",
         "unknown subcommand: {} (use: status | update)",
     ),
-    ("dataset instalado ✅", "dataset installed ✅"),
+    ("dataset instalado", "dataset installed"),
     (
         "   versão:  {} (gerado em {})",
         "   version:  {} (generated on {})",
@@ -776,7 +776,7 @@ static EN: &[(&str, &str)] = &[
         "\nO audit desta máquina já usa os dados frescos (offline até o próximo update).",
         "\nThis machine's audit already uses the fresh data (offline until the next update).",
     ),
-    ("❌ dataset recusado: {}", "❌ dataset refused: {}"),
+    ("dataset recusado: {}", "dataset refused: {}"),
     (
         "   (nada foi instalado — o dataset anterior, se houver, permanece)",
         "   (nothing was installed — the previous dataset, if any, remains)",
@@ -1065,10 +1065,10 @@ static EN: &[(&str, &str)] = &[
         "clone sem URL (inconsistência interna do plano)",
         "clone without URL (internal plan inconsistency)",
     ),
-    ("✅ clonado em {}", "✅ cloned into {}"),
+    ("clonado em {}", "cloned into {}"),
     (
-        "\n✨ Pipeline concluído.",
-        "\n✨ Pipeline completed.",
+        "Pipeline concluído.",
+        "Pipeline completed.",
     ),
     (
         "\n⏹️ Pipeline interrompido — nada além do ponto de aborto foi executado.",
@@ -1131,24 +1131,24 @@ static EN: &[(&str, &str)] = &[
         "No manifest recognized in this directory.",
     ),
     (
-        "\n• Linguagem : {}   |   Gerenciador: {}   |   Nome: {}",
-        "\n• Language : {}   |   Manager: {}   |   Name: {}",
+        "{} · {} · {}",
+        "{} · {} · {}",
     ),
-    ("  Manifesto : {}", "  Manifest : {}"),
-    ("  Dependências: {}", "  Dependencies: {}"),
+    ("Manifesto: {}", "Manifest: {}"),
+    ("Dependências: {}", "Dependencies: {}"),
     (
-        "✅ Nada a reportar: dependências e lockfiles parecem saudáveis.",
-        "✅ Nothing to report: dependencies and lockfiles look healthy.",
+        "Nada a reportar: dependências e lockfiles parecem saudáveis.",
+        "Nothing to report: dependencies and lockfiles look healthy.",
     ),
-    ("❌ A execução parou: {}", "❌ Execution stopped: {}"),
+    ("A execução parou: {}", "Execution stopped: {}"),
     (
         "   Corrija o problema e rode novamente.",
         "   Fix the problem and run again.",
     ),
     ("Nada foi executado.", "Nothing was executed."),
     (
-        "\n✨ Concluído: {} passo(s) executado(s), {} pulado(s).",
-        "\n✨ Done: {} step(s) executed, {} skipped.",
+        "Concluído: {} passo(s) executado(s), {} pulado(s).",
+        "Done: {} step(s) executed, {} skipped.",
     ),
     // --- prepare section headers / mode label ---
     ("PLANO ({})", "PLAN ({})"),
@@ -1160,8 +1160,8 @@ static EN: &[(&str, &str)] = &[
         "   (trust verification failed, proceeding): {}",
     ),
     (
-        "\n✅ Verificação de confiança: nenhum risco detectado.",
-        "\n✅ Trust verification: no risk detected.",
+        "Verificação de confiança: nenhum risco detectado.",
+        "Trust verification: no risk detected.",
     ),
     (
         "O Zavik não confia cegamente no manifest. Riscos encontrados:\n",
@@ -1223,8 +1223,8 @@ static EN: &[(&str, &str)] = &[
         "No stack recognized — nothing to prepare.",
     ),
     (
-        "\n✅ Toolchain instalada — seguindo.",
-        "\n✅ Toolchain installed — proceeding.",
+        "Toolchain instalada — seguindo.",
+        "Toolchain installed — proceeding.",
     ),
     (
         "\n⏹️  Abortado por risco de segurança. Nada foi instalado nem buildado.",
@@ -1418,10 +1418,10 @@ mod tests {
 
     #[test]
     fn t_fmt_translates_first_then_substitutes_in_order() {
-        let out = t_fmt("    • {} ❌ fora do PATH — sugestão: {}", &["go"]);
+        let out = t_fmt("{}: fora do PATH — sugestão: {}", &["go"]);
         // Default lang is pt during migration → identity path with args filled.
         assert!(out.contains("go"), "arg substituído: {out}");
-        let en = translate(Lang::En, "    • {} ❌ fora do PATH — sugestão: {}");
+        let en = translate(Lang::En, "{}: fora do PATH — sugestão: {}");
         assert!(en.contains("{}"), "template preservado na tradução");
     }
 
@@ -1475,9 +1475,8 @@ mod tests {
         assert_eq!(translate(Lang::PtBr, "AMBIENTE"), "AMBIENTE");
         assert_eq!(t_en("AMBIENTE"), "ENVIRONMENT");
         assert_eq!(
-            t_en("Veredito: SEM DADOS ⚠️  (0 pacotes — nada foi atestado)",
-            ),
-            "Verdict: NO DATA ⚠️  (0 packages — nothing was certified)"
+            t_en("Veredito: SEM DADOS (0 pacotes — nada foi atestado)"),
+            "Verdict: NO DATA (0 packages — nothing was certified)"
         );
         // Unknown key: identity in both, never a guess.
         assert_eq!(t_en("mensagem ainda não migrada"), "mensagem ainda não migrada");
