@@ -31,4 +31,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: node --test (npm package)
-        run: node --version && node --test npm/test/
+        run: node --version && node --test npm/test/*.test.js
