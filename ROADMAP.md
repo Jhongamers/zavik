@@ -229,6 +229,18 @@ swift-argument-parser, googletest). Findings:
   sha256 OK, binary `zavik 0.1.3`, anonymous install.sh with the new default
   OK and **`action-smoke` green** — the action consumed a real release
   (anonymous curl + sha256 + audit + gate), closing door F2 with real E2E.
+- [x] **`v0.1.4` published** (26/10) ✅ — the aesthetic batch + follow-up
+  shipped together: modern terminal presentation (`d2d70d7`: box frames,
+  Unicode symbols, severity colors, hand-rolled ANSI, zero deps) and quiet
+  internal traces (`83f0686`: `KERNEL:`/`CORE:`/`EVENTBUS:`/`[logger]`
+  hidden unless `ZAVIK_VERBOSE=1`, and the `CORE:` lines moved off stdout —
+  `zavik detect > file` no longer writes trace junk into the file), plus the
+  **installer auto-detects the latest release** (GitHub API JSON, `sed`
+  parse without jq, honest pinned fallback with a warning — the install.sh
+  pin is now a safety net, not the main path). Bump = the usual 7 pins; tag
+  `v0.1.4` at `97c3c28` → release 4/4, 8 assets. E2E: anonymous install.sh
+  resolved `v0.1.4` from the live API, sha256 OK, binary self-reports
+  `zavik 0.1.4`. Tests 233/0.
 - [x] **Finding (19/10): `action.yml` uses pure anonymous `curl`** (it does
   not inject `GITHUB_TOKEN`). With the repo **private** the install step
   fails **404** (anonymous download of a private asset); proven that

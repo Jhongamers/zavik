@@ -221,6 +221,18 @@ swift-argument-parser, googletest). Achados:
   install.sh anônimo com default novo OK e **`action-smoke` verde** — o
   action consumiu a release de verdade (curl anônimo + sha256 + audit +
   gate), fechando a porta F2 com E2E real.
+- [x] **Publicação da `v0.1.4`** (26/10) ✅ — lote estético + acompanhamento
+  juntos: apresentação moderna de terminal (`d2d70d7`: molduras, símbolos
+  Unicode, cores por severidade, ANSI hand-rolled, zero dependência) e
+  traces internas quietas por padrão (`83f0686`: `KERNEL:`/`CORE:`/
+  `EVENTBUS:`/`[logger]` escondidas salvo `ZAVIK_VERBOSE=1`, e os `CORE:`
+  saíram do stdout — `zavik detect > arquivo` não grava mais lixo de trace
+  no arquivo), além do **instalador autodetectar a última release** (JSON da
+  API do GitHub, parse via `sed` sem jq, fallback pinado honesto com aviso
+  — o pin do install.sh virou rede de segurança, não caminho principal).
+  Bump = os 7 pins de sempre; tag `v0.1.4` em `97c3c28` → release 4/4, 8
+  assets. E2E: install.sh anônimo resolveu `v0.1.4` da API ao vivo, sha256
+  OK, binário `zavik 0.1.4`. Testes 233/0.
 - [x] **Achado (19/10): o `action.yml` usa `curl` anônimo puro** (não injeta
   `GITHUB_TOKEN`). Com o repo **privado** o install step falha **404**
   (download anônimo de asset privado); provado que **autenticado** funciona
