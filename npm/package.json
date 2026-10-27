@@ -1,0 +1,34 @@
+{
+  "name": "zavik",
+  "version": "0.1.4",
+  "description": "Zavik — supply-chain audit for your dependencies. CLI that installs nothing at `npm install` time: the official release binary is downloaded and sha256-verified on first run.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jhongamers/zavik.git"
+  },
+  "homepage": "https://github.com/Jhongamers/zavik#readme",
+  "bugs": {
+    "url": "https://github.com/Jhongamers/zavik/issues"
+  },
+  "bin": {
+    "zavik": "bin/zavik.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "cli",
+    "supply-chain",
+    "security",
+    "audit",
+    "dependencies",
+    "sarif",
+    "devtools"
+  ]
+}

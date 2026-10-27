@@ -23,15 +23,17 @@ version = "0.1.4"
 edition = "2021"
 license = "MIT"
 authors = ["Zavik"]
+repository = "https://github.com/Jhongamers/zavik"
 
 [workspace.dependencies]
-# --- Internal workspace crates ---
-zavik-shared = { path = "crates/shared" }
-zavik-events = { path = "crates/events" }
-zavik-sdk = { path = "crates/sdk" }
-zavik-plugins = { path = "crates/plugins" }
-zavik-core = { path = "crates/core" }
-zavik-kernel = { path = "crates/kernel" }
+# --- Internal workspace crates (version feeds `cargo publish`; path feeds
+# local builds — the release-bump invariant test asserts they match) ---
+zavik-shared = { version = "0.1.4", path = "crates/shared" }
+zavik-events = { version = "0.1.4", path = "crates/events" }
+zavik-sdk = { version = "0.1.4", path = "crates/sdk" }
+zavik-plugins = { version = "0.1.4", path = "crates/plugins" }
+zavik-core = { version = "0.1.4", path = "crates/core" }
+zavik-kernel = { version = "0.1.4", path = "crates/kernel" }
 
 # --- External dependencies (centralized to standardize versions) ---
 serde = { version = "1", features = ["derive"] }

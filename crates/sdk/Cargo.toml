@@ -4,6 +4,7 @@ description = "Contratos (Capabilities) que os plugins do Zavik implementam."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 zavik-shared.workspace = true

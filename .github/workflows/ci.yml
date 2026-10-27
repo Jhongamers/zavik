@@ -22,3 +22,13 @@ jobs:
         run: cargo test --workspace
       - name: cargo clippy (deny warnings)
         run: cargo clippy --workspace --all-targets -- -D warnings
+
+  # The npm package (npm/) is plain Node with zero npm dependencies; the
+  # runner's preinstalled node runs its node:test suite (no setup-node
+  # action — house stance: only GitHub-official actions, minimum surface).
+  npm-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: node --test (npm package)
+        run: node --version && node --test npm/test/

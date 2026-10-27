@@ -4,6 +4,7 @@ description = "Tipos de domínio universais do Zavik (sem lógica de negócio)."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 # The domain does not depend on any external crate.

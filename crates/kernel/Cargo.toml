@@ -4,6 +4,7 @@ description = "Orquestrador (Microkernel): ciclo de vida de plugins e registry d
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 zavik-shared.workspace = true
