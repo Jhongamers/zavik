@@ -1126,8 +1126,16 @@ mod tests {
 
     #[test]
     fn supervise_timeout_kills_process() {
+        // The child must outlive plausible scheduler stalls of the loop
+        // thread: on a stalled GitHub-hosted runner (real CI incident, 27/10)
+        // the thread slept ~30s before running again, `sleep 30` had already
+        // exited on its own and try_wait honestly reported Exited before the
+        // timeout branch ever executed. With a long-lived child, any wake-up
+        // still finds it alive and the elapsed check produces TimedOut. Cost:
+        // a regressed timeout enforcement turns red after 5min instead of
+        // 30s — acceptable for a broken build.
         let child = Command::new("sleep")
-            .arg("30")
+            .arg("300")
             .stdout(std::process::Stdio::piped())
             .spawn()
             .unwrap();
@@ -1139,7 +1147,13 @@ mod tests {
         let outcome = supervise(child, &opts, None).unwrap();
         assert_eq!(outcome.state, RunState::TimedOut);
         assert!(!outcome.ready);
-        assert!(started.elapsed() < Duration::from_secs(10), "devia ter matado logo");
+        // Generous on purpose: the behavioral invariant is the TimedOut
+        // state; this bound only catches a dead timeout path and must not
+        // flake on a starved shared runner.
+        assert!(
+            started.elapsed() < Duration::from_secs(60),
+            "devia ter matado logo"
+        );
     }
 
     #[cfg(target_os = "linux")]
