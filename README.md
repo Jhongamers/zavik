@@ -346,7 +346,7 @@ Packaging comes with it — `.github/workflows/release.yml` publishes binaries
 (linux x64/arm64, macOS arm64, windows) on every `v*` tag:
 
 ```bash
-git tag v0.1.3 && git push origin v0.1.3   # publishes the Releases
+git tag v0.1.4 && git push origin v0.1.4   # publishes the Releases
 ```
 
 Usage in the consumer's repository (`.github/workflows/audit.yml`):
@@ -361,10 +361,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Jhongamers/zavik@v0.1.3
+      - uses: Jhongamers/zavik@v0.1.4
         with:
           fail-on: high
-          # version: v0.1.3   # pinned tag (on purpose, not "latest")
+          # version: v0.1.4   # pinned tag (on purpose, not "latest")
           # sha256: <hash>    # optional: pins integrity at the action level
           # online: "true"    # default; offline the score only reaches Medium
 ```

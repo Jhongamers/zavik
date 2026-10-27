@@ -23,7 +23,7 @@
 set -eu
 
 REPO="Jhongamers/zavik"
-FALLBACK_VERSION="v0.1.3"
+FALLBACK_VERSION="v0.1.4"
 INSTALL_DIR="${ZAVIK_INSTALL_DIR:-${HOME}/.local/bin}"
 
 say() { printf '%s\n' "$*"; }

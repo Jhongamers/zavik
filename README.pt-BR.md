@@ -326,7 +326,7 @@ workflow `.github/workflows/release.yml` publica binários (linux x64/arm64,
 macOS arm64, windows) a cada tag `v*`:
 
 ```bash
-git tag v0.1.3 && git push origin v0.1.3   # publica as Releases
+git tag v0.1.4 && git push origin v0.1.4   # publica as Releases
 ```
 
 Uso no repositório do consumidor (`.github/workflows/audit.yml`):
@@ -341,10 +341,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Jhongamers/zavik@v0.1.3
+      - uses: Jhongamers/zavik@v0.1.4
         with:
           fail-on: high
-          # version: v0.1.3   # tag pinada (proposital, não "latest")
+          # version: v0.1.4   # tag pinada (proposital, não "latest")
           # sha256: <hash>    # opcional: ancora a integridade no action
           # online: "true"    # default; offline o score só chega a Medium
 ```
