@@ -11,6 +11,7 @@ use std::path::PathBuf;
 /// (JSON/SARIF/exit codes) never goes through it — see module docs.
 pub mod i18n;
 pub mod style;
+pub mod verbose;
 
 /// Identifier of a plugin loaded in the Kernel (e.g. `"stack_detector"`).
 pub type PluginId = String;

@@ -59,38 +59,44 @@ impl WorkflowEngine {
         use zavik_shared::i18n::t_fmt;
         let steps_dbg = format!("{steps:?}");
         for attempt in 1..=self.max_retries {
-            println!(
-                "{}",
-                t_fmt(
-                    "CORE: tentativa {}/{} para os passos {}",
-                    &[
-                        &attempt.to_string(),
-                        &self.max_retries.to_string(),
-                        &steps_dbg,
-                    ]
-                )
-            );
+            if zavik_shared::verbose::enabled() {
+                eprintln!(
+                    "{}",
+                    t_fmt(
+                        "CORE: tentativa {}/{} para os passos {}",
+                        &[
+                            &attempt.to_string(),
+                            &self.max_retries.to_string(),
+                            &steps_dbg,
+                        ]
+                    )
+                );
+            }
 
             match self.run_attempt(steps, context, detector) {
                 Ok(report) => {
-                    println!(
-                        "{}",
-                        t_fmt(
-                            "CORE: workflow concluído na tentativa {}.",
-                            &[&attempt.to_string()]
-                        )
-                    );
+                    if zavik_shared::verbose::enabled() {
+                        eprintln!(
+                            "{}",
+                            t_fmt(
+                                "CORE: workflow concluído na tentativa {}.",
+                                &[&attempt.to_string()]
+                            )
+                        );
+                    }
                     return Ok(report);
                 }
                 Err(error) if attempt < self.max_retries => {
                     let delay = self.initial_backoff_secs * 2f64.powi((attempt - 1) as i32);
-                    eprintln!(
-                        "{}",
-                        t_fmt(
-                            "CORE: falha transitória ('{}'). Retentando em {}s (backoff exponencial)...",
-                            &[&error, &format!("{delay:.2}")]
-                        )
-                    );
+                    if zavik_shared::verbose::enabled() {
+                        eprintln!(
+                            "{}",
+                            t_fmt(
+                                "CORE: falha transitória ('{}'). Retentando em {}s (backoff exponencial)...",
+                                &[&error, &format!("{delay:.2}")]
+                            )
+                        );
+                    }
                     std::thread::sleep(Duration::from_secs_f64(delay));
                 }
                 Err(error) => {
@@ -114,10 +120,12 @@ impl WorkflowEngine {
         let mut report = WorkflowReport::default();
 
         for step in steps {
-            println!(
-                "{}",
-                zavik_shared::i18n::t_fmt("CORE: -> executando passo '{}'", &[step])
-            );
+            if zavik_shared::verbose::enabled() {
+                eprintln!(
+                    "{}",
+                    zavik_shared::i18n::t_fmt("CORE: -> executando passo '{}'", &[step])
+                );
+            }
             if step == STEP_DEPENDENCY_SCAN {
                 let stacks = detector.detect(context).map_err(|e: Error| e.to_string())?;
                 report.detected_stacks = stacks;

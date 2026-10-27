@@ -157,16 +157,20 @@ fn build_kernel(
 ) -> Result<Kernel, Box<dyn std::error::Error>> {
     let mut kernel = Kernel::new();
 
-    // The presentation layer just listens to domain events.
-    kernel.event_bus().subscribe(|event| {
-        eprintln!(
-            "{}",
-            zavik_shared::i18n::t_fmt(
-                "   [logger] evento de domínio: '{}'",
-                &[&event.event_type.to_string()],
-            )
-        );
-    });
+    // The presentation layer just listens to domain events (trace-only: the
+    // subscriber exists so the `[logger]` diagnostics appear under
+    // `ZAVIK_VERBOSE=1` — see `zavik_shared::verbose`).
+    if zavik_shared::verbose::enabled() {
+        kernel.event_bus().subscribe(|event| {
+            eprintln!(
+                "{}",
+                zavik_shared::i18n::t_fmt(
+                    "   [logger] evento de domínio: '{}'",
+                    &[&event.event_type.to_string()],
+                )
+            );
+        });
+    }
 
     let plugin_context = PluginContext {
         id: "system".to_string(),

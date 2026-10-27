@@ -9,18 +9,22 @@
 #   - `curl | sh` is a risk class our own `audit` flags: prefer downloading
 #     this script, reading it, then running it.
 #   - Windows is not supported by this script: use the .zip from Releases.
-#   - The script pins a release version; bump via ZAVIK_VERSION.
+#   - The script installs the LATEST published release by default (GitHub API).
+#     Pin a tag with ZAVIK_VERSION; when the API is unreachable (offline,
+#     air-gapped, rate-limited) it falls back to FALLBACK_VERSION below with
+#     a warning — update that pin on every release, but it is only a fallback,
+#     never the main path.
 #
 # Overrides (mirrors, air-gapped, tests):
-#   ZAVIK_VERSION       release tag to install (default: v0.1.3)
+#   ZAVIK_VERSION       release tag to install (default: latest release)
 #   ZAVIK_INSTALL_DIR   install dir (default: $HOME/.local/bin)
 #   ZAVIK_BASE_URL      download base (default: GitHub release download URL)
+#   ZAVIK_LATEST_URL    "latest release" JSON endpoint (default: GitHub API)
 set -eu
 
 REPO="Jhongamers/zavik"
-VERSION="${ZAVIK_VERSION:-v0.1.3}"
+FALLBACK_VERSION="v0.1.3"
 INSTALL_DIR="${ZAVIK_INSTALL_DIR:-${HOME}/.local/bin}"
-BASE_URL="${ZAVIK_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -43,17 +47,45 @@ case "$os" in
     ;;
 esac
 
-asset="zavik-${VERSION}-${target}.tar.gz"
-url="${BASE_URL}/${asset}"
-
-# --- downloader --------------------------------------------------------------
+# --- downloader (before version resolution: autodetect needs it too) ---------
 if command -v curl >/dev/null 2>&1; then
   download() { curl -fsSL "$1" -o "$2"; }
+  fetch() { curl -fsSL --max-time 10 "$1" 2>/dev/null; }
 elif command -v wget >/dev/null 2>&1; then
   download() { wget -qO "$2" "$1"; }
+  fetch() { wget -qO- -T 10 "$1" 2>/dev/null; }
 else
-  die "need curl or wget to download ${url}"
+  die "need curl or wget to download zavik"
 fi
+
+# Prints the latest release tag (`vX.Y.Z`) or fails (offline, rate-limited,
+# garbage response). The response is GitHub's release JSON; parsed without jq
+# on purpose (the installer stays dependency-free).
+latest_tag() {
+  api="${ZAVIK_LATEST_URL:-https://api.github.com/repos/${REPO}/releases/latest}"
+  json="$(fetch "$api")" || return 1
+  tag="$(printf '%s' "$json" |
+    sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' |
+    head -n1)" || return 1
+  case "$tag" in
+    v[0-9]*) printf '%s\n' "$tag" ;;
+    *) return 1 ;;
+  esac
+}
+
+# --- version: explicit pin > latest release > fallback pin -------------------
+VERSION="${ZAVIK_VERSION:-}"
+if [ -z "$VERSION" ]; then
+  VERSION="$(latest_tag)" || VERSION=""
+fi
+if [ -z "$VERSION" ]; then
+  VERSION="${FALLBACK_VERSION}"
+  printf 'warning: could not determine the latest release (offline? rate-limited?) — installing the pinned %s (set ZAVIK_VERSION to override)\n' "$VERSION" >&2
+fi
+
+BASE_URL="${ZAVIK_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
+asset="zavik-${VERSION}-${target}.tar.gz"
+url="${BASE_URL}/${asset}"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT INT TERM

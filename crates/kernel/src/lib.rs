@@ -50,17 +50,21 @@ impl Kernel {
         _context: &PluginContext,
     ) -> Result<(), String> {
         let name = plugin.name().to_string();
-        eprintln!(
-            "{}",
-            zavik_shared::i18n::t_fmt("KERNEL: registrando plugin '{}'", &[&name])
-        );
+        if zavik_shared::verbose::enabled() {
+            eprintln!(
+                "{}",
+                zavik_shared::i18n::t_fmt("KERNEL: registrando plugin '{}'", &[&name])
+            );
+        }
         self.plugins.insert(name, plugin);
         Ok(())
     }
 
     /// Starts the Kernel by publishing the first system event.
     pub fn run_initialization(&self) {
-        eprintln!("{}", zavik_shared::i18n::t("KERNEL: Zavik inicializado."));
+        if zavik_shared::verbose::enabled() {
+            eprintln!("{}", zavik_shared::i18n::t("KERNEL: Zavik inicializado."));
+        }
         self.event_bus.publish(EventEnvelope::new("system_ready"));
     }
 

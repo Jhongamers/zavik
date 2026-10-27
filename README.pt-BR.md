@@ -20,20 +20,22 @@ vendor pra instalar. *(Compatibilidade, não filiação.)*
 
 ## Como rodar
 
-**Instalação rápida** (linux x64/arm64, macOS arm64; precisa da release
-`v0.1.3` publicada):
+**Instalação rápida** (linux x64/arm64, macOS arm64; instala a **última**
+release):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jhongamers/zavik/main/install.sh | sh
 ```
 
-Detecta seu OS/arch, baixa o tarball da release, **confere o sha256** (sem
+Detecta seu OS/arch, resolve a última release (API do GitHub; offline, cai
+para a versão pinada com aviso), baixa o tarball, **confere o sha256** (sem
 flag de pular) e instala em `~/.local/bin`. De preferência baixe o script,
 leia e rode — o nosso próprio `audit` classifica `curl | sh` como risco.
 Windows: pegue o `.zip` em
 [Releases](https://github.com/Jhongamers/zavik/releases). Overrides:
-`ZAVIK_VERSION`, `ZAVIK_INSTALL_DIR`, `ZAVIK_BASE_URL` (espelhos,
-ambiente air-gapped, testes).
+`ZAVIK_VERSION` (pin de tag), `ZAVIK_INSTALL_DIR`, `ZAVIK_BASE_URL`
+(espelhos, ambiente air-gapped, testes), `ZAVIK_LATEST_URL` (endpoint da
+última release).
 
 **Da fonte** (sempre funciona):
 

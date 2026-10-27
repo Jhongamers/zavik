@@ -3,7 +3,9 @@
 //! The installer is the only door that touches the network, so the tests
 //! fake a whole release (tarball + sha256) served over `file://` and assert:
 //! happy path installs a working binary, a tampered archive is refused, an
-//! unsupported OS gets a clear message, and the script parses as POSIX sh.
+//! unsupported OS gets a clear message, the script parses as POSIX sh, and
+//! version resolution picks the latest release (API JSON faked over file://)
+//! with an honest fallback to the pinned version when the API is unreachable.
 
 #![cfg(unix)]
 
@@ -180,5 +182,98 @@ fn installer_refuses_unsupported_os_with_clear_message() {
     assert!(
         combined.contains("SunOS") && combined.contains("unsupported"),
         "a mensagem diz qual SO e que não é suportado: {combined}"
+    );
+}
+
+// --- latest release resolution (pin > autodetect > fallback) -----------------
+
+#[test]
+fn installer_autodetects_the_latest_release_from_the_api_json() {
+    let release = TempDir::new().unwrap();
+    fake_release(&release, "v9.9.9-test");
+    // GitHub's release JSON, faked over file:// (same shape the API returns).
+    fs::write(
+        release.path().join("latest.json"),
+        r#"{"tag_name": "v9.9.9-test", "name": "v9.9.9-test"}"#,
+    )
+    .unwrap();
+
+    let home = TempDir::new().unwrap();
+    let output = installer(&home)
+        .env_remove("ZAVIK_VERSION") // autodetect only kicks in unpinned
+        .env(
+            "ZAVIK_LATEST_URL",
+            format!("file://{}/latest.json", release.path().display()),
+        )
+        .env(
+            "ZAVIK_BASE_URL",
+            format!("file://{}", release.path().display()),
+        )
+        .output()
+        .unwrap();
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success(),
+        "autodetect deve instalar a última release: {} {stderr}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert!(
+        !stderr.contains("warning"),
+        "sem fallback quando a API responde: {stderr}"
+    );
+    let installed = home.path().join("bin/zavik");
+    let version = Command::new(&installed).output().unwrap();
+    assert!(
+        String::from_utf8_lossy(&version.stdout).contains("test-binary"),
+        "o binário da release autodetectada roda"
+    );
+}
+
+#[test]
+fn installer_falls_back_to_the_pinned_version_when_the_api_is_unreachable() {
+    // The pin lives in install.sh itself; the test reads it so a release bump
+    // never breaks this fixture.
+    let script = fs::read_to_string(install_sh()).unwrap();
+    let pin = script
+        .split("FALLBACK_VERSION=\"")
+        .nth(1)
+        .and_then(|rest| rest.split('"').next())
+        .expect("install.sh declara FALLBACK_VERSION");
+    assert!(pin.starts_with('v'), "pin tem cara de tag: {pin}");
+
+    let release = TempDir::new().unwrap();
+    fake_release(&release, pin);
+
+    let home = TempDir::new().unwrap();
+    let output = installer(&home)
+        .env_remove("ZAVIK_VERSION") // force the autodetect path
+        .env(
+            "ZAVIK_LATEST_URL",
+            format!("file://{}/missing.json", release.path().display()),
+        )
+        .env(
+            "ZAVIK_BASE_URL",
+            format!("file://{}", release.path().display()),
+        )
+        .output()
+        .unwrap();
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success(),
+        "API fora do ar não pode barrar a instalação: {stderr}"
+    );
+    assert!(
+        stderr.contains("warning: could not determine the latest release"),
+        "o fallback é honesto (avisa qual pin será usado): {stderr}"
+    );
+    assert!(
+        stderr.contains(pin),
+        "o aviso diz a versão pinada: {stderr}"
+    );
+    assert!(
+        home.path().join("bin/zavik").is_file(),
+        "o pin de fallback ainda instala"
     );
 }

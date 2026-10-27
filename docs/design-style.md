@@ -62,3 +62,44 @@ não toca tradução nenhuma.
 - Paleta configurável por tema/config file.
 - `--no-color` como flag explícita do CLI (hoje só env `NO_COLOR`).
 - Barras de progresso (o `run` ainda é linha-a-linha).
+
+## 7. Traces internos: quiet por padrão, `ZAVIK_VERBOSE=1` para voltar
+
+Mesmo lote (26/10). O output real tinha ruído de motor vazando no terminal:
+`KERNEL: registrando plugin …` ×4, `EVENTBUS: publicando …`, `CORE: tentativa
+1/3 …`, `CORE: -> executando passo …`, `[logger] evento de domínio …` — sete
+linhas por comando, do pior tipo possível para uma CLI moderna: log de
+interno, não dado do projeto.
+
+Dois problemas, não um:
+
+1. **Ruído**: clis modernas não imprimem internals por default (bun, cargo,
+   npm — o debug aparece sob flag/env).
+2. **Vazamento de stdout**: os `CORE:` usavam `println!` — `zavik detect >
+   arquivo` jogava `CORE: tentativa …` **dentro do arquivo**, e `2>&1 |
+   zavik diagnose` recebia as traces como se fossem o erro do usuário.
+
+Decisão: gate único em `zavik_shared::verbose` (`crates/shared/src/verbose.rs`):
+
+- `ZAVIK_VERBOSE` definido e ≠ `0` → traces **no stderr**; default → nada.
+- Os quatro `println!` do `core` viraram `eprintln!` — trace nunca toca
+  stdout, com ou sem verbose. É a mesma regra da cor (§1): stdout é contrato,
+  stderr é diagnóstico.
+- O subscriber `[logger]` só é registrado com verbose ligado (nem assina
+  eventos quando está quiet).
+
+Por que gate e não apagar as linhas: elas são a primeira coisa que pedimos num
+bug report ("roda com `ZAVIK_VERBOSE=1` e me manda o output"), e o catálogo
+i18n já as mantém traduzidas.
+
+Invariantes (testados em `crates/cli/tests/traces.rs` + unitário do truth
+table em `verbose.rs`):
+
+- default → nenhuma trace (`KERNEL:`/`CORE:`/`EVENTBUS:`/`[logger]`) em
+  nenhum stream, e a saída real continua vindo;
+- `ZAVIK_VERBOSE=1` → traces de volta no **stderr**, traduzidas (EN);
+- mesmo com verbose, stdout fica limpo (o `CORE:` não polui mais `> file`);
+- `ZAVIK_VERBOSE=0` → off (mesma regra do `CLICOLOR_FORCE`);
+- `--json` byte-idêntico com/sem verbose; trace nunca entra no payload.
+
+Fora de escopo: níveis (`info`/`debug`), `RUST_LOG`, spinner de progresso.

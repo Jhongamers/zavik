@@ -62,13 +62,15 @@ impl EventBus {
             .handlers
             .read()
             .expect("EventBus: lock de leitura envenenado");
-        eprintln!(
-            "{}",
-            zavik_shared::i18n::t_fmt(
-                "EVENTBUS: publicando '{}' para {} assinante(s)",
-                &[&event.event_type, &handlers.len().to_string()]
-            )
-        );
+        if zavik_shared::verbose::enabled() {
+            eprintln!(
+                "{}",
+                zavik_shared::i18n::t_fmt(
+                    "EVENTBUS: publicando '{}' para {} assinante(s)",
+                    &[&event.event_type, &handlers.len().to_string()]
+                )
+            );
+        }
         for handler in handlers.iter() {
             handler(&event);
         }
